@@ -1,9 +1,6 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { AudioEngine, getAudioEngine, AudioSource } from '@/lib/audio/engine';
 
-/**
- * Audio engine state interface
- */
 interface AudioEngineState {
   isInitialized: boolean;
   isLoading: boolean;
@@ -16,9 +13,6 @@ interface AudioEngineState {
   };
 }
 
-/**
- * Audio context hook return type
- */
 interface UseAudioContextReturn extends AudioEngineState {
   engine: AudioEngine | null;
   initialize: () => Promise<void>;
@@ -27,12 +21,6 @@ interface UseAudioContextReturn extends AudioEngineState {
   reset: () => void;
 }
 
-/**
- * Custom hook for managing audio engine and context
- *
- * Provides React integration for the AudioEngine singleton with proper
- * lifecycle management, error handling, and performance monitoring.
- */
 export function useAudioContext(): UseAudioContextReturn {
   const engineRef = useRef<AudioEngine | null>(null);
   const [state, setState] = useState<AudioEngineState>({
@@ -47,12 +35,8 @@ export function useAudioContext(): UseAudioContextReturn {
     },
   });
 
-  // Performance monitoring interval
   const metricsIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  /**
-   * Initialize audio engine
-   */
   const initialize = useCallback(async () => {
     if (state.isInitialized || state.isLoading) {
       return;
@@ -61,10 +45,7 @@ export function useAudioContext(): UseAudioContextReturn {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Get audio engine instance
       engineRef.current = getAudioEngine();
-
-      // Initialize with user gesture (required for Web Audio API)
       await engineRef.current.initialize();
 
       setState(prev => ({
@@ -74,9 +55,7 @@ export function useAudioContext(): UseAudioContextReturn {
         error: null,
       }));
 
-      // Start performance monitoring
       startPerformanceMonitoring();
-
       console.log('Audio context initialized successfully');
 
     } catch (error) {
@@ -93,9 +72,6 @@ export function useAudioContext(): UseAudioContextReturn {
     }
   }, [state.isInitialized, state.isLoading]);
 
-  /**
-   * Create audio source for deck
-   */
   const createDeckSource = useCallback((deckId: string): AudioSource | null => {
     if (!engineRef.current || !state.isInitialized) {
       console.warn('Audio engine not initialized, cannot create deck source');
@@ -110,9 +86,6 @@ export function useAudioContext(): UseAudioContextReturn {
     }
   }, [state.isInitialized]);
 
-  /**
-   * Load audio file
-   */
   const loadAudioFile = useCallback(async (url: string) => {
     if (!engineRef.current || !state.isInitialized) {
       throw new Error('Audio engine not initialized');
@@ -126,23 +99,17 @@ export function useAudioContext(): UseAudioContextReturn {
     }
   }, [state.isInitialized]);
 
-  /**
-   * Reset audio context and engine
-   */
   const reset = useCallback(() => {
-    // Stop performance monitoring
     if (metricsIntervalRef.current) {
       clearInterval(metricsIntervalRef.current);
       metricsIntervalRef.current = null;
     }
 
-    // Dispose audio engine
     if (engineRef.current) {
       engineRef.current.dispose();
       engineRef.current = null;
     }
 
-    // Reset state
     setState({
       isInitialized: false,
       isLoading: false,
@@ -156,9 +123,6 @@ export function useAudioContext(): UseAudioContextReturn {
     });
   }, []);
 
-  /**
-   * Start performance monitoring
-   */
   const startPerformanceMonitoring = useCallback(() => {
     if (metricsIntervalRef.current) {
       clearInterval(metricsIntervalRef.current);
@@ -172,36 +136,25 @@ export function useAudioContext(): UseAudioContextReturn {
           performanceMetrics: metrics,
         }));
       }
-    }, 1000); // Update every second
+    }, 1000);
   }, []);
 
-  /**
-   * Initialize on mount (requires user interaction)
-   */
   useEffect(() => {
-    // Note: Audio context initialization must be triggered by user gesture
-    // This will be called from a user interaction event
     return () => {
-      // Cleanup on unmount
       if (metricsIntervalRef.current) {
         clearInterval(metricsIntervalRef.current);
       }
     };
   }, []);
 
-  /**
-   * Handle visibility change to manage audio context
-   */
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (engineRef.current) {
         if (document.hidden) {
-          // Suspend audio context when tab is hidden to save resources
           if (engineRef.current.context.state === 'running') {
             engineRef.current.context.suspend();
           }
         } else {
-          // Resume audio context when tab becomes visible
           if (engineRef.current.context.state === 'suspended') {
             engineRef.current.context.resume();
           }
@@ -213,29 +166,6 @@ export function useAudioContext(): UseAudioContextReturn {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  /**
-   * Handle audio context state changes
-   */
-  useEffect(() => {
-    if (!engineRef.current) return;
-
-    const handleStateChange = () => {
-      if (engineRef.current?.context.state === 'interrupted') {
-        setState(prev => ({
-          ...prev,
-          error: 'Audio context was interrupted'
-        }));
-      }
-    };
-
-    // Listen for audio context state changes
-    engineRef.current.context.addEventListener('statechange', handleStateChange);
-
-    return () => {
-      engineRef.current?.context.removeEventListener('statechange', handleStateChange);
-    };
-  }, [state.isInitialized]);
-
   return {
     ...state,
     engine: engineRef.current,
@@ -246,9 +176,6 @@ export function useAudioContext(): UseAudioContextReturn {
   };
 }
 
-/**
- * Hook for managing individual deck audio sources
- */
 export function useDeckAudio(deckId: string) {
   const { engine, isInitialized } = useAudioContext();
   const sourceRef = useRef<AudioSource | null>(null);
@@ -262,7 +189,6 @@ export function useDeckAudio(deckId: string) {
     volume: 1,
   });
 
-  // Create deck source when engine is ready
   useEffect(() => {
     if (isInitialized && engine && !sourceRef.current) {
       sourceRef.current = engine.createDeckSource(deckId);
@@ -276,7 +202,6 @@ export function useDeckAudio(deckId: string) {
     };
   }, [deckId, engine, isInitialized]);
 
-  // Load audio file
   const loadFile = useCallback(async (url: string) => {
     if (!sourceRef.current) {
       throw new Error('Deck source not initialized');
@@ -295,7 +220,6 @@ export function useDeckAudio(deckId: string) {
     }
   }, [deckId]);
 
-  // Playback controls
   const play = useCallback(() => {
     if (sourceRef.current && deckState.isLoaded) {
       sourceRef.current.start();
@@ -338,7 +262,6 @@ export function useDeckAudio(deckId: string) {
     }
   }, []);
 
-  // Update position periodically when playing
   useEffect(() => {
     if (!deckState.isPlaying || !sourceRef.current) return;
 
@@ -347,7 +270,7 @@ export function useDeckAudio(deckId: string) {
         const position = sourceRef.current.getPosition();
         setDeckState(prev => ({ ...prev, position }));
       }
-    }, 100); // Update every 100ms for smooth progress
+    }, 100);
 
     return () => clearInterval(interval);
   }, [deckState.isPlaying]);
