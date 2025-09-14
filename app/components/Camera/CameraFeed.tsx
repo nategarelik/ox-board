@@ -195,6 +195,9 @@ export default function CameraFeed({
       if (cameraRef.current) {
         cameraRef.current.stop()
       }
+      if (handsRef.current) {
+        handsRef.current.close()
+      }
     }
   }, [initializeMediaPipe])
 

@@ -8,13 +8,11 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: [
+          // Relaxed CORS headers to allow MediaPipe CDN resources
+          // COEP and COOP headers removed to fix MediaPipe loading issues
           {
-            key: 'Cross-Origin-Embedder-Policy',
-            value: 'require-corp',
-          },
-          {
-            key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin',
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'cross-origin',
           },
         ],
       },
