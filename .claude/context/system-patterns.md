@@ -1,7 +1,7 @@
 ---
 created: 2025-09-13T21:07:43Z
-last_updated: 2025-09-14T06:12:50Z
-version: 1.1
+last_updated: 2025-09-14T20:15:00Z
+version: 1.2
 author: Claude Code PM System
 ---
 
@@ -250,6 +250,53 @@ const handsConfig = {
 }
 ```
 
+## MVP Implementation Patterns (Planned)
+
+### Track Loading Strategy
+```typescript
+// Streaming adapter pattern for multiple sources
+interface TrackLoader {
+  loadFromURL(url: string): Promise<AudioBuffer>;
+  supportsURL(url: string): boolean;
+}
+
+class YouTubeLoader implements TrackLoader { ... }
+class SoundCloudLoader implements TrackLoader { ... }
+class LocalFileLoader implements TrackLoader { ... }
+```
+
+### DJ State Management
+```typescript
+// Expanded store pattern for DJ functionality
+interface DJState {
+  // Existing infrastructure
+  mixer: AudioMixer | null;
+  gestureControls: GestureControl[];
+
+  // New MVP additions
+  tracks: { left: Track | null; right: Track | null };
+  playback: { left: PlaybackState; right: PlaybackState };
+  tutorial: TutorialState;
+
+  // Actions for MVP
+  loadTrack: (deck: 'left' | 'right', url: string) => Promise<void>;
+  togglePlayback: (deck: 'left' | 'right') => void;
+  setBPMSync: (enabled: boolean) => void;
+}
+```
+
+### Effects Chain Pattern
+```typescript
+// Chain of responsibility for audio effects
+class EffectsChain {
+  private effects: AudioEffect[] = [];
+
+  addEffect(effect: AudioEffect): void;
+  processAudio(input: AudioNode): AudioNode;
+  setWetDry(mix: number): void;
+}
+```
+
 ## Recent Pattern Implementations
 - Implemented Zustand for state management (Observer pattern)
 - Added three-tier error boundaries (Composite pattern)
@@ -257,5 +304,13 @@ const handsConfig = {
 - Implemented AudioMixer with channel abstraction (Bridge pattern)
 - Added dynamic imports for code splitting (Lazy Loading pattern)
 
+## Upcoming Pattern Implementations (MVP)
+- Track loader strategy pattern for multiple streaming sources
+- Command pattern for gesture-to-action mapping
+- Factory pattern for audio effect creation
+- Template method pattern for tutorial progression
+- State pattern for playback management
+
 ## Update History
-- 2025-09-14: Updated with actually implemented patterns from epic completion
+- 2025-09-14 06:12: Updated with actually implemented patterns from epic completion
+- 2025-09-14 20:15: Added MVP implementation patterns for current epic
