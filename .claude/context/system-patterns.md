@@ -1,7 +1,7 @@
 ---
 created: 2025-09-13T21:07:43Z
-last_updated: 2025-09-13T21:07:43Z
-version: 1.0
+last_updated: 2025-09-14T06:12:50Z
+version: 1.1
 author: Claude Code PM System
 ---
 
@@ -11,357 +11,251 @@ author: Claude Code PM System
 
 ### Application Type
 - **Single Page Application (SPA)** with Next.js app router
-- **Client-side heavy** processing planned
-- **Static generation** with API routes
-- **Progressive enhancement** approach
+- **Client-side heavy** processing with MediaPipe and Tone.js
+- **Static generation** with dynamic imports for code splitting
+- **Progressive enhancement** with error boundaries
 
 ### Architectural Style
-- **Component-based** UI architecture
-- **Event-driven** for gesture detection
-- **Reactive** state management planned
-- **Modular** code organization intended
+- **Component-based** UI architecture with React 19
+- **Event-driven** gesture detection and audio processing
+- **Reactive** state management with Zustand
+- **Modular** code organization with clear separation of concerns
 
-## Design Patterns (Planned)
+## Design Patterns (Implemented)
 
 ### Creational Patterns
 
 #### Singleton Pattern
 ```typescript
-// Audio Engine - single instance
-class AudioEngine {
-  private static instance: AudioEngine;
-  private constructor() {}
+// AudioMixer - single instance per session
+export class AudioMixer {
+  private channels: Channel[] = [];
+  private isInitialized: boolean = false;
 
-  static getInstance(): AudioEngine {
-    if (!this.instance) {
-      this.instance = new AudioEngine();
-    }
-    return this.instance;
+  async initialize(): Promise<void> {
+    if (this.isInitialized) return;
+    await Tone.start();
+    this.isInitialized = true;
   }
 }
 ```
-**Use Cases**: AudioEngine, CameraManager, GestureDetector
+**Implemented In**: AudioMixer, MediaPipe Hands instance
 
 #### Factory Pattern
 ```typescript
-// Gesture recognizer factory
-class GestureFactory {
-  static createGesture(type: GestureType): IGesture {
-    switch(type) {
-      case 'swipe': return new SwipeGesture();
-      case 'pinch': return new PinchGesture();
-      // ...
-    }
-  }
+// Error Boundary Factory for different levels
+export function DJErrorBoundary({ children }: { children: ReactNode }) {
+  return <ErrorBoundary level="section" ... />
+}
+
+export function CameraErrorBoundary({ children }: { children: ReactNode }) {
+  return <ErrorBoundary level="section" fallback={...} ... />
 }
 ```
-**Use Cases**: Creating different gesture types, effect chains
+**Implemented In**: Error boundaries, Kalman filters
 
 ### Behavioral Patterns
 
 #### Observer Pattern
 ```typescript
-// Gesture events
-interface GestureObserver {
-  onGestureDetected(gesture: Gesture): void;
-}
-
-class GestureDetector {
-  private observers: GestureObserver[] = [];
-
-  subscribe(observer: GestureObserver) {
-    this.observers.push(observer);
-  }
-
-  notify(gesture: Gesture) {
-    this.observers.forEach(o => o.onGestureDetected(gesture));
-  }
-}
+// Zustand store with subscriptions
+const useDJStore = create<DJState>()(
+  devtools(
+    (set, get) => ({
+      updateGestureControls: (controls) => {
+        set({ gestureControls: controls });
+        // Automatically updates all subscribed components
+      }
+    })
+  )
+)
 ```
-**Use Cases**: Gesture detection, audio events, UI updates
+**Implemented In**: Zustand stores, gesture detection callbacks
 
 #### Command Pattern
 ```typescript
-// Audio commands
-interface AudioCommand {
-  execute(): void;
-  undo(): void;
-}
-
-class PlayCommand implements AudioCommand {
-  constructor(private deck: DJDeck) {}
-  execute() { this.deck.play(); }
-  undo() { this.deck.pause(); }
+// Gesture controls as commands
+interface GestureControl {
+  type: 'volume' | 'crossfader' | 'eq' | 'effect';
+  value: number;
+  hand: 'left' | 'right';
+  gesture: string;
 }
 ```
-**Use Cases**: Mapping gestures to actions, undo/redo
-
-#### Strategy Pattern
-```typescript
-// Effect processing strategies
-interface EffectStrategy {
-  process(audio: AudioBuffer): AudioBuffer;
-}
-
-class ReverbStrategy implements EffectStrategy {
-  process(audio: AudioBuffer): AudioBuffer {
-    // Apply reverb
-  }
-}
-```
-**Use Cases**: Audio effects, gesture smoothing algorithms
+**Implemented In**: Gesture control system
 
 ### Structural Patterns
 
+#### Composite Pattern
+```typescript
+// Error boundary hierarchy
+<ErrorBoundary level="page">
+  <ErrorBoundary level="section">
+    <ErrorBoundary level="component">
+      <Component />
+    </ErrorBoundary>
+  </ErrorBoundary>
+</ErrorBoundary>
+```
+**Implemented In**: Error boundary system, component hierarchy
+
 #### Adapter Pattern
 ```typescript
-// MediaPipe to app gesture adapter
-class MediaPipeAdapter {
-  constructor(private mediaPipe: MediaPipeHands) {}
-
-  toAppGesture(mpGesture: MPGesture): AppGesture {
-    // Convert MediaPipe format to app format
-  }
-}
+// MediaPipe to gesture control adapter
+const processHandLandmarks = (landmarks: any[], hand: 'left' | 'right'): Point2D[] => {
+  return landmarks.map(landmark => ({
+    x: landmark.x,
+    y: landmark.y
+  }));
+};
 ```
-**Use Cases**: Third-party library integration
-
-#### Decorator Pattern
-```typescript
-// Audio effect chaining
-class EffectDecorator {
-  constructor(private effect: AudioEffect) {}
-
-  apply(signal: AudioSignal): AudioSignal {
-    return this.effect.process(signal);
-  }
-}
-```
-**Use Cases**: Chaining audio effects
-
-## Data Flow Architecture
-
-### Current Implementation
-```
-User → Browser → Next.js Page → Basic UI
-```
-
-### Planned Architecture
-```
-Camera Input
-    ↓
-MediaPipe Processing
-    ↓
-Gesture Detection
-    ↓
-Gesture Mapping
-    ↓
-Audio Command
-    ↓
-Tone.js Processing
-    ↓
-Audio Output
-
-Parallel:
-Gesture Data → Three.js → Visual Feedback
-             → UI Updates → React Components
-```
+**Implemented In**: MediaPipe integration, Tone.js wrapper
 
 ## State Management Architecture
 
-### Global State (Zustand)
+### Zustand Store Pattern
 ```typescript
-interface AppState {
-  // Audio state
-  audioEngine: {
-    isPlaying: boolean;
-    bpm: number;
-    crossfaderPosition: number;
-    deck1: DeckState;
-    deck2: DeckState;
-  };
+interface DJState {
+  // State
+  mixer: AudioMixer | null;
+  gestureControls: GestureControl[];
 
-  // Gesture state
-  gestures: {
-    activeGesture: Gesture | null;
-    confidence: number;
-    calibration: CalibrationData;
-  };
-
-  // UI state
-  ui: {
-    showTutorial: boolean;
-    activeView: ViewType;
-    theme: 'light' | 'dark';
-  };
+  // Actions
+  initializeMixer: () => Promise<void>;
+  updateGestureControls: (controls: GestureControl[]) => void;
 }
 ```
 
-### Local State
-- Component animations
-- Form inputs
-- Temporary UI states
+### State Flow
+1. **User Input** → Gestures/UI controls
+2. **Processing** → Kalman filter smoothing
+3. **State Update** → Zustand store
+4. **Side Effects** → Audio mixer updates
+5. **UI Update** → React re-render
 
 ## Component Architecture
 
-### Smart vs Dumb Components
+### Smart/Dumb Component Pattern
+- **Smart Components**: page.tsx (connected to store)
+- **Dumb Components**: Deck, Mixer (receive props)
+- **Hook Components**: useGestures (encapsulate logic)
+
+### Error Handling Strategy
 ```typescript
-// Smart Component (Container)
-const DJDeckContainer = () => {
-  const { deck, updateDeck } = useAudioStore();
-  return <DJDeck {...deck} onChange={updateDeck} />;
-};
-
-// Dumb Component (Presentational)
-const DJDeck = ({ bpm, isPlaying, onChange }) => {
-  // Pure presentation logic
-};
+// Three-tier error handling
+Level 1: Page-level → Full page error UI
+Level 2: Section-level → Section replacement
+Level 3: Component-level → Inline error message
 ```
 
-### Component Composition
+## Data Flow Patterns
+
+### Unidirectional Data Flow
 ```
-<DJApp>
-  <GestureProvider>
-    <AudioProvider>
-      <Layout>
-        <CameraFeed />
-        <DeckSection>
-          <DJDeck side="left" />
-          <Mixer />
-          <DJDeck side="right" />
-        </DeckSection>
-        <EffectsPanel />
-      </Layout>
-    </AudioProvider>
-  </GestureProvider>
-</DJApp>
+User Action → Store Action → State Change → UI Update
+     ↑                            ↓
+     └──── Side Effects ←─────────┘
 ```
 
-## API Architecture (Planned)
-
-### RESTful Endpoints
+### Event Processing Pipeline
 ```
-GET  /api/tracks          - List available tracks
-POST /api/tracks/upload   - Upload new track
-GET  /api/presets         - Get gesture presets
-POST /api/sessions        - Save mixing session
-GET  /api/sessions/:id    - Retrieve session
-```
-
-### WebSocket Events
-```
-connect              - Join collaborative session
-disconnect           - Leave session
-gesture:detected     - Broadcast gesture
-audio:sync          - Sync audio state
-user:joined         - User joined session
-user:left           - User left session
+Camera → MediaPipe → Landmarks → Kalman Filter → Gestures → Controls → Audio
 ```
 
 ## Performance Patterns
 
-### Optimization Strategies
-1. **Debouncing**: Gesture detection updates
-2. **Throttling**: Audio parameter changes
-3. **Memoization**: Expensive calculations
-4. **Virtualization**: Large track lists
-5. **Code Splitting**: Route-based splitting
-
-### Caching Strategy
+### Code Splitting
 ```typescript
-// Service Worker caching (planned)
-- Cache MediaPipe models
-- Cache audio samples
-- Cache static assets
-- Network-first for API calls
+const CameraFeed = dynamic(() => import('./components/Camera/CameraFeed'), {
+  ssr: false
+});
+```
+
+### Memoization
+```typescript
+const processHandLandmarks = useCallback((landmarks, hand) => {
+  // Processing logic
+}, []);
+```
+
+### Throttling
+```typescript
+if (now - lastUpdateTime.current < updateInterval) {
+  return; // Throttle updates to 60 FPS
+}
+```
+
+## Testing Patterns (Planned)
+
+### Arrange-Act-Assert
+```typescript
+// Future test structure
+it('should process gestures correctly', () => {
+  // Arrange
+  const mockLandmarks = createMockLandmarks();
+
+  // Act
+  const result = processGestures(mockLandmarks);
+
+  // Assert
+  expect(result.controls).toHaveLength(3);
+});
 ```
 
 ## Security Patterns
 
-### Client-Side Security
-1. **Input Validation**: Validate all gesture inputs
-2. **Rate Limiting**: Limit gesture detection frequency
-3. **Sanitization**: Clean user-uploaded content
-4. **CORS**: Strict CORS policies
-
-### Privacy Patterns
-1. **Local Processing**: Camera data never leaves device
-2. **Opt-in Recording**: Explicit consent for session recording
-3. **Data Minimization**: Only store necessary data
-
-## Error Handling Patterns
-
-### Error Boundaries
+### Input Validation
 ```typescript
-class AudioErrorBoundary extends React.Component {
-  componentDidCatch(error: Error) {
-    // Fallback to keyboard controls
-    this.props.onError(error);
+const value = Math.max(0, Math.min(1, gain)); // Clamp values
+if (channel < 0 || channel >= 4) return; // Boundary checks
+```
+
+### Resource Cleanup
+```typescript
+useEffect(() => {
+  return () => {
+    if (cameraRef.current) cameraRef.current.stop();
+    if (handsRef.current) handsRef.current.close();
+  };
+}, []);
+```
+
+## Async Patterns
+
+### Promise-based Initialization
+```typescript
+async initialize(): Promise<void> {
+  if (this.isInitialized) return;
+  await Tone.start();
+  this.isInitialized = true;
+}
+```
+
+### Effect Cleanup
+```typescript
+useEffect(() => {
+  initializeMediaPipe();
+  return () => cleanup();
+}, []);
+```
+
+## Configuration Patterns
+
+### Environment-agnostic Config
+```typescript
+const handsConfig = {
+  locateFile: (file: string) => {
+    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
   }
 }
 ```
 
-### Graceful Degradation
-1. Camera unavailable → Keyboard controls
-2. MediaPipe fails → Simple gesture detection
-3. WebGL unsupported → 2D visualization
-4. Audio API blocked → Visual-only mode
+## Recent Pattern Implementations
+- Implemented Zustand for state management (Observer pattern)
+- Added three-tier error boundaries (Composite pattern)
+- Created Kalman filter for smoothing (Strategy pattern)
+- Implemented AudioMixer with channel abstraction (Bridge pattern)
+- Added dynamic imports for code splitting (Lazy Loading pattern)
 
-## Testing Patterns (Not Implemented)
-
-### Planned Testing Strategy
-```
-Unit Tests:
-- Gesture detection algorithms
-- Audio processing functions
-- State management logic
-
-Integration Tests:
-- Component interactions
-- API endpoints
-- WebSocket communication
-
-E2E Tests:
-- Full user flows
-- Gesture to audio pipeline
-- Multi-user sessions
-```
-
-## Deployment Patterns
-
-### Environment Strategy
-```
-Development:
-- Local MediaPipe models
-- Mock audio tracks
-- Debug logging enabled
-
-Staging:
-- CDN for models
-- Test audio library
-- Performance monitoring
-
-Production:
-- Optimized builds
-- Real audio library
-- Error tracking only
-```
-
-## Code Organization Patterns
-
-### Module Boundaries
-```
-/lib/gesture   - Gesture detection logic only
-/lib/audio     - Audio processing only
-/components    - UI components only
-/hooks         - React hooks only
-/api           - API routes only
-/types         - Type definitions only
-```
-
-### Naming Conventions
-- **Components**: PascalCase
-- **Utilities**: camelCase
-- **Constants**: UPPER_SNAKE_CASE
-- **Types**: PascalCase with 'I' or 'T' prefix
-- **Hooks**: use* prefix
+## Update History
+- 2025-09-14: Updated with actually implemented patterns from epic completion

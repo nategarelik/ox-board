@@ -35,6 +35,17 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# temporary files
+tmp-*
+temp-*
+*.tmp
+
+# epic directories (old versions)
+epic-*/
+
+# malformed files
+C:*
+
 # IDEs and editors
 /.idea
 .project
