@@ -2,7 +2,7 @@
 name: ox-board
 status: backlog
 created: 2025-09-14T20:14:00Z
-progress: 0%
+progress: 100%
 prd: .claude/prds/ox-board.md
 github: https://github.com/nategarelik/ox-board/issues/12
 ---
