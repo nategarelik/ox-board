@@ -1,0 +1,907 @@
+/**
+ * Intelligent Mix Assistant - Rule-based algorithmic DJ mixing intelligence
+ *
+ * Provides intelligent mixing recommendations using:
+ * - Camelot Wheel harmonic mixing theory
+ * - BPM matching and tempo adjustment algorithms
+ * - Energy level analysis for smooth transitions
+ * - Phrase detection and alignment
+ * - Spectral analysis for frequency clash detection
+ * - Heuristic-based effect recommendations
+ */
+
+import { MusicAnalyzer, type BPMAnalysis, type KeyAnalysis, type SpectralFeatures, type OnsetDetection } from '../audio/musicAnalyzer';
+
+// Camelot Wheel mapping for harmonic mixing
+const CAMELOT_WHEEL: Record<string, { position: number; type: 'A' | 'B' }> = {
+  'C major': { position: 8, type: 'B' },
+  'A minor': { position: 8, type: 'A' },
+  'G major': { position: 9, type: 'B' },
+  'E minor': { position: 9, type: 'A' },
+  'D major': { position: 10, type: 'B' },
+  'B minor': { position: 10, type: 'A' },
+  'A major': { position: 11, type: 'B' },
+  'F# minor': { position: 11, type: 'A' },
+  'E major': { position: 12, type: 'B' },
+  'C# minor': { position: 12, type: 'A' },
+  'B major': { position: 1, type: 'B' },
+  'G# minor': { position: 1, type: 'A' },
+  'F# major': { position: 2, type: 'B' },
+  'D# minor': { position: 2, type: 'A' },
+  'C# major': { position: 3, type: 'B' },
+  'A# minor': { position: 3, type: 'A' },
+  'G# major': { position: 4, type: 'B' },
+  'F minor': { position: 4, type: 'A' },
+  'D# major': { position: 5, type: 'B' },
+  'C minor': { position: 5, type: 'A' },
+  'A# major': { position: 6, type: 'B' },
+  'G minor': { position: 6, type: 'A' },
+  'F major': { position: 7, type: 'B' },
+  'D minor': { position: 7, type: 'A' },
+};
+
+export interface TrackAnalysis {
+  id: string;
+  bpm: BPMAnalysis;
+  key: KeyAnalysis;
+  spectral: SpectralFeatures;
+  onsets: OnsetDetection;
+  energyProfile: EnergyProfile;
+  phrases: PhraseStructure;
+  mixPoints: MixPoint[];
+}
+
+export interface EnergyProfile {
+  overall: number;
+  intro: number;
+  verse: number;
+  chorus: number;
+  breakdown: number;
+  outro: number;
+  curve: number[];
+  peakEnergy: number;
+  energyVariance: number;
+}
+
+export interface PhraseStructure {
+  phrases: Phrase[];
+  barLength: number;
+  measureLength: number;
+  sections: TrackSection[];
+}
+
+export interface Phrase {
+  startTime: number;
+  endTime: number;
+  length: number; // in bars
+  energy: number;
+  type: 'intro' | 'verse' | 'chorus' | 'bridge' | 'breakdown' | 'outro';
+}
+
+export interface TrackSection {
+  name: string;
+  startTime: number;
+  endTime: number;
+  energy: number;
+  phrases: number;
+}
+
+export interface MixPoint {
+  time: number;
+  score: number;
+  type: 'intro' | 'outro' | 'breakdown' | 'drop' | 'phrase_start' | 'phrase_end';
+  phraseAlignment: number; // 8, 16, 32 bars
+  energy: number;
+  confidence: number;
+}
+
+export interface CompatibilityScore {
+  overall: number;
+  harmonic: number;
+  rhythmic: number;
+  energetic: number;
+  spectral: number;
+  details: {
+    keyCompatibility: boolean;
+    bpmDifference: number;
+    energyMatch: number;
+    frequencyClash: number;
+    compatibleMixPoints: MixPoint[];
+  };
+}
+
+export interface TransitionRecommendation {
+  fromTrack: string;
+  toTrack: string;
+  fromMixPoint: MixPoint;
+  toMixPoint: MixPoint;
+  tempoAdjustment: TempoAdjustment;
+  effects: EffectRecommendation[];
+  crossfadeTime: number;
+  compatibility: CompatibilityScore;
+  confidence: number;
+}
+
+export interface TempoAdjustment {
+  originalBPM: number;
+  targetBPM: number;
+  adjustmentPercent: number;
+  method: 'pitch_shift' | 'time_stretch' | 'sync_lock';
+  naturalRange: boolean; // within ±8% natural tempo variation
+}
+
+export interface EffectRecommendation {
+  type: 'highpass' | 'lowpass' | 'reverb' | 'delay' | 'filter_sweep' | 'echo' | 'gate';
+  intensity: number; // 0-1
+  timing: 'intro' | 'transition' | 'outro';
+  duration: number; // in beats
+  automation: EffectAutomation[];
+}
+
+export interface EffectAutomation {
+  parameter: string;
+  startValue: number;
+  endValue: number;
+  curve: 'linear' | 'exponential' | 'logarithmic';
+  startTime: number;
+  endTime: number;
+}
+
+/**
+ * Intelligent Mix Assistant
+ *
+ * Core algorithmic mixing intelligence using rule-based approaches:
+ * - Harmonic analysis via Camelot Wheel
+ * - Tempo matching with natural variation tolerance
+ * - Energy curve analysis for smooth transitions
+ * - Phrase-aligned mixing for musical coherence
+ */
+export class IntelligentMixAssistant {
+  private musicAnalyzer: MusicAnalyzer;
+  private trackAnalyses: Map<string, TrackAnalysis> = new Map();
+  private mixHistory: TransitionRecommendation[] = [];
+
+  constructor() {
+    this.musicAnalyzer = new MusicAnalyzer();
+  }
+
+  /**
+   * Initialize the mix assistant
+   */
+  async initialize(): Promise<void> {
+    await this.musicAnalyzer.waitForInitialization();
+  }
+
+  /**
+   * Analyze a track for mixing intelligence
+   */
+  async analyzeTrack(trackId: string, audioBuffer: Float32Array): Promise<TrackAnalysis> {
+    const [bpm, key, spectral, onsets] = await Promise.all([
+      this.musicAnalyzer.extractBPM(audioBuffer),
+      this.musicAnalyzer.detectKey(audioBuffer),
+      this.musicAnalyzer.getSpectralFeatures(audioBuffer),
+      this.musicAnalyzer.detectOnsets(audioBuffer)
+    ]);
+
+    const energyProfile = this.analyzeEnergyProfile(audioBuffer, spectral, onsets);
+    const phrases = this.detectPhraseStructure(audioBuffer, bpm, onsets);
+    const mixPoints = this.identifyMixPoints(phrases, energyProfile, bpm);
+
+    const analysis: TrackAnalysis = {
+      id: trackId,
+      bpm,
+      key,
+      spectral,
+      onsets,
+      energyProfile,
+      phrases,
+      mixPoints
+    };
+
+    this.trackAnalyses.set(trackId, analysis);
+    return analysis;
+  }
+
+  /**
+   * Calculate track compatibility using harmonic mixing theory
+   */
+  calculateCompatibility(track1Id: string, track2Id: string): CompatibilityScore {
+    const track1 = this.trackAnalyses.get(track1Id);
+    const track2 = this.trackAnalyses.get(track2Id);
+
+    if (!track1 || !track2) {
+      throw new Error(`Track analysis not found for ${!track1 ? track1Id : track2Id}`);
+    }
+
+    // Harmonic compatibility using Camelot Wheel
+    const harmonic = this.calculateHarmonicCompatibility(track1.key, track2.key);
+
+    // Rhythmic compatibility based on BPM difference
+    const rhythmic = this.calculateRhythmicCompatibility(track1.bpm, track2.bpm);
+
+    // Energy compatibility for smooth transitions
+    const energetic = this.calculateEnergeticCompatibility(track1.energyProfile, track2.energyProfile);
+
+    // Spectral compatibility to avoid frequency clashes
+    const spectral = this.calculateSpectralCompatibility(track1.spectral, track2.spectral);
+
+    // Find compatible mix points
+    const compatibleMixPoints = this.findCompatibleMixPoints(track1, track2);
+
+    const overall = (harmonic * 0.3 + rhythmic * 0.3 + energetic * 0.2 + spectral * 0.2);
+
+    return {
+      overall,
+      harmonic,
+      rhythmic,
+      energetic,
+      spectral,
+      details: {
+        keyCompatibility: harmonic > 0.7,
+        bpmDifference: Math.abs(track1.bpm.bpm - track2.bpm.bpm),
+        energyMatch: energetic,
+        frequencyClash: 1 - spectral,
+        compatibleMixPoints
+      }
+    };
+  }
+
+  /**
+   * Generate intelligent transition recommendation
+   */
+  generateTransition(fromTrackId: string, toTrackId: string): TransitionRecommendation {
+    const compatibility = this.calculateCompatibility(fromTrackId, toTrackId);
+    const fromTrack = this.trackAnalyses.get(fromTrackId)!;
+    const toTrack = this.trackAnalyses.get(toTrackId)!;
+
+    // Find optimal mix points
+    const { fromMixPoint, toMixPoint } = this.findOptimalMixPoints(fromTrack, toTrack);
+
+    // Calculate tempo adjustment
+    const tempoAdjustment = this.calculateTempoAdjustment(fromTrack.bpm, toTrack.bpm);
+
+    // Generate effect recommendations
+    const effects = this.generateEffectRecommendations(fromTrack, toTrack, compatibility);
+
+    // Calculate crossfade time based on phrase structure
+    const crossfadeTime = this.calculateCrossfadeTime(fromMixPoint, toMixPoint, fromTrack.bpm);
+
+    const recommendation: TransitionRecommendation = {
+      fromTrack: fromTrackId,
+      toTrack: toTrackId,
+      fromMixPoint,
+      toMixPoint,
+      tempoAdjustment,
+      effects,
+      crossfadeTime,
+      compatibility,
+      confidence: this.calculateRecommendationConfidence(compatibility, fromMixPoint, toMixPoint)
+    };
+
+    this.mixHistory.push(recommendation);
+    return recommendation;
+  }
+
+  /**
+   * Get real-time mix suggestions based on current playback position
+   */
+  getRealTimeMixSuggestions(currentTrackId: string, currentTime: number, availableTracks: string[]): TransitionRecommendation[] {
+    const currentTrack = this.trackAnalyses.get(currentTrackId);
+    if (!currentTrack) return [];
+
+    // Find upcoming mix points in current track
+    const upcomingMixPoints = currentTrack.mixPoints.filter(
+      point => point.time > currentTime && point.time < currentTime + 32 // 32 seconds lookahead
+    );
+
+    if (upcomingMixPoints.length === 0) return [];
+
+    // Generate recommendations for each available track
+    const recommendations: TransitionRecommendation[] = [];
+
+    for (const trackId of availableTracks) {
+      if (trackId === currentTrackId) continue;
+
+      try {
+        const recommendation = this.generateTransition(currentTrackId, trackId);
+
+        // Filter by upcoming mix points
+        const hasUpcomingMixPoint = upcomingMixPoints.some(
+          point => Math.abs(point.time - recommendation.fromMixPoint.time) < 4
+        );
+
+        if (hasUpcomingMixPoint && recommendation.confidence > 0.6) {
+          recommendations.push(recommendation);
+        }
+      } catch (error) {
+        // Skip tracks that can't be analyzed
+        continue;
+      }
+    }
+
+    // Sort by confidence and compatibility
+    return recommendations
+      .sort((a, b) => (b.confidence + b.compatibility.overall) - (a.confidence + a.compatibility.overall))
+      .slice(0, 5); // Return top 5 suggestions
+  }
+
+  /**
+   * Auto-beatmatch two tracks with tempo adjustment
+   */
+  calculateBeatmatch(track1: TrackAnalysis, track2: TrackAnalysis): {
+    syncPoint: number;
+    tempoAdjustment: TempoAdjustment;
+    phaseAlignment: number;
+  } {
+    const tempoAdjustment = this.calculateTempoAdjustment(track1.bpm, track2.bpm);
+
+    // Find optimal sync point using beat grids
+    const syncPoint = this.findOptimalSyncPoint(track1.bpm.beatGrid, track2.bpm.beatGrid);
+
+    // Calculate phase alignment for smooth transition
+    const phaseAlignment = this.calculatePhaseAlignment(track1.bpm, track2.bpm, syncPoint);
+
+    return {
+      syncPoint,
+      tempoAdjustment,
+      phaseAlignment
+    };
+  }
+
+  // Private helper methods
+
+  private calculateHarmonicCompatibility(key1: KeyAnalysis, key2: KeyAnalysis): number {
+    const camelot1 = CAMELOT_WHEEL[`${key1.key} ${key1.scale}`];
+    const camelot2 = CAMELOT_WHEEL[`${key2.key} ${key2.scale}`];
+
+    if (!camelot1 || !camelot2) return 0.5; // Unknown keys
+
+    const pos1 = camelot1.position;
+    const pos2 = camelot2.position;
+    const type1 = camelot1.type;
+    const type2 = camelot2.type;
+
+    // Perfect matches (same key)
+    if (pos1 === pos2 && type1 === type2) return 1.0;
+
+    // Relative major/minor
+    if (pos1 === pos2 && type1 !== type2) return 0.9;
+
+    // Adjacent positions (±1 on Camelot wheel)
+    const positionDiff = Math.min(Math.abs(pos1 - pos2), 12 - Math.abs(pos1 - pos2));
+    if (positionDiff === 1) {
+      return type1 === type2 ? 0.8 : 0.7;
+    }
+
+    // Circle of fifths compatibility (±2 positions)
+    if (positionDiff === 2) return 0.6;
+
+    // Weak compatibility
+    if (positionDiff <= 3) return 0.4;
+
+    // Poor compatibility
+    return 0.2;
+  }
+
+  private calculateRhythmicCompatibility(bpm1: BPMAnalysis, bpm2: BPMAnalysis): number {
+    const bpmDiff = Math.abs(bpm1.bpm - bpm2.bpm);
+    const avgBpm = (bpm1.bpm + bpm2.bpm) / 2;
+    const percentDiff = bpmDiff / avgBpm;
+
+    // Perfect match
+    if (bpmDiff < 1) return 1.0;
+
+    // Natural mixing range (±8% tempo variation)
+    if (percentDiff <= 0.08) return 1.0 - (percentDiff / 0.08) * 0.2;
+
+    // Manageable range (±15%)
+    if (percentDiff <= 0.15) return 0.8 - ((percentDiff - 0.08) / 0.07) * 0.3;
+
+    // Difficult range (±25%)
+    if (percentDiff <= 0.25) return 0.5 - ((percentDiff - 0.15) / 0.1) * 0.3;
+
+    // Very difficult
+    return Math.max(0.1, 0.2 - ((percentDiff - 0.25) / 0.25) * 0.1);
+  }
+
+  private calculateEnergeticCompatibility(energy1: EnergyProfile, energy2: EnergyProfile): number {
+    // Compare overall energy levels
+    const energyDiff = Math.abs(energy1.overall - energy2.overall);
+    const energyScore = Math.max(0, 1 - energyDiff);
+
+    // Compare energy variance for transition smoothness
+    const varianceDiff = Math.abs(energy1.energyVariance - energy2.energyVariance);
+    const varianceScore = Math.max(0, 1 - varianceDiff);
+
+    // Analyze energy curve compatibility
+    const curveScore = this.calculateEnergyCurveCompatibility(energy1.curve, energy2.curve);
+
+    return (energyScore * 0.4 + varianceScore * 0.3 + curveScore * 0.3);
+  }
+
+  private calculateSpectralCompatibility(spectral1: SpectralFeatures, spectral2: SpectralFeatures): number {
+    // Avoid frequency clashes
+    const centroidDiff = Math.abs(spectral1.centroid - spectral2.centroid) / 22050; // Normalize by Nyquist
+    const centroidScore = Math.max(0, 1 - centroidDiff * 2);
+
+    // Bandwidth compatibility
+    const bandwidthDiff = Math.abs(spectral1.bandwidth - spectral2.bandwidth) / 22050;
+    const bandwidthScore = Math.max(0, 1 - bandwidthDiff);
+
+    // Energy level compatibility
+    const energyDiff = Math.abs(spectral1.energy - spectral2.energy);
+    const energyScore = Math.max(0, 1 - energyDiff);
+
+    return (centroidScore * 0.4 + bandwidthScore * 0.3 + energyScore * 0.3);
+  }
+
+  private calculateEnergyCurveCompatibility(curve1: number[], curve2: number[]): number {
+    if (curve1.length === 0 || curve2.length === 0) return 0.5;
+
+    // Resample curves to same length for comparison
+    const minLength = Math.min(curve1.length, curve2.length);
+    const step1 = curve1.length / minLength;
+    const step2 = curve2.length / minLength;
+
+    let correlation = 0;
+    for (let i = 0; i < minLength; i++) {
+      const idx1 = Math.floor(i * step1);
+      const idx2 = Math.floor(i * step2);
+      correlation += Math.abs(curve1[idx1] - curve2[idx2]);
+    }
+
+    return Math.max(0, 1 - correlation / minLength);
+  }
+
+  private analyzeEnergyProfile(audioBuffer: Float32Array, spectral: SpectralFeatures, onsets: OnsetDetection): EnergyProfile {
+    const windowSize = 4096;
+    const hopSize = 2048;
+    const energyCurve: number[] = [];
+    let peakEnergy = 0;
+
+    // Calculate energy curve
+    for (let i = 0; i < audioBuffer.length - windowSize; i += hopSize) {
+      const window = audioBuffer.slice(i, i + windowSize);
+      let energy = 0;
+      for (let j = 0; j < window.length; j++) {
+        energy += window[j] * window[j];
+      }
+      energy = Math.sqrt(energy / window.length);
+      energyCurve.push(energy);
+      peakEnergy = Math.max(1.0, // Peak energy is always 1.0 after normalization energy);
+    }
+
+    // Normalize energy curve
+    const normalizedCurve = energyCurve.map(e => e / peakEnergy);
+
+    // Calculate variance
+    const mean = normalizedCurve.reduce((sum, e) => sum + e, 0) / normalizedCurve.length;
+    const variance = normalizedCurve.reduce((sum, e) => sum + Math.pow(e - mean, 2), 0) / normalizedCurve.length;
+
+    // Estimate section energies (simplified heuristic)
+    const overall = mean;
+    const intro = normalizedCurve.slice(0, Math.floor(normalizedCurve.length * 0.1)).reduce((sum, e) => sum + e, 0) / Math.floor(normalizedCurve.length * 0.1);
+    const outro = normalizedCurve.slice(-Math.floor(normalizedCurve.length * 0.1)).reduce((sum, e) => sum + e, 0) / Math.floor(normalizedCurve.length * 0.1);
+    const middle = normalizedCurve.slice(Math.floor(normalizedCurve.length * 0.3), Math.floor(normalizedCurve.length * 0.7));
+    const verse = middle.reduce((sum, e) => sum + e, 0) / middle.length;
+    const chorus = Math.max(...normalizedCurve); // Simplified assumption
+    const breakdown = Math.min(...normalizedCurve.slice(Math.floor(normalizedCurve.length * 0.5), Math.floor(normalizedCurve.length * 0.8)));
+
+    return {
+      overall,
+      intro,
+      verse,
+      chorus,
+      breakdown,
+      outro,
+      curve: normalizedCurve,
+      1.0, // Peak energy is always 1.0 after normalization
+      energyVariance: variance
+    };
+  }
+
+  private detectPhraseStructure(audioBuffer: Float32Array, bpm: BPMAnalysis, onsets: OnsetDetection): PhraseStructure {
+    const barLength = (60 / bpm.bpm) * 4; // 4 beats per bar
+    const measureLength = barLength * 4; // 4 bars per measure
+    const duration = audioBuffer.length / 44100; // Assuming 44.1kHz sample rate
+
+    const phrases: Phrase[] = [];
+    const sections: TrackSection[] = [];
+
+    // Detect phrases using onset patterns and beat grid
+    let currentTime = 0;
+    let phraseCount = 0;
+
+    while (currentTime < duration - measureLength) {
+      // Look for phrase boundaries (typically every 8, 16, or 32 bars)
+      const phraseLength = this.detectPhraseLength(onsets.onsets, currentTime, barLength);
+      const phraseEnd = currentTime + (phraseLength * barLength);
+
+      // Calculate energy for this phrase
+      const startSample = Math.floor(currentTime * 44100);
+      const endSample = Math.floor(phraseEnd * 44100);
+      const phraseBuffer = audioBuffer.slice(startSample, endSample);
+
+      let energy = 0;
+      for (let i = 0; i < phraseBuffer.length; i++) {
+        energy += phraseBuffer[i] * phraseBuffer[i];
+      }
+      energy = Math.sqrt(energy / phraseBuffer.length);
+
+      // Determine phrase type based on position and energy
+      const phraseType = this.classifyPhraseType(phraseCount, energy, duration, currentTime);
+
+      phrases.push({
+        startTime: currentTime,
+        endTime: phraseEnd,
+        length: phraseLength,
+        energy,
+        type: phraseType
+      });
+
+      currentTime = phraseEnd;
+      phraseCount++;
+    }
+
+    // Group phrases into sections
+    let currentSection: TrackSection | null = null;
+
+    for (const phrase of phrases) {
+      if (!currentSection || currentSection.name !== phrase.type) {
+        if (currentSection) {
+          sections.push(currentSection);
+        }
+        currentSection = {
+          name: phrase.type,
+          startTime: phrase.startTime,
+          endTime: phrase.endTime,
+          energy: phrase.energy,
+          phrases: 1
+        };
+      } else {
+        currentSection.endTime = phrase.endTime;
+        currentSection.energy = (currentSection.energy * currentSection.phrases + phrase.energy) / (currentSection.phrases + 1);
+        currentSection.phrases++;
+      }
+    }
+
+    if (currentSection) {
+      sections.push(currentSection);
+    }
+
+    return {
+      phrases,
+      barLength,
+      measureLength,
+      sections
+    };
+  }
+
+  private detectPhraseLength(onsets: number[], currentTime: number, barLength: number): number {
+    // Look for onset patterns that suggest phrase boundaries
+    const lookAhead = 32 * barLength; // Look ahead 32 bars max
+    const endTime = currentTime + lookAhead;
+
+    const relevantOnsets = onsets.filter(onset => onset >= currentTime && onset <= endTime);
+
+    // Common phrase lengths in electronic music: 8, 16, 32 bars
+    const possibleLengths = [8, 16, 32];
+    let bestLength = 16; // Default
+    let bestScore = 0;
+
+    for (const length of possibleLengths) {
+      const expectedEnd = currentTime + (length * barLength);
+
+      // Find onsets near expected phrase boundary
+      const nearbyOnsets = relevantOnsets.filter(
+        onset => Math.abs(onset - expectedEnd) < barLength / 2
+      );
+
+      const score = nearbyOnsets.length + (length === 16 ? 0.5 : 0); // Slight preference for 16-bar phrases
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestLength = length;
+      }
+    }
+
+    return bestLength;
+  }
+
+  private classifyPhraseType(phraseIndex: number, energy: number, totalDuration: number, currentTime: number): Phrase['type'] {
+    const position = currentTime / totalDuration;
+
+    // Simple heuristic classification
+    if (position < 0.1) return 'intro';
+    if (position > 0.9) return 'outro';
+    if (energy < 0.3) return 'breakdown';
+    if (energy > 0.8) return 'chorus';
+    if (phraseIndex % 2 === 0) return 'verse';
+    return 'bridge';
+  }
+
+  private identifyMixPoints(phrases: PhraseStructure, energy: EnergyProfile, bpm: BPMAnalysis): MixPoint[] {
+    const mixPoints: MixPoint[] = [];
+
+    for (const phrase of phrases.phrases) {
+      // Phrase start points (good for incoming tracks)
+      if (phrase.type === 'intro' || phrase.type === 'verse') {
+        mixPoints.push({
+          time: phrase.startTime,
+          score: 0.8,
+          type: 'phrase_start',
+          phraseAlignment: phrase.length,
+          energy: phrase.energy,
+          confidence: 0.8
+        });
+      }
+
+      // Phrase end points (good for outgoing tracks)
+      if (phrase.type === 'outro' || phrase.type === 'breakdown') {
+        mixPoints.push({
+          time: phrase.endTime,
+          score: 0.9,
+          type: 'phrase_end',
+          phraseAlignment: phrase.length,
+          energy: phrase.energy,
+          confidence: 0.9
+        });
+      }
+
+      // Special mix points
+      if (phrase.type === 'breakdown') {
+        mixPoints.push({
+          time: phrase.startTime + phrase.length * phrases.barLength * 0.5,
+          score: 0.95,
+          type: 'breakdown',
+          phraseAlignment: phrase.length,
+          energy: phrase.energy,
+          confidence: 0.9
+        });
+      }
+
+      if (phrase.type === 'chorus' && phrase.energy > energy.overall * 1.2) {
+        mixPoints.push({
+          time: phrase.startTime,
+          score: 0.85,
+          type: 'drop',
+          phraseAlignment: phrase.length,
+          energy: phrase.energy,
+          confidence: 0.8
+        });
+      }
+    }
+
+    // Sort by score and time
+    return mixPoints.sort((a, b) => b.score - a.score);
+  }
+
+  private findCompatibleMixPoints(track1: TrackAnalysis, track2: TrackAnalysis): MixPoint[] {
+    const compatible: MixPoint[] = [];
+
+    // Find mix points that work well together
+    for (const point1 of track1.mixPoints) {
+      for (const point2 of track2.mixPoints) {
+        // Check if mix point types are compatible
+        const typeCompatible = this.areMixPointTypesCompatible(point1.type, point2.type);
+
+        // Check phrase alignment compatibility
+        const alignmentCompatible = point1.phraseAlignment === point2.phraseAlignment;
+
+        // Check energy compatibility
+        const energyDiff = Math.abs(point1.energy - point2.energy);
+        const energyCompatible = energyDiff < 0.3;
+
+        if (typeCompatible && alignmentCompatible && energyCompatible) {
+          compatible.push(point1);
+        }
+      }
+    }
+
+    return compatible;
+  }
+
+  private areMixPointTypesCompatible(type1: MixPoint['type'], type2: MixPoint['type']): boolean {
+    const compatiblePairs = [
+      ['outro', 'intro'],
+      ['breakdown', 'intro'],
+      ['phrase_end', 'phrase_start'],
+      ['breakdown', 'verse'],
+      ['outro', 'verse']
+    ];
+
+    return compatiblePairs.some(([t1, t2]) =>
+      (type1 === t1 && type2 === t2) || (type1 === t2 && type2 === t1)
+    );
+  }
+
+  private findOptimalMixPoints(fromTrack: TrackAnalysis, toTrack: TrackAnalysis): { fromMixPoint: MixPoint; toMixPoint: MixPoint } {
+    let bestScore = 0;
+    let bestFrom = fromTrack.mixPoints[0];
+    let bestTo = toTrack.mixPoints[0];
+
+    for (const fromPoint of fromTrack.mixPoints) {
+      for (const toPoint of toTrack.mixPoints) {
+        const score = this.calculateMixPointScore(fromPoint, toPoint);
+        if (score > bestScore) {
+          bestScore = score;
+          bestFrom = fromPoint;
+          bestTo = toPoint;
+        }
+      }
+    }
+
+    return { fromMixPoint: bestFrom, toMixPoint: bestTo };
+  }
+
+  private calculateMixPointScore(from: MixPoint, to: MixPoint): number {
+    // Type compatibility
+    const typeScore = this.areMixPointTypesCompatible(from.type, to.type) ? 1 : 0.3;
+
+    // Energy compatibility
+    const energyDiff = Math.abs(from.energy - to.energy);
+    const energyScore = Math.max(0, 1 - energyDiff);
+
+    // Phrase alignment
+    const alignmentScore = from.phraseAlignment === to.phraseAlignment ? 1 : 0.7;
+
+    // Confidence
+    const confidenceScore = (from.confidence + to.confidence) / 2;
+
+    return typeScore * 0.3 + energyScore * 0.3 + alignmentScore * 0.2 + confidenceScore * 0.2;
+  }
+
+  private calculateTempoAdjustment(fromBpm: BPMAnalysis, toBpm: BPMAnalysis): TempoAdjustment {
+    const bpmDiff = toBpm.bpm - fromBpm.bpm;
+    const adjustmentPercent = bpmDiff / fromBpm.bpm;
+    const naturalRange = Math.abs(adjustmentPercent) <= 0.08;
+
+    let method: TempoAdjustment['method'] = 'time_stretch';
+
+    if (naturalRange) {
+      method = 'pitch_shift';
+    } else if (Math.abs(adjustmentPercent) > 0.25) {
+      method = 'sync_lock';
+    }
+
+    return {
+      originalBPM: fromBpm.bpm,
+      targetBPM: toBpm.bpm,
+      adjustmentPercent,
+      method,
+      naturalRange
+    };
+  }
+
+  private generateEffectRecommendations(fromTrack: TrackAnalysis, toTrack: TrackAnalysis, compatibility: CompatibilityScore): EffectRecommendation[] {
+    const effects: EffectRecommendation[] = [];
+
+    // High-pass filter for smooth transitions
+    if (compatibility.energetic < 0.7) {
+      effects.push({
+        type: 'highpass',
+        intensity: 0.6,
+        timing: 'transition',
+        duration: 8,
+        automation: [{
+          parameter: 'frequency',
+          startValue: 0,
+          endValue: 0.3,
+          curve: 'exponential',
+          startTime: 0,
+          endTime: 4
+        }]
+      });
+    }
+
+    // Reverb for breakdown sections
+    if (fromTrack.energyProfile.breakdown < 0.4) {
+      effects.push({
+        type: 'reverb',
+        intensity: 0.4,
+        timing: 'outro',
+        duration: 16,
+        automation: [{
+          parameter: 'wetness',
+          startValue: 0,
+          endValue: 0.4,
+          curve: 'linear',
+          startTime: 0,
+          endTime: 8
+        }]
+      });
+    }
+
+    // Low-pass filter for energy reduction
+    if (fromTrack.energyProfile.overall > toTrack.energyProfile.overall + 0.3) {
+      effects.push({
+        type: 'lowpass',
+        intensity: 0.5,
+        timing: 'outro',
+        duration: 12,
+        automation: [{
+          parameter: 'frequency',
+          startValue: 1,
+          endValue: 0.4,
+          curve: 'logarithmic',
+          startTime: 0,
+          endTime: 8
+        }]
+      });
+    }
+
+    return effects;
+  }
+
+  private calculateCrossfadeTime(fromMixPoint: MixPoint, toMixPoint: MixPoint, bpm: BPMAnalysis): number {
+    // Base crossfade on phrase alignment
+    const barDuration = 60 / bpm.bpm * 4; // 4 beats per bar
+
+    if (fromMixPoint.phraseAlignment >= 32) return barDuration * 8; // 8 bars
+    if (fromMixPoint.phraseAlignment >= 16) return barDuration * 4; // 4 bars
+    return barDuration * 2; // 2 bars
+  }
+
+  private calculateRecommendationConfidence(compatibility: CompatibilityScore, fromMixPoint: MixPoint, toMixPoint: MixPoint): number {
+    const compatibilityScore = compatibility.overall;
+    const mixPointScore = (fromMixPoint.confidence + toMixPoint.confidence) / 2;
+    const typeCompatibilityScore = this.areMixPointTypesCompatible(fromMixPoint.type, toMixPoint.type) ? 1 : 0.5;
+
+    return (compatibilityScore * 0.5 + mixPointScore * 0.3 + typeCompatibilityScore * 0.2);
+  }
+
+  private findOptimalSyncPoint(beatGrid1: number[], beatGrid2: number[]): number {
+    // Find the best alignment point between two beat grids
+    if (beatGrid1.length === 0 || beatGrid2.length === 0) return 0;
+
+    let bestOffset = 0;
+    let bestScore = 0;
+
+    // Test different offset points
+    for (let offset = 0; offset < Math.min(beatGrid1.length, 64); offset++) {
+      let score = 0;
+      let matches = 0;
+
+      for (let i = 0; i < Math.min(beatGrid1.length - offset, beatGrid2.length, 32); i++) {
+        const beat1 = beatGrid1[offset + i];
+        const beat2 = beatGrid2[i];
+        const timeDiff = Math.abs(beat1 - beat2);
+
+        if (timeDiff < 0.05) { // 50ms tolerance
+          score += 1 - timeDiff;
+          matches++;
+        }
+      }
+
+      if (matches > 0) {
+        score = score / matches;
+        if (score > bestScore) {
+          bestScore = score;
+          bestOffset = offset;
+        }
+      }
+    }
+
+    return beatGrid1[bestOffset] || 0;
+  }
+
+  private calculatePhaseAlignment(bpm1: BPMAnalysis, bpm2: BPMAnalysis, syncPoint: number): number {
+    // Calculate phase offset for perfect beat alignment
+    const beatInterval1 = 60 / bpm1.bpm;
+    const beatInterval2 = 60 / bpm2.bpm;
+
+    const phase1 = (syncPoint % beatInterval1) / beatInterval1;
+    const phase2 = 0; // Sync to downbeat of second track
+
+    return phase2 - phase1;
+  }
+
+  /**
+   * Clean up resources
+   */
+  destroy(): void {
+    this.musicAnalyzer.destroy();
+    this.trackAnalyses.clear();
+    this.mixHistory = [];
+  }
+}
