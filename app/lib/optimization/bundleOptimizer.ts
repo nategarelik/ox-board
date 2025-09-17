@@ -32,9 +32,9 @@ class DynamicImportManager {
     this.importCache.set(modulePath, importPromise);
 
     try {
-      const module = await importPromise;
+      const loadedModule = await importPromise;
       this.loadedModules.add(modulePath);
-      return module;
+      return loadedModule;
     } catch (error) {
       this.importCache.delete(modulePath);
       throw error;
