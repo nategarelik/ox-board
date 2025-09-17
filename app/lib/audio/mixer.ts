@@ -70,21 +70,8 @@ export class AudioMixer {
       compressorRelease: 0.25
     };
 
-    // Initialize nodes
-    this.crossfader = new Tone.CrossFade(0.5);
-    this.masterGain = new Tone.Gain(this.masterConfig.gain);
-    this.masterLimiter = new Tone.Limiter(this.masterConfig.limiterThreshold);
-    this.masterCompressor = new Tone.Compressor({
-      ratio: this.masterConfig.compressorRatio,
-      threshold: this.masterConfig.compressorThreshold,
-      attack: this.masterConfig.compressorAttack,
-      release: this.masterConfig.compressorRelease
-    });
-    this.masterOut = new Tone.Gain(1);
-    this.cueOut = new Tone.Gain(1);
-
-    this.initializeChannels();
-    this.connectNodes();
+    // Defer node initialization until user interaction
+    // Nodes will be created in initialize() method
   }
 
   private initializeChannels(): void {
@@ -167,11 +154,30 @@ export class AudioMixer {
         await Tone.context.resume();
       }
 
+      // Now create all audio nodes after AudioContext is ready
+      this.createAudioNodes();
+      this.initializeChannels();
+      this.connectNodes();
+
       this.isInitialized = true;
     } catch (error) {
       console.error('Failed to initialize audio:', error);
-      throw error;
+      throw new Error('Audio initialization requires user interaction. Please click "Start DJ Session" to begin.');
     }
+  }
+
+  private createAudioNodes(): void {
+    this.crossfader = new Tone.CrossFade(0.5);
+    this.masterGain = new Tone.Gain(this.masterConfig.gain);
+    this.masterLimiter = new Tone.Limiter(this.masterConfig.limiterThreshold);
+    this.masterCompressor = new Tone.Compressor({
+      ratio: this.masterConfig.compressorRatio,
+      threshold: this.masterConfig.compressorThreshold,
+      attack: this.masterConfig.compressorAttack,
+      release: this.masterConfig.compressorRelease
+    });
+    this.masterOut = new Tone.Gain(1);
+    this.cueOut = new Tone.Gain(1);
   }
 
   setChannelGain(channel: number, gain: number): void {

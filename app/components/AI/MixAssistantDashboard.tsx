@@ -79,11 +79,12 @@ export const MixAssistantDashboard: React.FC<MixAssistantDashboardProps> = ({
         'D# major', 'C minor', 'A# major', 'G minor', 'F major', 'D minor'
       ];
 
-      for (const key of allKeys) {
-        if (key !== currentKey && mixAssistant.isCompatibleKey(currentKey, key)) {
-          compatible.push(key.split(' ')[0] + (key.includes('minor') ? 'm' : ''));
-        }
-      }
+      // TODO: Implement harmonic key compatibility check
+      // for (const key of allKeys) {
+      //   if (key !== currentKey && mixAssistant.isCompatibleKey(currentKey, key)) {
+      //     compatible.push(key.split(' ')[0] + (key.includes('minor') ? 'm' : ''));
+      //   }
+      // }
 
       setCompatibleKeys(compatible);
     } catch (err) {

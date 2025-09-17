@@ -4,17 +4,44 @@ import { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import useEnhancedDJStore from './stores/enhancedDjStoreWithGestures'
 import { useGestures } from './hooks/useGestures'
+import ErrorBoundary, { DJErrorBoundary, CameraErrorBoundary, AudioErrorBoundary } from './components/ErrorBoundary'
 
-// Dynamic imports to avoid SSR issues
-const CameraFeed = dynamic(() => import('./components/Camera/CameraFeed'), { ssr: false })
-const DeckPlayer = dynamic(() => import('./components/DJ/DeckPlayer'), { ssr: false })
-const EnhancedMixer = dynamic(() => import('./components/DJ/EnhancedMixer'), { ssr: false })
-const StemMixer = dynamic(() => import('./components/StemMixer'), { ssr: false })
-const MixAssistantDashboard = dynamic(() => import('./components/AI/MixAssistantDashboard'), { ssr: false })
-const GestureFeedback = dynamic(() => import('./components/GestureFeedback'), { ssr: false })
+// Loading component for lazy imports
+const LoadingSpinner = () => (
+  <div className="animate-pulse flex items-center justify-center p-4">
+    <div className="w-8 h-8 border-4 border-ox-primary border-t-transparent rounded-full animate-spin"></div>
+  </div>
+)
+
+// Dynamic imports to avoid SSR issues with loading states
+const CameraFeed = dynamic(() => import('./components/Camera/CameraFeed'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+})
+const DeckPlayer = dynamic(() => import('./components/DJ/DeckPlayer'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+})
+const EnhancedMixer = dynamic(() => import('./components/DJ/EnhancedMixer'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+})
+const StemMixer = dynamic(() => import('./components/StemMixer'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+})
+const MixAssistantDashboard = dynamic(() => import('./components/AI/MixAssistantDashboard'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+})
+const GestureFeedback = dynamic(() => import('./components/GestureFeedback'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+})
 
 export default function Home() {
-  const [isLoading, setIsLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const {
     isDJModeActive,
@@ -39,8 +66,10 @@ export default function Home() {
     reset: resetGestures
   } = useGestures()
 
-  // Initialize loading animation
+  // Handle mounting and loading states
   useEffect(() => {
+    setMounted(true)
+    setIsLoading(true)
     const timer = setTimeout(() => {
       setIsLoading(false)
     }, 1000)
@@ -90,8 +119,14 @@ export default function Home() {
     }
   }, [gestureEnabled, updateGestures])
 
+  // Prevent SSR hydration mismatches
+  if (!mounted) {
+    return null
+  }
+
   return (
-    <main className="min-h-screen bg-ox-background">
+    <ErrorBoundary level="page">
+      <main className="min-h-screen bg-ox-background">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-ox-surface/80 backdrop-blur-lg border-b border-gray-800">
         <div className="container mx-auto px-4 h-full flex items-center justify-between">
@@ -264,6 +299,7 @@ export default function Home() {
           <p className="mt-1 font-mono text-xs">AI-Powered DJ Platform</p>
         </div>
       </footer>
-    </main>
+      </main>
+    </ErrorBoundary>
   )
 }
