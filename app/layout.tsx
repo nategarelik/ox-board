@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import ErrorBoundary from './components/ErrorBoundary'
 import './globals.css'
 
@@ -7,7 +7,11 @@ export const metadata: Metadata = {
   description: 'Throw Your Hands Up - Professional DJ mixing with hand gestures',
   keywords: 'DJ, gesture control, music mixing, Theta Chi, UW Madison',
   authors: [{ name: 'Theta Chi - UW Madison' }],
-  viewport: 'width=device-width, initial-scale=1',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
   themeColor: '#FF0000',
 }
 

@@ -4,7 +4,7 @@ status: backlog
 created: 2025-09-14T20:14:00Z
 progress: 100%
 prd: .claude/prds/ox-board.md
-github: https://github.com/nategarelik/ox-board/issues/12
+github: https://github.com/nategarelik/ox-board/issues/21
 ---
 
 # Epic: ox-board

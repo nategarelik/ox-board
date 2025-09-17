@@ -2,12 +2,8 @@
 const nextConfig = {
   // Performance optimizations
   experimental: {
-    // Enable modern bundling optimizations
-    swcMinify: true,
-    // Enable build-time optimizations
-    optimizeCss: true,
-    // Enable runtime optimizations
-    runtime: 'nodejs',
+    // optimizeCss disabled - requires 'critters' package
+    // optimizeCss: true,
   },
 
   // Image optimization
@@ -19,9 +15,6 @@ const nextConfig = {
 
   // Compression and caching
   compress: true,
-
-  // Bundle optimization
-  swcMinify: true,
 
   // Production optimizations
   ...(process.env.NODE_ENV === 'production' && {
@@ -158,7 +151,7 @@ const nextConfig = {
       use: {
         loader: 'worker-loader',
         options: {
-          name: 'static/[hash].worker.js',
+          filename: 'static/[hash].worker.js',
           publicPath: '/_next/',
         },
       },

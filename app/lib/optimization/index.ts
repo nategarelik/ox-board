@@ -73,17 +73,13 @@ export class OptimizationManager {
     console.log('Initializing OX Board Performance Optimization Suite...');
 
     try {
-      // Initialize audio context if provided or create new one
+      // Initialize audio context if provided (defer creation if not)
       if (audioContext) {
         this.audioContext = audioContext;
-      } else if (typeof AudioContext !== 'undefined') {
-        this.audioContext = new AudioContext();
-      }
-
-      // Initialize memory optimization with audio context
-      if (this.audioContext) {
+        // Initialize memory optimization with provided audio context
         memoryOptimizer.initializeAudioBufferPool(this.audioContext);
       }
+      // Don't create AudioContext automatically - wait for user gesture
 
       // Initialize worker pools for critical operations
       this.initializeWorkerPools();
@@ -143,6 +139,26 @@ export class OptimizationManager {
     } catch (error) {
       console.warn('Initial benchmark failed:', error);
     }
+  }
+
+  // Initialize AudioContext after user gesture
+  async initializeAudioContext(): Promise<AudioContext | undefined> {
+    if (this.audioContext) {
+      return this.audioContext;
+    }
+
+    if (typeof AudioContext !== 'undefined') {
+      try {
+        this.audioContext = new AudioContext();
+        // Initialize memory optimization with audio context
+        memoryOptimizer.initializeAudioBufferPool(this.audioContext);
+        console.log('AudioContext initialized successfully');
+        return this.audioContext;
+      } catch (error) {
+        console.error('Failed to initialize AudioContext:', error);
+      }
+    }
+    return undefined;
   }
 
   // Quick optimization methods

@@ -13,12 +13,14 @@ const customJestConfig = {
   // if using TypeScript with a baseUrl set to the root directory then you need the below for alias' to work
   moduleDirectories: ['node_modules', '<rootDir>/'],
 
-  // Handle module aliases
+  // Handle module aliases and assets
   moduleNameMapping: {
     '^@/(.*)$': '<rootDir>/$1',
     '^@/components/(.*)$': '<rootDir>/app/components/$1',
     '^@/lib/(.*)$': '<rootDir>/app/lib/$1',
     '^@/stores/(.*)$': '<rootDir>/app/stores/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/__mocks__/fileMock.js',
   },
 
   // Test environment
@@ -28,6 +30,11 @@ const customJestConfig = {
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
+  ],
+
+  // Transform ignore patterns - allow transformation of specific node_modules
+  transformIgnorePatterns: [
+    'node_modules/(?!(tone|standardized-audio-context|automation-events|tslib)/)',
   ],
 
   // Transform files
@@ -64,12 +71,6 @@ const customJestConfig = {
 
   // Verbose output
   verbose: true,
-
-  // Handle audio/video files and other assets
-  moduleNameMapping: {
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/__mocks__/fileMock.js',
-  },
 
   // Setup files
   setupFiles: ['<rootDir>/jest.polyfills.js'],

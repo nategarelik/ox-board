@@ -268,3 +268,5 @@ export const MixAssistantDashboard: React.FC<MixAssistantDashboardProps> = ({
     </div>
   );
 };
+
+export default MixAssistantDashboard;

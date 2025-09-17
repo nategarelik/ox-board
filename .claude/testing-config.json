@@ -1,0 +1,72 @@
+{
+  "framework": "jest",
+  "testCommand": "npm test",
+  "testDirectory": ["app"],
+  "testPatterns": [
+    "**/__tests__/**/*.{ts,tsx}",
+    "**/*.test.{ts,tsx}",
+    "**/*.spec.{ts,tsx}"
+  ],
+  "setupFiles": ["jest.setup.js"],
+  "configFile": "jest.config.js",
+  "environment": "jsdom",
+  "coverage": {
+    "enabled": true,
+    "threshold": {
+      "branches": 80,
+      "functions": 80,
+      "lines": 80,
+      "statements": 80
+    }
+  },
+  "timeout": 10000,
+  "verbose": true,
+  "watchMode": false,
+  "testResults": {
+    "outputDirectory": ".claude/test-results",
+    "format": ["json", "text"]
+  },
+  "parallelization": {
+    "enabled": true,
+    "maxWorkers": "50%"
+  },
+  "dependencies": {
+    "jest": "30.1.3",
+    "@testing-library/react": "16.3.0",
+    "@testing-library/jest-dom": "6.8.0",
+    "ts-jest": "29.4.1"
+  },
+  "scripts": {
+    "test": "npm test",
+    "test:watch": "npm test -- --watch",
+    "test:coverage": "npm test -- --coverage",
+    "test:specific": "npm test -- --testNamePattern"
+  },
+  "testStats": {
+    "totalTests": 17,
+    "testFiles": [
+      "app/components/AI/__tests__/CompatibilityVisualizer.test.tsx",
+      "app/components/AI/__tests__/MixRecommendationsPanel.test.tsx",
+      "app/components/__tests__/GestureFeedback.test.tsx",
+      "app/components/__tests__/StemControls.test.tsx",
+      "app/components/__tests__/StemVisualizerPanel.test.tsx",
+      "app/components/__tests__/StemWaveform.test.tsx",
+      "app/hooks/__tests__/useGestureStemMapping.test.ts",
+      "app/lib/ai/__tests__/mixAssistant.test.ts",
+      "app/lib/audio/__tests__/demucsProcessor.test.ts",
+      "app/lib/audio/__tests__/enhancedMixer.test.ts",
+      "app/lib/audio/__tests__/musicAnalyzer.test.ts",
+      "app/lib/audio/__tests__/musicAnalyzerClient.test.ts",
+      "app/lib/audio/__tests__/stemEffects.test.ts",
+      "app/lib/audio/__tests__/stemPlayer.test.ts",
+      "app/lib/gestures/__tests__/gestureStemMapper.test.ts",
+      "app/lib/optimization/__tests__/performanceOptimizer.test.ts",
+      "app/stores/__tests__/enhancedDjStore.test.ts"
+    ]
+  },
+  "notes": {
+    "lastPrimed": "2025-01-16T21:34:00Z",
+    "project": "ox-board",
+    "description": "Gesture-controlled DJ platform with MediaPipe, Tone.js, and Next.js 15"
+  }
+}

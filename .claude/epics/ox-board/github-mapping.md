@@ -1,6 +1,6 @@
 # GitHub Issue Mapping
 
-Epic: #12 - https://github.com/nategarelik/ox-board/issues/12
+Epic: #21 - https://github.com/nategarelik/ox-board/issues/21
 
 Tasks:
 - #13: Extend AudioMixer with Tone.Player integration - https://github.com/nategarelik/ox-board/issues/13
@@ -12,4 +12,4 @@ Tasks:
 - #19: Implement keyboard shortcuts - https://github.com/nategarelik/ox-board/issues/19
 - #20: Performance optimization and testing - https://github.com/nategarelik/ox-board/issues/20
 
-Synced: 2025-09-14T20:32:00Z
+Synced: 2025-09-16T05:34:01Z

@@ -222,3 +222,5 @@ export const MixRecommendationsPanel: React.FC<MixRecommendationsPanelProps> = (
     </div>
   );
 };
+
+export default MixRecommendationsPanel;

@@ -2,7 +2,7 @@
 
 import React, { memo, useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { StemType } from '../lib/audio/stemPlayer';
-import useEnhancedDJStore from '../stores/enhancedDjStore';
+import useEnhancedDJStore from '../stores/enhancedDjStoreWithGestures';
 
 interface StemWaveformProps {
   channel: number;

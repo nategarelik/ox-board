@@ -154,8 +154,24 @@ export class AudioMixer {
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
-    await Tone.start();
-    this.isInitialized = true;
+    try {
+      // Ensure Tone.js starts with user gesture
+      if (Tone.context.state !== 'running') {
+        console.log('Starting Tone.js audio context...');
+        await Tone.start();
+        console.log('Tone.js started successfully');
+      }
+
+      // Additional check for suspended context
+      if (Tone.context.state === 'suspended') {
+        await Tone.context.resume();
+      }
+
+      this.isInitialized = true;
+    } catch (error) {
+      console.error('Failed to initialize audio:', error);
+      throw error;
+    }
   }
 
   setChannelGain(channel: number, gain: number): void {

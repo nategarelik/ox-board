@@ -280,3 +280,5 @@ export const CamelotWheelVisualizer: React.FC<CamelotWheelVisualizerProps> = ({
     </div>
   );
 };
+
+export default CamelotWheelVisualizer;

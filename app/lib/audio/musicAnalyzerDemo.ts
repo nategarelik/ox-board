@@ -7,7 +7,7 @@
  */
 
 import { musicAnalyzer } from './musicAnalyzerClient';
-import useEnhancedDJStore, { type AnalyzedTrack } from '../../stores/enhancedDjStore';
+import useEnhancedDJStore, { type AnalyzedTrack } from '../../stores/enhancedDjStoreWithGestures';
 
 // Example usage scenarios
 export class MusicAnalyzerDemo {

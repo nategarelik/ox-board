@@ -2,7 +2,7 @@
 
 import React, { memo, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { StemType } from '../lib/audio/stemPlayer';
-import useEnhancedDJStore from '../stores/enhancedDjStore';
+import useEnhancedDJStore from '../stores/enhancedDjStoreWithGestures';
 import StemControls from './StemControls';
 import StemWaveform from './StemWaveform';
 import StemMixer from './StemMixer';

@@ -124,3 +124,5 @@ export const CompatibilityVisualizer: React.FC<CompatibilityVisualizerProps> = (
     </div>
   );
 };
+
+export default CompatibilityVisualizer;

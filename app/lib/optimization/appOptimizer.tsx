@@ -334,8 +334,9 @@ export const withPerformanceOptimization = <P extends object>(
 
   // Apply lazy loading if requested
   if (lazy) {
-    const LazyComponent = React.lazy(() => Promise.resolve({ default: OptimizedComponent }));
-    return enableMemo ? React.memo(LazyComponent) : LazyComponent;
+    // Note: Lazy loading would need actual code splitting to work properly
+    // For now, return the component directly to avoid runtime errors
+    return enableMemo ? React.memo(OptimizedComponent) : OptimizedComponent;
   }
 
   return enableMemo ? React.memo(OptimizedComponent) : OptimizedComponent;

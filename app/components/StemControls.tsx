@@ -2,7 +2,7 @@
 
 import React, { memo, useCallback, useRef, useEffect, useState } from 'react';
 import { StemType, StemControls as StemControlsType } from '../lib/audio/stemPlayer';
-import useEnhancedDJStore from '../stores/enhancedDjStore';
+import useEnhancedDJStore from '../stores/enhancedDjStoreWithGestures';
 
 interface StemControlsProps {
   channel: number;
