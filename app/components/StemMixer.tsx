@@ -583,7 +583,10 @@ const StemMixerComponent: React.FC<StemMixerProps> = ({
               <span className="font-semibold">Active Stems:</span>
               <div className="mt-1">
                 {Object.entries(stemLevels)
-                  .filter(([stem, level]) => level > 0.01 && !controls[stem as keyof typeof controls].muted)
+                  .filter(([stem, level]) => {
+                    const control = controls[stem as keyof typeof controls];
+                    return level > 0.01 && typeof control === 'object' && 'muted' in control && !control.muted;
+                  })
                   .map(([stem]) => stem.toUpperCase())
                   .join(', ') || 'None'
                 }

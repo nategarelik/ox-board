@@ -147,7 +147,7 @@ export class DefaultDemucsProcessor implements DemucsProcessor {
       // Create simulated stem data using frequency filtering
       // Real Demucs would provide actual ML-based separation
       const createStemData = (hasAudio: boolean = true): StemData => ({
-        audioBuffer: audioBuffer.clone ? audioBuffer.clone() : audioBuffer,
+        audioBuffer: audioBuffer,
         duration: audioBuffer.duration,
         sampleRate: audioBuffer.sampleRate,
         hasAudio

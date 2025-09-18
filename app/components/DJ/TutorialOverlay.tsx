@@ -13,7 +13,7 @@ export default function TutorialOverlay({ isVisible, onClose }: TutorialOverlayP
         <div className="space-y-4 text-gray-300">
           <div className="border-l-4 border-blue-500 pl-4">
             <h3 className="text-xl font-semibold text-white mb-2">🎛️ Getting Started</h3>
-            <p>Click "Start DJ Mode" to initialize the audio system and enable mixing capabilities.</p>
+            <p>Click &quot;Start DJ Mode&quot; to initialize the audio system and enable mixing capabilities.</p>
           </div>
 
           <div className="border-l-4 border-green-500 pl-4">
@@ -63,7 +63,7 @@ export default function TutorialOverlay({ isVisible, onClose }: TutorialOverlayP
             onClick={onClose}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
           >
-            Got it, let's mix!
+            Got it, let&apos;s mix!
           </button>
         </div>
       </div>

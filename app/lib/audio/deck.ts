@@ -23,7 +23,7 @@ export class Deck extends EventEmitter implements DeckControls {
   private isInitialized: boolean = false
   private playbackRate: number = 1.0
   private beatGridOffset: number = 0
-  private updateInterval: NodeJS.Timer | null = null
+  private updateInterval: ReturnType<typeof setInterval> | null = null
 
   constructor(id: 'A' | 'B', config?: Partial<DeckConfig>) {
     super()

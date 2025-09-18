@@ -117,11 +117,7 @@ class EffectProcessor {
   private createEffect(type: EffectType): Tone.ToneAudioNode {
     switch (type) {
       case 'reverb':
-        return new Tone.Reverb({
-          roomSize: 0.7,
-          decay: 1.5,
-          preDelay: 0.01
-        });
+        return new Tone.Reverb(1.5); // decay time in seconds
 
       case 'delay':
         return new Tone.FeedbackDelay({
@@ -478,7 +474,7 @@ export class StemEffectsProcessor {
       for (const effectType of effectOrder) {
         const effect = effectChain.get(effectType)!;
         previousNode.connect(effect.getInput());
-        previousNode = effect.getOutput();
+        previousNode = effect.getOutput() as Tone.ToneAudioNode;
       }
 
       previousNode.connect(output);
@@ -994,7 +990,7 @@ export class StemEffectsProcessor {
    */
   connectDestination(stemIndex: number, destination: Tone.InputNode): void {
     const output = this.getStemOutput(stemIndex);
-    output.connect(destination);
+    output.connect(destination as any);
   }
 
   /**

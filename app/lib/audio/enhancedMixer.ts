@@ -1,6 +1,6 @@
 import * as Tone from "tone";
 import { StemPlayer, StemPlayerConfig } from './stemPlayer';
-import { DemucsOutput, StemType } from './demucsProcessor';
+import { DemucsOutput, StemType, StemLoadResult } from './demucsProcessor';
 import { Crossfader } from './crossfader';
 
 export interface ChannelEQ {
@@ -54,15 +54,15 @@ export interface StemMixerConfig {
 
 export class EnhancedAudioMixer {
   private channels: Channel[] = [];
-  private crossfader: Tone.CrossFade;
+  private crossfader!: Tone.CrossFade;
   private customCrossfader: Crossfader | null = null;
-  private masterGain: Tone.Gain;
-  private masterLimiter: Tone.Limiter;
-  private masterCompressor: Tone.Compressor;
-  private masterOut: Tone.Gain;
-  private cueOut: Tone.Gain;
-  private crossfaderConfig: CrossfaderConfig;
-  private masterConfig: MasterConfig;
+  private masterGain!: Tone.Gain;
+  private masterLimiter!: Tone.Limiter;
+  private masterCompressor!: Tone.Compressor;
+  private masterOut!: Tone.Gain;
+  private cueOut!: Tone.Gain;
+  private crossfaderConfig!: CrossfaderConfig;
+  private masterConfig!: MasterConfig;
   private stemMixerConfig: StemMixerConfig;
   private isInitialized: boolean = false;
   private useCustomCrossfader: boolean = false;
@@ -269,7 +269,7 @@ export class EnhancedAudioMixer {
     });
   }
 
-  async loadStemsToChannel(channel: number, demucsOutput: DemucsOutput): Promise<void> {
+  async loadStemsToChannel(channel: number, demucsOutput: DemucsOutput): Promise<StemLoadResult[]> {
     if (channel < 0 || channel >= 4) {
       throw new Error(`Invalid channel: ${channel}`);
     }
@@ -490,10 +490,6 @@ export class EnhancedAudioMixer {
     return (x - 0.1) / 0.8;
   }
 
-  setCrossfaderCurve(curve: CrossfaderConfig['curve']): void {
-    this.crossfaderConfig.curve = curve;
-    this.setCrossfaderPosition(this.crossfaderConfig.position);
-  }
 
   setMasterGain(gain: number): void {
     const value = Math.max(0, Math.min(1, gain));

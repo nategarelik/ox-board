@@ -14,13 +14,13 @@ export default function AudioMixer({ viewMode, decks }: AudioMixerProps) {
         return (
           <div className="flex gap-4 items-center justify-center">
             <div className="w-[400px]">
-              <DeckPlayer deckIndex={0} />
+              <DeckPlayer deckId={0} />
             </div>
             <div className="w-[300px]">
               <EnhancedMixer />
             </div>
             <div className="w-[400px]">
-              <DeckPlayer deckIndex={1} />
+              <DeckPlayer deckId={1} />
             </div>
           </div>
         )
@@ -29,13 +29,13 @@ export default function AudioMixer({ viewMode, decks }: AudioMixerProps) {
         return (
           <div className="flex gap-4 items-center justify-center">
             <div className="w-[350px]">
-              <DeckPlayer deckIndex={0} />
+              <DeckPlayer deckId={0} />
             </div>
             <div className="w-[400px]">
               <EnhancedMixer />
             </div>
             <div className="w-[350px]">
-              <DeckPlayer deckIndex={1} />
+              <DeckPlayer deckId={1} />
             </div>
           </div>
         )
@@ -46,17 +46,15 @@ export default function AudioMixer({ viewMode, decks }: AudioMixerProps) {
             <div className="flex-1">
               <h3 className="text-white text-xl mb-4">Deck A Stems</h3>
               <StemMixer
-                deckIndex={0}
-                onStemChange={() => {}}
-                isAdvancedMode={true}
+                channel={0}
+                showAdvancedControls={true}
               />
             </div>
             <div className="flex-1">
               <h3 className="text-white text-xl mb-4">Deck B Stems</h3>
               <StemMixer
-                deckIndex={1}
-                onStemChange={() => {}}
-                isAdvancedMode={true}
+                channel={1}
+                showAdvancedControls={true}
               />
             </div>
           </div>
@@ -91,16 +89,14 @@ export default function AudioMixer({ viewMode, decks }: AudioMixerProps) {
         <div className="flex gap-4 mt-4" style={{ height: '30vh' }}>
           <div className="flex-1">
             <StemMixer
-              deckIndex={0}
-              onStemChange={() => {}}
-              isAdvancedMode={false}
+              channel={0}
+              showAdvancedControls={false}
             />
           </div>
           <div className="flex-1">
             <StemMixer
-              deckIndex={1}
-              onStemChange={() => {}}
-              isAdvancedMode={false}
+              channel={1}
+              showAdvancedControls={false}
             />
           </div>
         </div>

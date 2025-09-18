@@ -1,7 +1,7 @@
 'use client';
 
 import React, { memo, useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { StemType } from '../lib/audio/stemPlayer';
+import { StemType } from '../lib/audio/demucsProcessor';
 import useEnhancedDJStore from '../stores/enhancedDjStoreWithGestures';
 
 interface StemWaveformProps {

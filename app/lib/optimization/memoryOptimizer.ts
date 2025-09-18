@@ -81,7 +81,7 @@ class AudioBufferPool {
     }, this.config.cleanupInterval);
   }
 
-  private cleanup(): void {
+  public cleanup(): void {
     // Remove excess buffers if pool is too large
     const totalBuffers = this.getTotalBufferCount();
     if (totalBuffers > this.config.maxSize) {

@@ -96,7 +96,7 @@ export interface CrossfaderConfig {
 
 // AudioService Types
 export interface AudioServiceConfig {
-  latencyHint: Tone.LatencyHint
+  latencyHint: 'interactive' | 'playback' | 'balanced'
   lookAhead: number
   updateInterval: number
   sampleRate?: number
@@ -131,7 +131,7 @@ export interface BeatEvent {
 export interface EffectRack {
   reverb: Tone.Reverb
   delay: Tone.FeedbackDelay
-  flanger: Tone.Flanger
+  flanger: any // Flanger type not exported
   bitcrusher: Tone.BitCrusher
   distortion: Tone.Distortion
   phaser: Tone.Phaser

@@ -40,7 +40,7 @@ export class DeckManager extends EventEmitter implements DeckManagerInterface {
     cpuUsage: 0,
     memoryUsage: 0
   }
-  private metricsInterval: NodeJS.Timer | null = null
+  private metricsInterval: ReturnType<typeof setInterval> | null = null
 
   private constructor() {
     super()

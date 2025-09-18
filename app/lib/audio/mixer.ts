@@ -43,14 +43,14 @@ interface Channel {
 
 export class AudioMixer {
   private channels: Channel[] = [];
-  private crossfader: Tone.CrossFade;
-  private masterGain: Tone.Gain;
-  private masterLimiter: Tone.Limiter;
-  private masterCompressor: Tone.Compressor;
-  private masterOut: Tone.Gain;
-  private cueOut: Tone.Gain;
-  private crossfaderConfig: CrossfaderConfig;
-  private masterConfig: MasterConfig;
+  private crossfader!: Tone.CrossFade;
+  private masterGain!: Tone.Gain;
+  private masterLimiter!: Tone.Limiter;
+  private masterCompressor!: Tone.Compressor;
+  private masterOut!: Tone.Gain;
+  private cueOut!: Tone.Gain;
+  private crossfaderConfig!: CrossfaderConfig;
+  private masterConfig!: MasterConfig;
   private isInitialized: boolean = false;
 
   constructor() {

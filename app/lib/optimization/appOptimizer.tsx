@@ -327,7 +327,7 @@ export const withPerformanceOptimization = <P extends object>(
       }
     });
 
-    return React.createElement(Component, { ...props, ref });
+    return React.createElement(Component as any, { ...props, ref } as any);
   });
 
   OptimizedComponent.displayName = `Optimized(${Component.displayName || Component.name})`;

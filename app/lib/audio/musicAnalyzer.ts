@@ -139,16 +139,16 @@ export class MusicAnalyzer {
 
   private async initializeEssentia(): Promise<void> {
     try {
-      // Dynamic import to handle different environments
-      const EssentiaJS = await import('essentia.js');
-      const { Essentia, EssentiaWASM } = EssentiaJS;
+      // Essentia.js initialization commented out - library not installed
+      // const EssentiaJS = await import('essentia.js');
+      // const { Essentia, EssentiaWASM } = EssentiaJS;
 
-      // Initialize Essentia WASM
-      this.essentiaWASM = new EssentiaWASM();
-      await this.essentiaWASM.init();
+      // // Initialize Essentia WASM
+      // this.essentiaWASM = new EssentiaWASM();
+      // await this.essentiaWASM.init();
 
-      // Create Essentia instance
-      this.essentia = new Essentia(this.essentiaWASM);
+      // // Create Essentia instance
+      // this.essentia = new Essentia(this.essentiaWASM);
 
       // Initialize algorithms
       this.initializeAlgorithms();
@@ -471,7 +471,7 @@ export class MusicAnalyzer {
       const onsetsGlobal = this.algorithms.onsetDetectionGlobal(audioBuffer);
 
       // Generate novelty curve for visualization
-      const novelty = this.algorithms.noveltyCurve(audioBuffer);
+      const novelty = this.algorithms.noveltyCurve ? this.algorithms.noveltyCurve(audioBuffer) : new Float32Array(0);
 
       // Combine onset detection results
       const allOnsets = [...onsets.onsets, ...onsetsGlobal.onsets];
@@ -493,7 +493,8 @@ export class MusicAnalyzer {
 
       // Find peaks in novelty curve
       const peaks: number[] = [];
-      const threshold = Math.max(...Array.from(novelty)) * 0.3; // 30% of max
+      const noveltyArray = novelty ? Array.from(novelty) : [];
+      const threshold = noveltyArray.length > 0 ? Math.max(...noveltyArray as number[]) * 0.3 : 0; // 30% of max
 
       for (let i = 1; i < novelty.length - 1; i++) {
         if (novelty[i] > novelty[i - 1] &&

@@ -5,6 +5,14 @@
  * Provides a unified interface for performance optimization across the OX Board application.
  */
 
+// Import modules for internal use
+import * as React from 'react';
+import { performanceOptimizer, type PerformanceMetrics } from './performanceOptimizer';
+import { bundleOptimizer } from './bundleOptimizer';
+import { memoryOptimizer } from './memoryOptimizer';
+import { performanceMonitor } from './performanceMonitor';
+import { performanceBenchmark } from './performanceBenchmark';
+
 // Core optimization modules
 export {
   PerformanceOptimizer,

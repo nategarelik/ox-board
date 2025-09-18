@@ -5,7 +5,7 @@
 
 export interface AudioAnalysisRequest {
   id: string;
-  type: 'analyze' | 'spectrum' | 'waveform' | 'levels';
+  type: 'analyze' | 'spectrum' | 'waveform' | 'levels' | 'config';
   audioData: Float32Array;
   sampleRate: number;
   channelIndex: number;
@@ -64,19 +64,19 @@ const defaultConfig: WorkerConfig = {
 };
 
 class AudioAnalyzer {
-  private config: WorkerConfig;
-  private windowFunction: Float32Array;
-  private fftBuffer: Float32Array;
-  private spectrumHistory: Float32Array[];
-  private rmsHistory: number[];
-  private peakHistory: number[];
+  private config!: WorkerConfig;
+  private windowFunction!: Float32Array;
+  private fftBuffer!: Float32Array;
+  private spectrumHistory!: Float32Array[];
+  private rmsHistory!: number[];
+  private peakHistory!: number[];
 
   // FFT implementation (simple DFT for Web Worker compatibility)
-  private cosTable: Float32Array;
-  private sinTable: Float32Array;
+  private cosTable!: Float32Array;
+  private sinTable!: Float32Array;
 
   // Mel filter bank for MFCC
-  private melFilters: Float32Array[];
+  private melFilters!: Float32Array[];
 
   constructor(config: Partial<WorkerConfig> = {}) {
     this.config = { ...defaultConfig, ...config };
@@ -484,5 +484,4 @@ self.onmessage = (event) => {
   }
 };
 
-// Export types for TypeScript
-export type { AudioAnalysisRequest, AudioAnalysisResult, WorkerConfig };
+// Types are already exported as interfaces above

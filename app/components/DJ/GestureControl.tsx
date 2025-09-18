@@ -21,14 +21,7 @@ export default function GestureControl({
   return (
     <div className="flex-1 bg-gray-800 rounded-lg overflow-hidden relative">
       {cameraActive && (
-        <>
-          <CameraFeed onHandsDetected={onHandsDetected} />
-          {gestureEnabled && (
-            <div className="absolute inset-0 pointer-events-none">
-              <GestureFeedback />
-            </div>
-          )}
-        </>
+        <CameraFeed onHandsDetected={onHandsDetected} />
       )}
       {!cameraActive && (
         <div className="flex items-center justify-center h-full text-gray-500">

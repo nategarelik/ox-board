@@ -1,5 +1,5 @@
 import * as Tone from "tone";
-import { DemucsOutput, StemType, StemLoadResult } from './demucsProcessor';
+import { DemucsOutput, StemType, StemLoadResult, StemData } from './demucsProcessor';
 
 export interface StemPlayerConfig {
   /** Enable time stretching without pitch change */
@@ -65,12 +65,12 @@ const defaultStemControls: StemControls = {
 };
 
 export class StemPlayer {
-  private config: StemPlayerConfig;
-  private state: StemPlayerState;
+  private config!: StemPlayerConfig;
+  private state!: StemPlayerState;
   private isInitialized: boolean = false;
 
   // Tone.js audio nodes
-  private players: {
+  private players!: {
     drums: Tone.Player | null;
     bass: Tone.Player | null;
     melody: Tone.Player | null;
@@ -78,7 +78,7 @@ export class StemPlayer {
     original: Tone.Player | null;
   };
 
-  private gains: {
+  private gains!: {
     drums: Tone.Gain;
     bass: Tone.Gain;
     melody: Tone.Gain;
@@ -86,7 +86,7 @@ export class StemPlayer {
     original: Tone.Gain;
   };
 
-  private panners: {
+  private panners!: {
     drums: Tone.Panner;
     bass: Tone.Panner;
     melody: Tone.Panner;
@@ -94,7 +94,7 @@ export class StemPlayer {
     original: Tone.Panner;
   };
 
-  private eqs: {
+  private eqs!: {
     drums: Tone.EQ3;
     bass: Tone.EQ3;
     melody: Tone.EQ3;
@@ -102,10 +102,10 @@ export class StemPlayer {
     original: Tone.EQ3;
   };
 
-  private stemMixer: Tone.Gain;
-  private originalMixer: Tone.Gain;
-  private crossfader: Tone.CrossFade;
-  private masterOut: Tone.Gain;
+  private stemMixer!: Tone.Gain;
+  private originalMixer!: Tone.Gain;
+  private crossfader!: Tone.CrossFade;
+  private masterOut!: Tone.Gain;
 
   // Sync management
   private syncTimer: number | null = null;
@@ -233,7 +233,7 @@ export class StemPlayer {
       for (const stemType of stemTypes) {
         try {
           const stemData = demucsOutput[stemType as keyof DemucsOutput];
-          if (!stemData || typeof stemData === 'object' && 'audioBuffer' in stemData && !stemData.hasAudio) {
+          if (!stemData || typeof stemData !== 'object' || !('audioBuffer' in stemData) || !stemData.hasAudio) {
             results.push({
               success: false,
               error: `No audio data for ${stemType}`,
@@ -244,23 +244,18 @@ export class StemPlayer {
 
           // Create player from AudioBuffer
           const player = new Tone.Player({
-            url: stemData.audioBuffer,
+            url: (stemData as StemData).audioBuffer,
             loop: false,
             autostart: false,
             volume: 0 // Will be controlled by gain nodes
           });
 
           // Wait for player to load
-          await new Promise<void>((resolve, reject) => {
-            player.onstop = () => this.handlePlayerStop();
+          player.onstop = () => this.handlePlayerStop();
 
-            if (player.loaded) {
-              resolve();
-            } else {
-              player.onload = () => resolve();
-              player.onerror = (error) => reject(new Error(`Failed to load ${stemType}: ${error}`));
-            }
-          });
+          if (!player.loaded) {
+            await Tone.ToneAudioBuffer.loaded();
+          }
 
           // Connect to audio graph
           player.connect(this.gains[stemType]);
@@ -335,7 +330,7 @@ export class StemPlayer {
 
       // Start all players simultaneously
       players.forEach(player => {
-        if (player && !player.state === 'started') {
+        if (player && player.state !== 'started') {
           player.start(now, this.state.currentTime);
         }
       });

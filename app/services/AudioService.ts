@@ -19,7 +19,7 @@ export class AudioService implements AudioServiceInterface {
     sampleRate: 44100,
     channels: 2
   }
-  private performanceMonitor: NodeJS.Timer | null = null
+  private performanceMonitor: ReturnType<typeof setInterval> | null = null
 
   private constructor(config?: Partial<AudioServiceConfig>) {
     if (config) {
@@ -45,9 +45,7 @@ export class AudioService implements AudioServiceInterface {
       this.context = new Tone.Context({
         latencyHint: this.config.latencyHint,
         lookAhead: this.config.lookAhead,
-        updateInterval: this.config.updateInterval,
-        sampleRate: this.config.sampleRate,
-        channels: this.config.channels
+        updateInterval: this.config.updateInterval
       })
 
       // Set as default context
@@ -59,7 +57,7 @@ export class AudioService implements AudioServiceInterface {
       // Update stats
       this.stats.sampleRate = this.context.sampleRate
       this.stats.isRunning = true
-      this.stats.latency = this.context.baseLatency + this.context.lookAhead
+      this.stats.latency = ((this.context.rawContext as any)?.baseLatency || 0) + this.context.lookAhead
 
       // Start performance monitoring
       this.startPerformanceMonitoring()
@@ -108,7 +106,7 @@ export class AudioService implements AudioServiceInterface {
 
   public getStats(): AudioServiceStats {
     if (this.context) {
-      this.stats.latency = this.context.baseLatency + this.context.lookAhead
+      this.stats.latency = ((this.context.rawContext as any)?.baseLatency || 0) + this.context.lookAhead
       // CPU usage would need Web Audio API performance metrics
       // This is a placeholder - actual implementation would use performance.measureUserAgentSpecificMemory()
       this.stats.cpuUsage = this.estimateCPUUsage()
@@ -117,26 +115,27 @@ export class AudioService implements AudioServiceInterface {
   }
 
   public async suspend(): Promise<void> {
-    if (this.context && this.context.state === 'running') {
-      await this.context.suspend()
+    if (this.context && this.context.state === 'running' && this.context.rawContext) {
+      await (this.context.rawContext as any).suspend()
       this.stats.isRunning = false
       console.log('AudioService suspended')
     }
   }
 
   public async resume(): Promise<void> {
-    if (this.context && this.context.state === 'suspended') {
-      await this.context.resume()
+    if (this.context && this.context.state === 'suspended' && this.context.rawContext) {
+      await (this.context.rawContext as any).resume()
       this.stats.isRunning = true
       console.log('AudioService resumed')
     }
   }
 
-  public setLatencyHint(hint: Tone.LatencyHint): void {
+  public setLatencyHint(hint: 'interactive' | 'playback' | 'balanced'): void {
+    // Note: latencyHint is read-only once context is created
+    // We can only update our config for next initialization
+    this.config.latencyHint = hint
     if (this.context) {
-      this.context.latencyHint = hint
-      this.config.latencyHint = hint
-      this.stats.latency = this.context.baseLatency + this.context.lookAhead
+      this.stats.latency = ((this.context.rawContext as any)?.baseLatency || 0) + this.context.lookAhead
     }
   }
 
@@ -147,7 +146,7 @@ export class AudioService implements AudioServiceInterface {
     return Tone.Transport
   }
 
-  public getMaster(): Tone.Destination {
+  public getMaster(): ReturnType<typeof Tone.getDestination> {
     if (!this.isReady()) {
       throw new Error('AudioService not ready')
     }
@@ -164,20 +163,20 @@ export class AudioService implements AudioServiceInterface {
       if (this.context && this.context.state === 'running') {
         this.updatePerformanceStats()
       }
-    }, 1000) as any // Update every second
+    }, 1000) // Update every second
   }
 
   private updatePerformanceStats(): void {
     if (!this.context) return
 
     // Update latency
-    this.stats.latency = this.context.baseLatency + this.context.lookAhead
+    this.stats.latency = ((this.context.rawContext as any)?.baseLatency || 0) + this.context.lookAhead
 
     // Update buffer size if available
     if (this.context.rawContext) {
       const audioContext = this.context.rawContext as AudioContext
-      if (audioContext.baseLatency) {
-        this.stats.bufferSize = Math.round(audioContext.baseLatency * audioContext.sampleRate)
+      if ((audioContext as any).baseLatency) {
+        this.stats.bufferSize = Math.round((audioContext as any).baseLatency * audioContext.sampleRate)
       }
     }
 
@@ -190,9 +189,9 @@ export class AudioService implements AudioServiceInterface {
     // Real implementation would use Web Audio API analytics
     if (!this.context) return 0
 
-    const activeNodes = Tone.getContext().activeVoices || 0
-    const maxNodes = 100 // Arbitrary max for scaling
-    return Math.min(activeNodes / maxNodes, 1) * 100
+    // activeVoices doesn't exist on Context, return placeholder value
+    // A real implementation would track active audio nodes
+    return 0
   }
 
   // Utility methods

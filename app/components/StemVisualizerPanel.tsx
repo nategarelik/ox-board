@@ -1,7 +1,7 @@
 'use client';
 
 import React, { memo, useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { StemType } from '../lib/audio/stemPlayer';
+import { StemType } from '../lib/audio/demucsProcessor';
 import useEnhancedDJStore from '../stores/enhancedDjStoreWithGestures';
 import StemControls from './StemControls';
 import StemWaveform from './StemWaveform';
@@ -126,7 +126,7 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
       const isInputFocused = activeElement && (
         activeElement.tagName === 'INPUT' ||
         activeElement.tagName === 'TEXTAREA' ||
-        activeElement.contentEditable === 'true'
+        (activeElement as HTMLElement).contentEditable === 'true'
       );
 
       if (isInputFocused) return;

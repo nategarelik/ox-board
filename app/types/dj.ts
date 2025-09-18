@@ -1,6 +1,6 @@
 // Type definitions for DJ Interface components
 
-export type ViewMode = 'decks' | 'mixer' | 'stems' | 'effects'
+export type ViewMode = 'decks' | 'mixer' | 'stems' | 'effects' | 'library'
 
 export interface DJState {
   isDJModeActive: boolean

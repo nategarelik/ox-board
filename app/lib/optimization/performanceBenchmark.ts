@@ -322,7 +322,8 @@ export class PerformanceBenchmark {
 
         // Simulate BPM calculation
         const bpm = (peaks / (channelData.length / 44100)) * 60;
-        return bpm;
+        // Store result for validation but don't return it
+        (this as any).lastBPM = bpm;
       },
       this.runner['config'].targets.bpmDetection
     );
@@ -352,7 +353,8 @@ export class PerformanceBenchmark {
         // Simulate gesture classification
         const action = actionScore > 10 ? 'grab' : actionScore > 5 ? 'point' : 'none';
 
-        return { action, confidence: gestureData.confidence };
+        // Store result for validation but don't return it
+        (this as any).lastGesture = { action, confidence: gestureData.confidence };
       },
       this.runner['config'].targets.gestureProcessing
     );

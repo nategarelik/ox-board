@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { StemType } from '../lib/audio/stemPlayer';
+import { StemType } from '../lib/audio/demucsProcessor';
 import type { AudioAnalysisRequest, AudioAnalysisResult } from '../lib/workers/audioAnalyzer.worker';
 
 interface PerformanceMetrics {
@@ -428,7 +428,7 @@ const useStemPerformance = () => {
     optimizePerformance,
 
     // Worker availability
-    hasWorkers: workerPoolRef.current?.workers.length > 0
+    hasWorkers: (workerPoolRef.current?.workers?.length ?? 0) > 0
   };
 };
 

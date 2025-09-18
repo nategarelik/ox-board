@@ -450,7 +450,8 @@ export class PerformanceOptimizer {
     return this.executeInWorker('bpmDetection', {
       buffer: audioBuffer.getChannelData(0),
       sampleRate: audioBuffer.sampleRate
-    }).then(bpm => {
+    }).then(result => {
+      const bpm = result as number;
       this.endProfiling('bpm_detection');
       this.setCached(cacheKey, bpm);
       return bpm;
