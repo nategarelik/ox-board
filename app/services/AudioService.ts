@@ -1,0 +1,250 @@
+import * as Tone from 'tone'
+import type { AudioServiceConfig, AudioServiceStats, AudioServiceInterface } from './types/audio'
+
+export class AudioService implements AudioServiceInterface {
+  private static instance: AudioService | null = null
+  private context: Tone.Context | null = null
+  private initialized: boolean = false
+  private stats: AudioServiceStats = {
+    latency: 0,
+    cpuUsage: 0,
+    isRunning: false,
+    sampleRate: 44100,
+    bufferSize: 256
+  }
+  private config: AudioServiceConfig = {
+    latencyHint: 'interactive',
+    lookAhead: 0.1,
+    updateInterval: 0.05,
+    sampleRate: 44100,
+    channels: 2
+  }
+  private performanceMonitor: NodeJS.Timer | null = null
+
+  private constructor(config?: Partial<AudioServiceConfig>) {
+    if (config) {
+      this.config = { ...this.config, ...config }
+    }
+  }
+
+  public static getInstance(config?: Partial<AudioServiceConfig>): AudioService {
+    if (!AudioService.instance) {
+      AudioService.instance = new AudioService(config)
+    }
+    return AudioService.instance
+  }
+
+  public async initialize(): Promise<void> {
+    if (this.initialized) {
+      console.warn('AudioService already initialized')
+      return
+    }
+
+    try {
+      // Create context with configuration
+      this.context = new Tone.Context({
+        latencyHint: this.config.latencyHint,
+        lookAhead: this.config.lookAhead,
+        updateInterval: this.config.updateInterval,
+        sampleRate: this.config.sampleRate,
+        channels: this.config.channels
+      })
+
+      // Set as default context
+      Tone.setContext(this.context)
+
+      // Start audio context (requires user interaction)
+      await Tone.start()
+
+      // Update stats
+      this.stats.sampleRate = this.context.sampleRate
+      this.stats.isRunning = true
+      this.stats.latency = this.context.baseLatency + this.context.lookAhead
+
+      // Start performance monitoring
+      this.startPerformanceMonitoring()
+
+      this.initialized = true
+      console.log('AudioService initialized successfully', this.stats)
+    } catch (error) {
+      console.error('Failed to initialize AudioService:', error)
+      throw new Error(`AudioService initialization failed: ${error}`)
+    }
+  }
+
+  public getContext(): Tone.Context {
+    if (!this.context) {
+      throw new Error('AudioService not initialized. Call initialize() first.')
+    }
+    return this.context
+  }
+
+  public isReady(): boolean {
+    return this.initialized && this.context !== null && this.context.state === 'running'
+  }
+
+  public dispose(): void {
+    if (this.performanceMonitor) {
+      clearInterval(this.performanceMonitor)
+      this.performanceMonitor = null
+    }
+
+    if (this.context) {
+      // Stop all sounds
+      Tone.Transport.stop()
+      Tone.Transport.cancel()
+
+      // Dispose of context
+      this.context.dispose()
+      this.context = null
+    }
+
+    this.initialized = false
+    this.stats.isRunning = false
+    AudioService.instance = null
+
+    console.log('AudioService disposed')
+  }
+
+  public getStats(): AudioServiceStats {
+    if (this.context) {
+      this.stats.latency = this.context.baseLatency + this.context.lookAhead
+      // CPU usage would need Web Audio API performance metrics
+      // This is a placeholder - actual implementation would use performance.measureUserAgentSpecificMemory()
+      this.stats.cpuUsage = this.estimateCPUUsage()
+    }
+    return { ...this.stats }
+  }
+
+  public async suspend(): Promise<void> {
+    if (this.context && this.context.state === 'running') {
+      await this.context.suspend()
+      this.stats.isRunning = false
+      console.log('AudioService suspended')
+    }
+  }
+
+  public async resume(): Promise<void> {
+    if (this.context && this.context.state === 'suspended') {
+      await this.context.resume()
+      this.stats.isRunning = true
+      console.log('AudioService resumed')
+    }
+  }
+
+  public setLatencyHint(hint: Tone.LatencyHint): void {
+    if (this.context) {
+      this.context.latencyHint = hint
+      this.config.latencyHint = hint
+      this.stats.latency = this.context.baseLatency + this.context.lookAhead
+    }
+  }
+
+  public getTransport(): typeof Tone.Transport {
+    if (!this.isReady()) {
+      throw new Error('AudioService not ready')
+    }
+    return Tone.Transport
+  }
+
+  public getMaster(): Tone.Destination {
+    if (!this.isReady()) {
+      throw new Error('AudioService not ready')
+    }
+    return Tone.getDestination()
+  }
+
+  // Performance monitoring
+  private startPerformanceMonitoring(): void {
+    if (this.performanceMonitor) {
+      clearInterval(this.performanceMonitor)
+    }
+
+    this.performanceMonitor = setInterval(() => {
+      if (this.context && this.context.state === 'running') {
+        this.updatePerformanceStats()
+      }
+    }, 1000) as any // Update every second
+  }
+
+  private updatePerformanceStats(): void {
+    if (!this.context) return
+
+    // Update latency
+    this.stats.latency = this.context.baseLatency + this.context.lookAhead
+
+    // Update buffer size if available
+    if (this.context.rawContext) {
+      const audioContext = this.context.rawContext as AudioContext
+      if (audioContext.baseLatency) {
+        this.stats.bufferSize = Math.round(audioContext.baseLatency * audioContext.sampleRate)
+      }
+    }
+
+    // Estimate CPU usage
+    this.stats.cpuUsage = this.estimateCPUUsage()
+  }
+
+  private estimateCPUUsage(): number {
+    // This is a simplified estimation
+    // Real implementation would use Web Audio API analytics
+    if (!this.context) return 0
+
+    const activeNodes = Tone.getContext().activeVoices || 0
+    const maxNodes = 100 // Arbitrary max for scaling
+    return Math.min(activeNodes / maxNodes, 1) * 100
+  }
+
+  // Utility methods
+  public createGain(gain: number = 1): Tone.Gain {
+    if (!this.isReady()) {
+      throw new Error('AudioService not ready')
+    }
+    return new Tone.Gain(gain)
+  }
+
+  public createEQ3(): Tone.EQ3 {
+    if (!this.isReady()) {
+      throw new Error('AudioService not ready')
+    }
+    return new Tone.EQ3()
+  }
+
+  public createFilter(frequency: number = 1000): Tone.Filter {
+    if (!this.isReady()) {
+      throw new Error('AudioService not ready')
+    }
+    return new Tone.Filter(frequency, 'lowpass')
+  }
+
+  public createCompressor(): Tone.Compressor {
+    if (!this.isReady()) {
+      throw new Error('AudioService not ready')
+    }
+    return new Tone.Compressor()
+  }
+
+  public createLimiter(): Tone.Limiter {
+    if (!this.isReady()) {
+      throw new Error('AudioService not ready')
+    }
+    return new Tone.Limiter(-3)
+  }
+
+  // Debug utilities
+  public debugInfo(): void {
+    console.group('AudioService Debug Info')
+    console.log('Initialized:', this.initialized)
+    console.log('Context State:', this.context?.state)
+    console.log('Stats:', this.stats)
+    console.log('Config:', this.config)
+    console.log('Transport State:', Tone.Transport.state)
+    console.log('Transport BPM:', Tone.Transport.bpm.value)
+    console.groupEnd()
+  }
+}
+
+// Export singleton getter
+export const getAudioService = (config?: Partial<AudioServiceConfig>): AudioService => {
+  return AudioService.getInstance(config)
+}

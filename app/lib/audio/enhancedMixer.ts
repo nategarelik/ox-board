@@ -1,6 +1,7 @@
 import * as Tone from "tone";
 import { StemPlayer, StemPlayerConfig } from './stemPlayer';
 import { DemucsOutput, StemType } from './demucsProcessor';
+import { Crossfader } from './crossfader';
 
 export interface ChannelEQ {
   low: number;
@@ -54,6 +55,7 @@ export interface StemMixerConfig {
 export class EnhancedAudioMixer {
   private channels: Channel[] = [];
   private crossfader: Tone.CrossFade;
+  private customCrossfader: Crossfader | null = null;
   private masterGain: Tone.Gain;
   private masterLimiter: Tone.Limiter;
   private masterCompressor: Tone.Compressor;
@@ -63,6 +65,7 @@ export class EnhancedAudioMixer {
   private masterConfig: MasterConfig;
   private stemMixerConfig: StemMixerConfig;
   private isInitialized: boolean = false;
+  private useCustomCrossfader: boolean = false;
 
   constructor(stemMixerConfig: StemMixerConfig = {}) {
     this.stemMixerConfig = {
@@ -617,6 +620,89 @@ export class EnhancedAudioMixer {
     this.setMasterCompressor(true, 4, -24, 0.003, 0.25);
   }
 
+  // Custom Crossfader Methods
+  enableCustomCrossfader(): void {
+    if (this.customCrossfader) return;
+
+    // Create custom crossfader
+    this.customCrossfader = new Crossfader({
+      position: this.crossfaderConfig.position,
+      curve: this.crossfaderConfig.curve as any,
+      cutLag: 0,
+      hamsterMode: false
+    });
+
+    // Disconnect old crossfader
+    if (this.channels.length >= 2) {
+      this.channels[0].channelOut.disconnect(this.crossfader.a);
+      this.channels[1].channelOut.disconnect(this.crossfader.b);
+      this.crossfader.disconnect(this.masterCompressor);
+
+      // Connect to custom crossfader
+      this.customCrossfader.connectDeckA(this.channels[0].channelOut);
+      this.customCrossfader.connectDeckB(this.channels[1].channelOut);
+      this.customCrossfader.getOutput().connect(this.masterCompressor);
+    }
+
+    this.useCustomCrossfader = true;
+  }
+
+  disableCustomCrossfader(): void {
+    if (!this.customCrossfader) return;
+
+    // Reconnect original crossfader
+    if (this.channels.length >= 2) {
+      this.channels[0].channelOut.connect(this.crossfader.a);
+      this.channels[1].channelOut.connect(this.crossfader.b);
+      this.crossfader.connect(this.masterCompressor);
+    }
+
+    // Dispose custom crossfader
+    this.customCrossfader.dispose();
+    this.customCrossfader = null;
+    this.useCustomCrossfader = false;
+  }
+
+  setCrossfaderCurve(curve: 'linear' | 'logarithmic' | 'exponential' | 'scratch' | 'smooth'): void {
+    if (this.customCrossfader) {
+      this.customCrossfader.setCurve(curve);
+    }
+  }
+
+  setCrossfaderHamsterMode(enabled: boolean): void {
+    if (this.customCrossfader) {
+      this.customCrossfader.setHamsterMode(enabled);
+    }
+  }
+
+  setCrossfaderCutLag(lag: number): void {
+    if (this.customCrossfader) {
+      this.customCrossfader.setCutLag(lag);
+    }
+  }
+
+  crossfaderCut(deck: 'A' | 'B', duration: number = 0): void {
+    if (this.customCrossfader) {
+      this.customCrossfader.cut(deck, duration);
+    }
+  }
+
+  crossfaderCenter(duration: number = 0): void {
+    if (this.customCrossfader) {
+      this.customCrossfader.center(duration);
+    }
+  }
+
+  getCrossfaderGains(): { gainA: number; gainB: number } {
+    if (this.customCrossfader) {
+      return {
+        gainA: this.customCrossfader.getGainA(),
+        gainB: this.customCrossfader.getGainB()
+      };
+    }
+    return { gainA: 0.5, gainB: 0.5 };
+  }
+
   dispose(): void {
     // Dispose stem players
     this.channels.forEach((channel, index) => {
@@ -635,6 +721,9 @@ export class EnhancedAudioMixer {
       channel.channelOut.dispose();
     });
 
+    if (this.customCrossfader) {
+      this.customCrossfader.dispose();
+    }
     this.crossfader.dispose();
     this.masterGain.dispose();
     this.masterLimiter.dispose();
