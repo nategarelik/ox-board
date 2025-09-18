@@ -63,3 +63,17 @@ C:*
 # OS
 .DS_Store
 Thumbs.db
+
+# Task execution logs
+TASK_*.md
+*_EXECUTION_STATUS.md
+*_COMPLETION_SUMMARY.md
+
+# Planning documents (moved to .claude/docs)
+plan.md
+IMPLEMENTATION_*.md
+REQUIREMENTS.md
+
+# Test coverage reports
+*.coverage
+coverage/

@@ -8,7 +8,7 @@ const createJestConfig = nextJest({
 // Add any custom config to be passed to Jest
 const customJestConfig = {
   // Add more setup options before each test is run
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup/jest.setup.js'],
 
   // if using TypeScript with a baseUrl set to the root directory then you need the below for alias' to work
   moduleDirectories: ['node_modules', '<rootDir>/'],
@@ -20,11 +20,16 @@ const customJestConfig = {
     '^@/lib/(.*)$': '<rootDir>/app/lib/$1',
     '^@/stores/(.*)$': '<rootDir>/app/stores/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/__mocks__/fileMock.js',
+    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/tests/__mocks__/fileMock.js',
   },
 
   // Test environment
   testEnvironment: 'jsdom',
+
+  // Test patterns
+  testMatch: [
+    '<rootDir>/tests/**/*.{spec,test}.{js,jsx,ts,tsx}',
+  ],
 
   // Patterns to ignore
   testPathIgnorePatterns: [
@@ -54,9 +59,7 @@ const customJestConfig = {
   collectCoverageFrom: [
     'app/**/*.{ts,tsx}',
     '!app/**/*.d.ts',
-    '!app/**/__tests__/**',
-    '!app/**/*.test.{ts,tsx}',
-    '!app/**/*.spec.{ts,tsx}',
+    '!tests/**',
   ],
 
   // Coverage thresholds
@@ -73,7 +76,7 @@ const customJestConfig = {
   verbose: true,
 
   // Setup files
-  setupFiles: ['<rootDir>/jest.polyfills.js'],
+  setupFiles: ['<rootDir>/tests/setup/jest.polyfills.js'],
 
   // Test timeout
   testTimeout: 10000,
