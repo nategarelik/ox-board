@@ -79,12 +79,41 @@ export const MixAssistantDashboard: React.FC<MixAssistantDashboardProps> = ({
         'D# major', 'C minor', 'A# major', 'G minor', 'F major', 'D minor'
       ];
 
-      // TODO: Implement harmonic key compatibility check
-      // for (const key of allKeys) {
-      //   if (key !== currentKey && mixAssistant.isCompatibleKey(currentKey, key)) {
-      //     compatible.push(key.split(' ')[0] + (key.includes('minor') ? 'm' : ''));
-      //   }
-      // }
+      // Check key compatibility using Camelot wheel
+      const keyToCamelot: Record<string, string> = {
+        'C major': '8B', 'A minor': '8A', 'G major': '3B', 'E minor': '3A',
+        'D major': '10B', 'B minor': '10A', 'A major': '5B', 'F# minor': '5A',
+        'E major': '12B', 'C# minor': '12A', 'B major': '7B', 'G# minor': '7A',
+        'F# major': '2B', 'D# minor': '2A', 'C# major': '9B', 'A# minor': '9A',
+        'G# major': '4B', 'F minor': '4A', 'D# major': '11B', 'C minor': '11A',
+        'A# major': '6B', 'G minor': '6A', 'F major': '1B', 'D minor': '1A'
+      };
+
+      const camelotWheel = [
+        '8B', '8A', '3B', '3A', '10B', '10A', '5B', '5A',
+        '12B', '12A', '7B', '7A', '2B', '2A', '9B', '9A',
+        '4B', '4A', '11B', '11A', '6B', '6A', '1B', '1A'
+      ];
+
+      const currentCamelot = keyToCamelot[currentKey];
+      if (currentCamelot) {
+        const currentIdx = camelotWheel.indexOf(currentCamelot);
+
+        for (const key of allKeys) {
+          const keyCamelot = keyToCamelot[key];
+          if (keyCamelot) {
+            const keyIdx = camelotWheel.indexOf(keyCamelot);
+
+            // Compatible if adjacent on wheel or same position (major/minor)
+            const isCompatible = Math.abs(currentIdx - keyIdx) <= 2 ||
+                                Math.abs(currentIdx - keyIdx) === camelotWheel.length - 2;
+
+            if (key !== currentKey && isCompatible) {
+              compatible.push(key.split(' ')[0] + (key.includes('minor') ? 'm' : ''));
+            }
+          }
+        }
+      }
 
       setCompatibleKeys(compatible);
     } catch (err) {

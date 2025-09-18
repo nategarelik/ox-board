@@ -87,7 +87,7 @@ export function GestureFeedback({
             const next = new Map(prev);
             const key = `${mapping.id}-value`;
             const existing = next.get(key) || { current: 0, target: 0, velocity: 0 };
-            existing.target = activeGesture.value;
+            existing.target = activeGesture.value!;
             next.set(key, existing);
             return next;
           });

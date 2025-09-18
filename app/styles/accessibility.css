@@ -1,0 +1,265 @@
+/* Accessibility Styles for OX Board */
+
+/* Focus Indicators */
+:focus-visible {
+  outline: 2px solid var(--ox-primary, #FF0000);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ox-primary, #FF0000);
+  outline-offset: 2px;
+}
+
+/* Skip Links */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--ox-primary, #FF0000);
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Screen Reader Only Content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  :root {
+    --ox-primary: #FF0000;
+    --ox-accent: #FFFF00;
+    --ox-background: #000000;
+    --ox-surface: #1A1A1A;
+    --ox-text: #FFFFFF;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    border: 1px solid #FFFFFF;
+  }
+
+  .ox-surface {
+    border: 1px solid #FFFFFF;
+  }
+
+  /* Increase contrast for text */
+  .text-gray-400 {
+    color: #CCCCCC !important;
+  }
+
+  .text-gray-500 {
+    color: #AAAAAA !important;
+  }
+
+  .text-gray-600 {
+    color: #999999 !important;
+  }
+
+  /* Make disabled elements more visible */
+  :disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    border-style: dashed;
+  }
+}
+
+/* Forced Colors Mode (Windows High Contrast) */
+@media (prefers-contrast: forced) {
+  button:focus-visible {
+    forced-color-adjust: none;
+    outline: 3px solid;
+  }
+
+  /* Ensure icons remain visible */
+  svg {
+    forced-color-adjust: auto;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keyboard Navigation Indicators */
+.keyboard-nav button:focus,
+.keyboard-nav a:focus,
+.keyboard-nav input:focus,
+.keyboard-nav select:focus,
+.keyboard-nav textarea:focus {
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.25);
+}
+
+/* Large Click Targets */
+button,
+a,
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Better Form Labels */
+label {
+  display: inline-block;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+/* Required Field Indicators */
+.required::after {
+  content: " *";
+  color: var(--ox-primary, #FF0000);
+}
+
+/* Error Messages */
+.error-message {
+  color: #FF6B6B;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  role: alert;
+}
+
+/* Success Messages */
+.success-message {
+  color: #4CAF50;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  role: status;
+}
+
+/* Loading States */
+.loading {
+  position: relative;
+  color: transparent;
+}
+
+.loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid var(--ox-primary, #FF0000);
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tooltips for Keyboard Shortcuts */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  border-radius: 0.25rem;
+  pointer-events: none;
+  z-index: 1000;
+  margin-bottom: 0.5rem;
+}
+
+/* Focus Trap Container */
+.focus-trap {
+  position: relative;
+}
+
+.focus-trap:focus-within {
+  box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.1);
+}
+
+/* Improved Range Sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: #333;
+  outline: none;
+  border-radius: 3px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--ox-primary, #FF0000);
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid #000;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--ox-primary, #FF0000);
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid #000;
+}
+
+input[type="range"]:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.25);
+}
+
+input[type="range"]:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.25);
+}
+
+/* Announce State Changes to Screen Readers */
+.aria-live-region {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

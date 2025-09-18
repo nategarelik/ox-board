@@ -20,10 +20,6 @@ const nextConfig = {
   ...(process.env.NODE_ENV === 'production' && {
     // Enable static optimization
     trailingSlash: false,
-    // Optimize images
-    optimizeFonts: true,
-    // Enable gzip compression
-    compress: true,
   }),
 
   async headers() {
