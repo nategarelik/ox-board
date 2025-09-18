@@ -1,8 +1,8 @@
 ---
 name: ox-board-professional-improvements
-status: backlog
+status: in_progress
 created: 2025-09-17T19:52:55Z
-progress: 0%
+progress: 30%
 prd: .claude/prds/ox-board-professional-improvements.md
 github: https://github.com/nategarelik/ox-board/issues/23
 ---
