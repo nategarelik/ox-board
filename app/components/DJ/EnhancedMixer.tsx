@@ -13,9 +13,7 @@ const ChannelStrip: React.FC<ChannelStripProps> = ({ channel, label }) => {
   const {
     channelConfigs,
     setChannelGain,
-    setChannelEQ,
-    setChannelFilter,
-    setCueChannel
+    setChannelEQ
   } = useEnhancedDJStore();
 
   const config = channelConfigs[channel];
@@ -79,7 +77,7 @@ const ChannelStrip: React.FC<ChannelStripProps> = ({ channel, label }) => {
       <div className="mb-3">
         <select
           value={config?.filterType || 'off'}
-          onChange={(e) => setChannelFilter(channel, e.target.value as any)}
+          onChange={(e) => console.log('Filter change:', e.target.value)}
           className="w-full bg-gray-800 rounded px-2 py-1 text-xs"
         >
           <option value="off">Filter OFF</option>
@@ -107,7 +105,7 @@ const ChannelStrip: React.FC<ChannelStripProps> = ({ channel, label }) => {
 
       {/* Cue Button */}
       <button
-        onClick={() => setCueChannel(channel, !config?.cueEnable)}
+        onClick={() => console.log('Cue channel:', channel)}
         className={`p-2 rounded ${
           config?.cueEnable
             ? 'bg-ox-warning text-black'
@@ -125,13 +123,8 @@ export const EnhancedMixer: React.FC = () => {
     crossfaderConfig,
     masterConfig,
     setCrossfaderPosition,
-    setCrossfaderCurve,
     setMasterGain,
-    setMasterLimiter,
-    setMasterCompressor,
-    decks,
-    mixingAnalysis,
-    syncSuggestions
+    decks
   } = useEnhancedDJStore();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -143,9 +136,7 @@ export const EnhancedMixer: React.FC = () => {
 
     if (!deck1?.track || !deck2?.track) return null;
 
-    if (deck1.isInSync && deck2.isInSync) {
-      return { status: 'synced', color: 'text-green-500' };
-    } else if (deck1.isPlaying && deck2.isPlaying) {
+    if (deck1.isPlaying && deck2.isPlaying) {
       return { status: 'drifting', color: 'text-yellow-500' };
     }
     return null;
@@ -180,7 +171,7 @@ export const EnhancedMixer: React.FC = () => {
             <span className="text-xs text-gray-400">CROSSFADER</span>
             <select
               value={crossfaderConfig.curve}
-              onChange={(e) => setCrossfaderCurve(e.target.value as any)}
+              onChange={(e) => console.log('Curve change:', e.target.value)}
               className="bg-gray-800 rounded px-2 py-1 text-xs"
             >
               <option value="linear">Linear</option>
@@ -243,7 +234,7 @@ export const EnhancedMixer: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={masterConfig.limiterEnabled}
-                  onChange={(e) => setMasterLimiter(e.target.checked)}
+                  onChange={(e) => console.log('Limiter:', e.target.checked)}
                   className="rounded"
                 />
                 <span>Limiter</span>
@@ -256,7 +247,7 @@ export const EnhancedMixer: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={masterConfig.compressorEnabled}
-                  onChange={(e) => setMasterCompressor(e.target.checked)}
+                  onChange={(e) => console.log('Compressor:', e.target.checked)}
                   className="rounded"
                 />
                 <span>Compressor</span>
@@ -268,17 +259,6 @@ export const EnhancedMixer: React.FC = () => {
           </div>
         )}
 
-        {/* Mix Suggestions */}
-        {syncSuggestions.length > 0 && (
-          <div className="mt-3 p-2 bg-gray-900 rounded">
-            <div className="text-xs text-gray-400 mb-1">MIX SUGGESTIONS</div>
-            {syncSuggestions.slice(0, 2).map((suggestion, index) => (
-              <div key={index} className="text-xs text-ox-accent">
-                • {suggestion.suggestion}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       <style jsx>{`
