@@ -15,18 +15,14 @@ export default function DJInterface({ djState, djActions, gestureData }: DJInter
   const handleHandsDetected = (hands: any[]) => {
     if (!djState.gestureEnabled) return
 
-    const leftHand = hands.find(h => h.handedness === 'Left')
-    const rightHand = hands.find(h => h.handedness === 'Right')
+    // Convert Hand[] to HandResult[] format expected by updateGestures
+    const handResults = hands.map(hand => ({
+      landmarks: hand.landmarks,
+      handedness: hand.handedness,
+      confidence: hand.score
+    }))
 
-    gestureData.updateGestures({
-      left: leftHand?.landmarks || null,
-      right: rightHand?.landmarks || null,
-      confidence: {
-        left: leftHand?.score || 0,
-        right: rightHand?.score || 0
-      }
-    })
-
+    gestureData.updateGestures(handResults)
     djActions.updateGestureControls(gestureData.controls)
   }
 

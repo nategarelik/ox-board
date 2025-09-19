@@ -13,6 +13,7 @@ const GestureFeedback = dynamic(
   { ssr: false }
 )
 
+
 export default function GestureControl({
   cameraActive,
   gestureEnabled,

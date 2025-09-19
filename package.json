@@ -1,7 +1,35 @@
 {
   "name": "ox-board",
-  "version": "1.0.0",
-  "private": true,
+  "version": "0.8.0",
+  "description": "Open-source gesture-controlled DJ platform using webcam hand tracking",
+  "keywords": [
+    "dj",
+    "music",
+    "gesture-control",
+    "hand-tracking",
+    "mediapipe",
+    "audio-mixer",
+    "web-audio",
+    "nextjs",
+    "react",
+    "typescript"
+  ],
+  "homepage": "https://github.com/your-org/ox-board#readme",
+  "bugs": {
+    "url": "https://github.com/your-org/ox-board/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/ox-board.git"
+  },
+  "license": "MIT",
+  "author": "OX Board Contributors",
+  "contributors": [],
+  "private": false,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
