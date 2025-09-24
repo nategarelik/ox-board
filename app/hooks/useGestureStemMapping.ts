@@ -3,11 +3,15 @@
  * Optimized for <50ms latency between gesture detection and audio control
  */
 
-import { useRef, useCallback, useEffect, useState } from 'react';
-import { GestureStemMapper, GestureDetectionResult, FeedbackState } from '../lib/gestures/gestureStemMapper';
-import { HandResult } from '../lib/gesture/recognition';
-import { HandLandmarkSmoother } from '../lib/gesture/smoothing';
-import useEnhancedDJStore from '../stores/enhancedDjStoreWithGestures';
+import { useRef, useCallback, useEffect, useState, useMemo } from "react";
+import {
+  GestureStemMapper,
+  GestureDetectionResult,
+  FeedbackState,
+} from "../lib/gestures/gestureStemMapper";
+import { HandResult } from "../lib/gesture/recognition";
+import { HandLandmarkSmoother } from "../lib/gesture/smoothing";
+import useEnhancedDJStore from "../stores/enhancedDjStoreWithGestures";
 
 interface UseGestureStemMappingConfig {
   /** Enable performance optimizations */
@@ -38,11 +42,16 @@ const DEFAULT_CONFIG: UseGestureStemMappingConfig = {
   smoothingEnabled: true,
   throttleInterval: 16, // ~60fps
   useAudioWorklet: true,
-  defaultChannel: 0
+  defaultChannel: 0,
 };
 
-export function useGestureStemMapping(config: Partial<UseGestureStemMappingConfig> = {}) {
-  const fullConfig = { ...DEFAULT_CONFIG, ...config };
+export function useGestureStemMapping(
+  config: Partial<UseGestureStemMappingConfig> = {},
+) {
+  const fullConfig = useMemo(
+    () => ({ ...DEFAULT_CONFIG, ...config }),
+    [config],
+  );
 
   // Store integration
   const {
@@ -53,7 +62,7 @@ export function useGestureStemMapping(config: Partial<UseGestureStemMappingConfi
     processHandGestures,
     initializeGestureMapper,
     setGestureMapperEnabled,
-    setGestureScreenDimensions
+    setGestureScreenDimensions,
   } = useEnhancedDJStore();
 
   // Performance tracking
@@ -62,16 +71,18 @@ export function useGestureStemMapping(config: Partial<UseGestureStemMappingConfi
     peakLatency: 0,
     droppedFrames: 0,
     gesturesPerSecond: 0,
-    audioLatency: 0
+    audioLatency: 0,
   });
 
   // Refs for performance optimization
   const lastProcessingTime = useRef<number>(0);
-  const processingQueue = useRef<Array<{
-    leftHand: HandResult | null;
-    rightHand: HandResult | null;
-    timestamp: number;
-  }>>([]);
+  const processingQueue = useRef<
+    Array<{
+      leftHand: HandResult | null;
+      rightHand: HandResult | null;
+      timestamp: number;
+    }>
+  >([]);
   const performanceBuffer = useRef<number[]>([]);
   const gestureCountBuffer = useRef<number[]>([]);
   const isProcessing = useRef<boolean>(false);
@@ -87,7 +98,7 @@ export function useGestureStemMapping(config: Partial<UseGestureStemMappingConfi
       initializeGestureMapper({
         latencyTarget: fullConfig.maxLatency,
         smoothingEnabled: fullConfig.smoothingEnabled,
-        gestureConfidenceThreshold: 0.7 // Slightly lower for faster response
+        gestureConfidenceThreshold: 0.7, // Slightly lower for faster response
       });
     }
   }, [gestureStemMapper, initializeGestureMapper, fullConfig]);
@@ -98,18 +109,23 @@ export function useGestureStemMapping(config: Partial<UseGestureStemMappingConfi
       // Calculate average latency
       const latencies = performanceBuffer.current;
       if (latencies.length > 0) {
-        const avgLatency = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+        const avgLatency =
+          latencies.reduce((a, b) => a + b, 0) / latencies.length;
         const peakLatency = Math.max(...latencies);
 
         // Calculate gestures per second
-        const gestureCount = gestureCountBuffer.current.reduce((a, b) => a + b, 0);
+        const gestureCount = gestureCountBuffer.current.reduce(
+          (a, b) => a + b,
+          0,
+        );
 
         setMetrics({
           averageLatency: avgLatency,
           peakLatency: peakLatency,
-          droppedFrames: latencies.filter(l => l > fullConfig.maxLatency).length,
+          droppedFrames: latencies.filter((l) => l > fullConfig.maxLatency)
+            .length,
           gesturesPerSecond: gestureCount,
-          audioLatency: gestureLatency
+          audioLatency: gestureLatency,
         });
 
         // Clear buffers
@@ -122,132 +138,152 @@ export function useGestureStemMapping(config: Partial<UseGestureStemMappingConfi
   }, [fullConfig.maxLatency, gestureLatency]);
 
   // Optimized gesture processing with frame scheduling
-  const processGesturesOptimized = useCallback(async (
-    leftHand: HandResult | null,
-    rightHand: HandResult | null,
-    channel: number = fullConfig.defaultChannel
-  ) => {
-    const now = performance.now();
+  const processGesturesOptimized = useCallback(
+    async (
+      leftHand: HandResult | null,
+      rightHand: HandResult | null,
+      channel: number = fullConfig.defaultChannel,
+    ) => {
+      const now = performance.now();
 
-    // Skip if processing is still ongoing and we're in performance mode
-    if (isProcessing.current && fullConfig.performanceMode) {
-      return;
-    }
+      // Skip if processing is still ongoing and we're in performance mode
+      if (isProcessing.current && fullConfig.performanceMode) {
+        return;
+      }
 
-    // Throttle based on configured interval
-    if (now - lastProcessingTime.current < fullConfig.throttleInterval) {
-      return;
-    }
+      // Throttle based on configured interval
+      if (now - lastProcessingTime.current < fullConfig.throttleInterval) {
+        return;
+      }
 
-    isProcessing.current = true;
-    const startTime = performance.now();
+      isProcessing.current = true;
+      const startTime = performance.now();
 
-    try {
-      // Pre-process hand data for critical optimizations
-      let processedLeftHand = leftHand;
-      let processedRightHand = rightHand;
+      try {
+        // Pre-process hand data for critical optimizations
+        let processedLeftHand = leftHand;
+        let processedRightHand = rightHand;
 
-      if (fullConfig.smoothingEnabled && (leftHand || rightHand)) {
-        // Apply targeted smoothing only to wrist landmarks for performance
-        if (leftHand && leftHand.landmarks.length > 0) {
-          const smoothedWrist = leftWristSmoother.current.smoothLandmarks(
-            [leftHand.landmarks[0]], // Just wrist
-            [0]
-          )[0];
-          processedLeftHand = {
-            ...leftHand,
-            landmarks: [smoothedWrist, ...leftHand.landmarks.slice(1)]
-          };
+        if (fullConfig.smoothingEnabled && (leftHand || rightHand)) {
+          // Apply targeted smoothing only to wrist landmarks for performance
+          if (leftHand && leftHand.landmarks.length > 0) {
+            const smoothedWrist = leftWristSmoother.current.smoothLandmarks(
+              [leftHand.landmarks[0]], // Just wrist
+              [0],
+            )[0];
+            processedLeftHand = {
+              ...leftHand,
+              landmarks: [smoothedWrist, ...leftHand.landmarks.slice(1)],
+            };
+          }
+
+          if (rightHand && rightHand.landmarks.length > 0) {
+            const smoothedWrist = rightWristSmoother.current.smoothLandmarks(
+              [rightHand.landmarks[0]], // Just wrist
+              [0],
+            )[0];
+            processedRightHand = {
+              ...rightHand,
+              landmarks: [smoothedWrist, ...rightHand.landmarks.slice(1)],
+            };
+          }
         }
 
-        if (rightHand && rightHand.landmarks.length > 0) {
-          const smoothedWrist = rightWristSmoother.current.smoothLandmarks(
-            [rightHand.landmarks[0]], // Just wrist
-            [0]
-          )[0];
-          processedRightHand = {
-            ...rightHand,
-            landmarks: [smoothedWrist, ...rightHand.landmarks.slice(1)]
-          };
+        // Process gestures with optimized path
+        await processHandGestures(
+          processedLeftHand,
+          processedRightHand,
+          channel,
+        );
+
+        const processingTime = performance.now() - startTime;
+
+        // Track performance
+        performanceBuffer.current.push(processingTime);
+        if (performanceBuffer.current.length > 100) {
+          performanceBuffer.current.shift();
         }
+
+        // Count gestures processed
+        const gestureCount =
+          (processedLeftHand ? 1 : 0) + (processedRightHand ? 1 : 0);
+        gestureCountBuffer.current.push(gestureCount);
+        if (gestureCountBuffer.current.length > 60) {
+          gestureCountBuffer.current.shift();
+        }
+
+        lastProcessingTime.current = now;
+      } catch (error) {
+        console.error("Optimized gesture processing error:", error);
+      } finally {
+        isProcessing.current = false;
       }
-
-      // Process gestures with optimized path
-      await processHandGestures(processedLeftHand, processedRightHand, channel);
-
-      const processingTime = performance.now() - startTime;
-
-      // Track performance
-      performanceBuffer.current.push(processingTime);
-      if (performanceBuffer.current.length > 100) {
-        performanceBuffer.current.shift();
-      }
-
-      // Count gestures processed
-      const gestureCount = (processedLeftHand ? 1 : 0) + (processedRightHand ? 1 : 0);
-      gestureCountBuffer.current.push(gestureCount);
-      if (gestureCountBuffer.current.length > 60) {
-        gestureCountBuffer.current.shift();
-      }
-
-      lastProcessingTime.current = now;
-
-    } catch (error) {
-      console.error('Optimized gesture processing error:', error);
-    } finally {
-      isProcessing.current = false;
-    }
-  }, [
-    fullConfig.defaultChannel,
-    fullConfig.performanceMode,
-    fullConfig.throttleInterval,
-    fullConfig.smoothingEnabled,
-    processHandGestures
-  ]);
+    },
+    [
+      fullConfig.defaultChannel,
+      fullConfig.performanceMode,
+      fullConfig.throttleInterval,
+      fullConfig.smoothingEnabled,
+      processHandGestures,
+    ],
+  );
 
   // Frame-based gesture processing for maximum responsiveness
-  const scheduleGestureProcessing = useCallback((
-    leftHand: HandResult | null,
-    rightHand: HandResult | null,
-    channel?: number
-  ) => {
-    // Cancel previous frame if still pending
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
+  const scheduleGestureProcessing = useCallback(
+    (
+      leftHand: HandResult | null,
+      rightHand: HandResult | null,
+      channel?: number,
+    ) => {
+      // Cancel previous frame if still pending
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
 
-    // Schedule processing on next animation frame for optimal timing
-    animationFrameRef.current = requestAnimationFrame(() => {
-      processGesturesOptimized(leftHand, rightHand, channel);
-    });
-  }, [processGesturesOptimized]);
+      // Schedule processing on next animation frame for optimal timing
+      animationFrameRef.current = requestAnimationFrame(() => {
+        processGesturesOptimized(leftHand, rightHand, channel);
+      });
+    },
+    [processGesturesOptimized],
+  );
 
   // Batch processing for multiple gesture updates
-  const processBatch = useCallback(async (
-    gestureBatch: Array<{
-      leftHand: HandResult | null;
-      rightHand: HandResult | null;
-      channel?: number;
-    }>
-  ) => {
-    if (!gestureMapperEnabled || gestureBatch.length === 0) return;
+  const processBatch = useCallback(
+    async (
+      gestureBatch: Array<{
+        leftHand: HandResult | null;
+        rightHand: HandResult | null;
+        channel?: number;
+      }>,
+    ) => {
+      if (!gestureMapperEnabled || gestureBatch.length === 0) return;
 
-    // Process only the most recent gesture in performance mode
-    const gestureToProcess = fullConfig.performanceMode
-      ? gestureBatch[gestureBatch.length - 1]
-      : gestureBatch[0];
+      // Process only the most recent gesture in performance mode
+      const gestureToProcess = fullConfig.performanceMode
+        ? gestureBatch[gestureBatch.length - 1]
+        : gestureBatch[0];
 
-    await processGesturesOptimized(
-      gestureToProcess.leftHand,
-      gestureToProcess.rightHand,
-      gestureToProcess.channel
-    );
-  }, [gestureMapperEnabled, fullConfig.performanceMode, processGesturesOptimized]);
+      await processGesturesOptimized(
+        gestureToProcess.leftHand,
+        gestureToProcess.rightHand,
+        gestureToProcess.channel,
+      );
+    },
+    [
+      gestureMapperEnabled,
+      fullConfig.performanceMode,
+      processGesturesOptimized,
+    ],
+  );
 
   // Screen dimension optimization
-  const updateScreenDimensions = useCallback((width: number, height: number) => {
-    setGestureScreenDimensions(width, height);
-  }, [setGestureScreenDimensions]);
+  const updateScreenDimensions = useCallback(
+    (width: number, height: number) => {
+      setGestureScreenDimensions(width, height);
+    },
+    [setGestureScreenDimensions],
+  );
 
   // Emergency latency recovery
   const recoverFromHighLatency = useCallback(() => {
@@ -263,7 +299,7 @@ export function useGestureStemMapping(config: Partial<UseGestureStemMappingConfi
       performanceBuffer.current = [];
       gestureCountBuffer.current = [];
 
-      console.warn('High latency detected, performing emergency recovery');
+      console.warn("High latency detected, performing emergency recovery");
     }
   }, [metrics.averageLatency, fullConfig.maxLatency]);
 
@@ -309,7 +345,7 @@ export function useGestureStemMapping(config: Partial<UseGestureStemMappingConfi
     needsOptimization: metrics.averageLatency > fullConfig.maxLatency * 0.8,
 
     // Configuration
-    config: fullConfig
+    config: fullConfig,
   };
 }
 

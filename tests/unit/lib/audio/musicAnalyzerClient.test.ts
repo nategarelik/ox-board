@@ -9,8 +9,15 @@
  * - Error handling
  */
 
-import { describe, beforeEach, afterEach, it, expect, jest } from '@jest/globals';
-import { MusicAnalyzerClient } from '../musicAnalyzerClient';
+import {
+  describe,
+  beforeEach,
+  afterEach,
+  it,
+  expect,
+  jest,
+} from "@jest/globals";
+import { MusicAnalyzerClient } from "@/lib/audio/musicAnalyzerClient";
 
 // Mock Worker
 class MockWorker {
@@ -23,11 +30,11 @@ class MockWorker {
     // Simulate worker initialization
     setTimeout(() => {
       this.simulateMessage({
-        id: 'init',
-        type: 'init',
+        id: "init",
+        type: "init",
         success: true,
         result: {},
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }, 10);
   }
@@ -65,34 +72,34 @@ class MockWorker {
       success: true,
       processingTime: 25,
       timestamp: Date.now(),
-      result: this.generateMockResult(request.type)
+      result: this.generateMockResult(request.type),
     };
 
     this.simulateMessage(response);
   }
 
-  private generateMockResult(type: string) {
+  private generateMockResult(type: string): any {
     switch (type) {
-      case 'bpm':
+      case "bpm":
         return {
           bpm: 128,
           confidence: 0.85,
           beatGrid: [0.5, 1.0, 1.5, 2.0, 2.5],
           downbeats: [0.5, 2.5],
           phase: 0.25,
-          timeSignature: [4, 4]
+          timeSignature: [4, 4],
         };
 
-      case 'key':
+      case "key":
         return {
-          key: 'C',
-          scale: 'major',
+          key: "C",
+          scale: "major",
           confidence: 0.8,
           chroma: new Float32Array(12).fill(0.1),
-          keyStrength: 0.8
+          keyStrength: 0.8,
         };
 
-      case 'spectral':
+      case "spectral":
         return {
           energy: 0.6,
           centroid: 2000,
@@ -101,60 +108,60 @@ class MockWorker {
           flatness: 0.3,
           flux: 0.2,
           rms: 0.4,
-          zcr: 0.1
+          zcr: 0.1,
         };
 
-      case 'onsets':
+      case "onsets":
         return {
           onsets: [0.1, 0.5, 1.0, 1.5],
           strength: [0.8, 0.9, 0.7, 0.8],
           novelty: new Float32Array(100).fill(0.3),
-          peaks: [0.5, 1.0, 1.5]
+          peaks: [0.5, 1.0, 1.5],
         };
 
-      case 'beatphase':
+      case "beatphase":
         return {
           phase: 0.3,
           nextBeatTime: 1.2,
           beatInterval: 0.46875,
-          confidence: 0.9
+          confidence: 0.9,
         };
 
-      case 'analyze':
+      case "analyze":
         return {
-          bpm: this.generateMockResult('bpm'),
-          key: this.generateMockResult('key'),
-          spectral: this.generateMockResult('spectral'),
-          onsets: this.generateMockResult('onsets'),
+          bpm: this.generateMockResult("bpm"),
+          key: this.generateMockResult("key"),
+          spectral: this.generateMockResult("spectral"),
+          onsets: this.generateMockResult("onsets"),
           harmonic: {
             harmonicChangeRate: 0.2,
             inharmonicity: 0.1,
             oddToEvenRatio: 1.2,
-            tristimulus: [0.4, 0.3, 0.3]
+            tristimulus: [0.4, 0.3, 0.3],
           },
           phrases: {
             phrases: [
-              { start: 0, end: 8, length: 8, type: 'verse' },
-              { start: 8, end: 16, length: 8, type: 'chorus' }
+              { start: 0, end: 8, length: 8, type: "verse" },
+              { start: 8, end: 16, length: 8, type: "chorus" },
             ],
-            structure: ['verse', 'chorus']
+            structure: ["verse", "chorus"],
           },
           mixing: {
-            compatibleKeys: ['C major', 'G major', 'A minor'],
+            compatibleKeys: ["C major", "G major", "A minor"],
             bpmRange: [120, 136],
             energyMatch: 0.6,
             harmonyScore: 0.7,
-            transitionPoints: [8, 16, 32]
+            transitionPoints: [8, 16, 32],
           },
           duration: 30,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
 
-      case 'realtime':
+      case "realtime":
         return {
-          bpm: this.generateMockResult('bpm'),
-          spectral: this.generateMockResult('spectral'),
-          timestamp: Date.now()
+          bpm: this.generateMockResult("bpm"),
+          spectral: this.generateMockResult("spectral"),
+          timestamp: Date.now(),
         };
 
       default:
@@ -168,25 +175,28 @@ global.Worker = MockWorker as any;
 
 // Mock URL constructor for worker
 (global as any).URL = class MockURL {
-  constructor(public href: string, public base?: string) {
+  constructor(
+    public href: string,
+    public base?: string,
+  ) {
     this.href = href;
   }
 
-  static createObjectURL = jest.fn(() => 'blob:mock-url');
+  static createObjectURL = jest.fn(() => "blob:mock-url");
   static revokeObjectURL = jest.fn();
 };
 
 // Mock import.meta for ES modules
-Object.defineProperty(globalThis, 'import', {
+Object.defineProperty(globalThis, "import", {
   value: {
     meta: {
-      url: 'file:///test'
-    }
+      url: "file:///test",
+    },
   },
-  configurable: true
+  configurable: true,
 });
 
-describe('MusicAnalyzerClient', () => {
+describe("MusicAnalyzerClient", () => {
   let client: MusicAnalyzerClient;
   let testAudioBuffer: Float32Array;
 
@@ -194,13 +204,13 @@ describe('MusicAnalyzerClient', () => {
     // Create test audio buffer
     testAudioBuffer = new Float32Array(44100); // 1 second
     for (let i = 0; i < testAudioBuffer.length; i++) {
-      testAudioBuffer[i] = Math.sin(2 * Math.PI * 440 * i / 44100) * 0.5;
+      testAudioBuffer[i] = Math.sin((2 * Math.PI * 440 * i) / 44100) * 0.5;
     }
 
     client = new MusicAnalyzerClient();
 
     // Wait for worker initialization
-    await new Promise(resolve => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
   });
 
   afterEach(() => {
@@ -209,8 +219,8 @@ describe('MusicAnalyzerClient', () => {
     }
   });
 
-  describe('Initialization', () => {
-    it('should initialize worker successfully', () => {
+  describe("Initialization", () => {
+    it("should initialize worker successfully", () => {
       expect(client).toBeDefined();
 
       const status = client.getStatus();
@@ -218,12 +228,14 @@ describe('MusicAnalyzerClient', () => {
       expect(status.queueSize).toBe(0);
     });
 
-    it('should handle worker initialization errors', () => {
+    it("should handle worker initialization errors", () => {
       const errorClient = new MusicAnalyzerClient();
 
       // Simulate worker error during initialization
       setTimeout(() => {
-        (errorClient as any).worker?.simulateError('Worker initialization failed');
+        (errorClient as any).worker?.simulateError(
+          "Worker initialization failed",
+        );
       }, 5);
 
       // Should not throw, but worker should be marked as not initialized
@@ -231,8 +243,8 @@ describe('MusicAnalyzerClient', () => {
     });
   });
 
-  describe('BPM Analysis', () => {
-    it('should extract BPM from audio', async () => {
+  describe("BPM Analysis", () => {
+    it("should extract BPM from audio", async () => {
       const result = await client.extractBPM(testAudioBuffer);
 
       expect(result).toBeDefined();
@@ -244,38 +256,40 @@ describe('MusicAnalyzerClient', () => {
       expect(result.timeSignature).toEqual([4, 4]);
     });
 
-    it('should handle different sample rates', async () => {
+    it("should handle different sample rates", async () => {
       const result = await client.extractBPM(testAudioBuffer, 48000);
 
       expect(result).toBeDefined();
       expect(result.bpm).toBeGreaterThan(0);
     });
 
-    it('should track analysis statistics', async () => {
+    it("should track analysis statistics", async () => {
       const initialStats = client.getStatus().stats;
 
       await client.extractBPM(testAudioBuffer);
 
       const finalStats = client.getStatus().stats;
       expect(finalStats.totalRequests).toBe(initialStats.totalRequests + 1);
-      expect(finalStats.successfulRequests).toBe(initialStats.successfulRequests + 1);
+      expect(finalStats.successfulRequests).toBe(
+        initialStats.successfulRequests + 1,
+      );
       expect(finalStats.averageProcessingTime).toBeGreaterThan(0);
     });
   });
 
-  describe('Key Detection', () => {
-    it('should detect musical key', async () => {
+  describe("Key Detection", () => {
+    it("should detect musical key", async () => {
       const result = await client.detectKey(testAudioBuffer);
 
       expect(result).toBeDefined();
-      expect(result.key).toBe('C');
-      expect(result.scale).toBe('major');
+      expect(result.key).toBe("C");
+      expect(result.scale).toBe("major");
       expect(result.confidence).toBe(0.8);
       expect(result.chroma).toBeInstanceOf(Float32Array);
       expect(result.chroma.length).toBe(12);
     });
 
-    it('should provide key strength', async () => {
+    it("should provide key strength", async () => {
       const result = await client.detectKey(testAudioBuffer);
 
       expect(result.keyStrength).toBeGreaterThanOrEqual(0);
@@ -283,8 +297,8 @@ describe('MusicAnalyzerClient', () => {
     });
   });
 
-  describe('Spectral Analysis', () => {
-    it('should calculate spectral features', async () => {
+  describe("Spectral Analysis", () => {
+    it("should calculate spectral features", async () => {
       const result = await client.getSpectralFeatures(testAudioBuffer);
 
       expect(result).toBeDefined();
@@ -298,7 +312,7 @@ describe('MusicAnalyzerClient', () => {
       expect(result.zcr).toBe(0.1);
     });
 
-    it('should validate spectral feature ranges', async () => {
+    it("should validate spectral feature ranges", async () => {
       const result = await client.getSpectralFeatures(testAudioBuffer);
 
       expect(result.energy).toBeGreaterThanOrEqual(0);
@@ -309,8 +323,8 @@ describe('MusicAnalyzerClient', () => {
     });
   });
 
-  describe('Onset Detection', () => {
-    it('should detect onsets', async () => {
+  describe("Onset Detection", () => {
+    it("should detect onsets", async () => {
       const result = await client.detectOnsets(testAudioBuffer);
 
       expect(result).toBeDefined();
@@ -322,18 +336,18 @@ describe('MusicAnalyzerClient', () => {
       expect(result.peaks).toBeInstanceOf(Array);
     });
 
-    it('should provide onset strengths', async () => {
+    it("should provide onset strengths", async () => {
       const result = await client.detectOnsets(testAudioBuffer);
 
-      result.strength.forEach(strength => {
+      result.strength.forEach((strength) => {
         expect(strength).toBeGreaterThanOrEqual(0);
         expect(strength).toBeLessThanOrEqual(1);
       });
     });
   });
 
-  describe('Beat Phase Tracking', () => {
-    it('should get beat phase', async () => {
+  describe("Beat Phase Tracking", () => {
+    it("should get beat phase", async () => {
       const currentTime = 1.5;
       const result = await client.getBeatPhase(testAudioBuffer, currentTime);
 
@@ -344,7 +358,7 @@ describe('MusicAnalyzerClient', () => {
       expect(result.confidence).toBe(0.9);
     });
 
-    it('should validate beat phase values', async () => {
+    it("should validate beat phase values", async () => {
       const result = await client.getBeatPhase(testAudioBuffer, 1.0);
 
       expect(result.phase).toBeGreaterThanOrEqual(0);
@@ -355,8 +369,8 @@ describe('MusicAnalyzerClient', () => {
     });
   });
 
-  describe('Complete Track Analysis', () => {
-    it('should analyze complete track', async () => {
+  describe("Complete Track Analysis", () => {
+    it("should analyze complete track", async () => {
       const result = await client.analyzeTrack(testAudioBuffer);
 
       expect(result).toBeDefined();
@@ -371,11 +385,11 @@ describe('MusicAnalyzerClient', () => {
       expect(result.timestamp).toBeGreaterThan(0);
     });
 
-    it('should respect analysis options', async () => {
+    it("should respect analysis options", async () => {
       const options = {
         minBPM: 100,
         maxBPM: 140,
-        enablePhraseDetection: false
+        enablePhraseDetection: false,
       };
 
       const result = await client.analyzeTrack(testAudioBuffer, 44100, options);
@@ -385,10 +399,10 @@ describe('MusicAnalyzerClient', () => {
       expect(result.bpm).toBeDefined();
     });
 
-    it('should provide mixing suggestions', async () => {
+    it("should provide mixing suggestions", async () => {
       const result = await client.analyzeTrack(testAudioBuffer);
 
-      expect(result.mixing.compatibleKeys).toContain('C major');
+      expect(result.mixing.compatibleKeys).toContain("C major");
       expect(result.mixing.bpmRange).toEqual([120, 136]);
       expect(result.mixing.energyMatch).toBe(0.6);
       expect(result.mixing.harmonyScore).toBe(0.7);
@@ -396,8 +410,8 @@ describe('MusicAnalyzerClient', () => {
     });
   });
 
-  describe('Real-time Analysis', () => {
-    it('should perform real-time analysis', async () => {
+  describe("Real-time Analysis", () => {
+    it("should perform real-time analysis", async () => {
       const result = await client.analyzeRealTime(testAudioBuffer);
 
       expect(result).toBeDefined();
@@ -412,7 +426,7 @@ describe('MusicAnalyzerClient', () => {
       expect(result.phrases).toBeUndefined();
     });
 
-    it('should be faster than full analysis', async () => {
+    it("should be faster than full analysis", async () => {
       const startReal = performance.now();
       await client.analyzeRealTime(testAudioBuffer);
       const realTimeTime = performance.now() - startReal;
@@ -426,38 +440,50 @@ describe('MusicAnalyzerClient', () => {
     });
   });
 
-  describe('Static Utility Methods', () => {
-    it('should check key compatibility', () => {
-      expect(MusicAnalyzerClient.isCompatibleKey('C major', 'G major')).toBe(true);
-      expect(MusicAnalyzerClient.isCompatibleKey('A minor', 'C major')).toBe(true);
-      expect(MusicAnalyzerClient.isCompatibleKey('C major', 'F# major')).toBe(false);
+  describe("Static Utility Methods", () => {
+    it("should check key compatibility", () => {
+      expect(MusicAnalyzerClient.isCompatibleKey("C major", "G major")).toBe(
+        true,
+      );
+      expect(MusicAnalyzerClient.isCompatibleKey("A minor", "C major")).toBe(
+        true,
+      );
+      expect(MusicAnalyzerClient.isCompatibleKey("C major", "F# major")).toBe(
+        false,
+      );
     });
 
-    it('should calculate BPM match percentage', () => {
+    it("should calculate BPM match percentage", () => {
       expect(MusicAnalyzerClient.getBPMMatchPercentage(120, 120)).toBe(1);
-      expect(MusicAnalyzerClient.getBPMMatchPercentage(120, 126)).toBeCloseTo(0.95, 2);
-      expect(MusicAnalyzerClient.getBPMMatchPercentage(120, 140)).toBeCloseTo(0.857, 2);
+      expect(MusicAnalyzerClient.getBPMMatchPercentage(120, 126)).toBeCloseTo(
+        0.95,
+        2,
+      );
+      expect(MusicAnalyzerClient.getBPMMatchPercentage(120, 140)).toBeCloseTo(
+        0.857,
+        2,
+      );
     });
 
-    it('should get compatible BPM range', () => {
+    it("should get compatible BPM range", () => {
       const [min, max] = MusicAnalyzerClient.getCompatibleBPMRange(120);
 
       expect(min).toBeCloseTo(112.8, 1); // 120 - 6%
       expect(max).toBeCloseTo(127.2, 1); // 120 + 6%
     });
 
-    it('should handle edge cases in BPM matching', () => {
+    it("should handle edge cases in BPM matching", () => {
       expect(MusicAnalyzerClient.getBPMMatchPercentage(0, 120)).toBe(0);
       expect(MusicAnalyzerClient.getBPMMatchPercentage(120, 0)).toBe(0);
     });
   });
 
-  describe('Request Management', () => {
-    it('should handle concurrent requests', async () => {
+  describe("Request Management", () => {
+    it("should handle concurrent requests", async () => {
       const promises = [
         client.extractBPM(testAudioBuffer),
         client.detectKey(testAudioBuffer),
-        client.getSpectralFeatures(testAudioBuffer)
+        client.getSpectralFeatures(testAudioBuffer),
       ];
 
       const results = await Promise.all(promises);
@@ -468,7 +494,7 @@ describe('MusicAnalyzerClient', () => {
       expect(results[2]).toBeDefined(); // Spectral result
     });
 
-    it('should track queue size', async () => {
+    it("should track queue size", async () => {
       // Start multiple requests
       const promise1 = client.extractBPM(testAudioBuffer);
       const promise2 = client.detectKey(testAudioBuffer);
@@ -485,21 +511,21 @@ describe('MusicAnalyzerClient', () => {
       expect(finalStatus.queueSize).toBe(0);
     });
 
-    it('should handle request timeout', async () => {
+    it("should handle request timeout", async () => {
       // Create client with mock that doesn't respond
       const timeoutClient = new MusicAnalyzerClient();
 
       // Mock worker that never responds
       (timeoutClient as any).worker.postMessage = jest.fn();
 
-      await expect(
-        timeoutClient.extractBPM(testAudioBuffer)
-      ).rejects.toThrow('Request timeout');
+      await expect(timeoutClient.extractBPM(testAudioBuffer)).rejects.toThrow(
+        "Request timeout",
+      );
 
       timeoutClient.destroy();
     });
 
-    it('should cancel pending requests', async () => {
+    it("should cancel pending requests", async () => {
       // Start requests
       const promise1 = client.extractBPM(testAudioBuffer);
       const promise2 = client.detectKey(testAudioBuffer);
@@ -507,13 +533,13 @@ describe('MusicAnalyzerClient', () => {
       // Cancel all requests
       client.cancelAll();
 
-      await expect(promise1).rejects.toThrow('Request cancelled');
-      await expect(promise2).rejects.toThrow('Request cancelled');
+      await expect(promise1).rejects.toThrow("Request cancelled");
+      await expect(promise2).rejects.toThrow("Request cancelled");
     });
   });
 
-  describe('Performance Monitoring', () => {
-    it('should track processing times', async () => {
+  describe("Performance Monitoring", () => {
+    it("should track processing times", async () => {
       await client.extractBPM(testAudioBuffer);
       await client.detectKey(testAudioBuffer);
 
@@ -526,24 +552,26 @@ describe('MusicAnalyzerClient', () => {
       expect(stats.lastAnalysisTime).toBeGreaterThan(0);
     });
 
-    it('should handle analysis failures', async () => {
+    it("should handle analysis failures", async () => {
       // Mock worker error
       const mockWorker = (client as any).worker;
       const originalPostMessage = mockWorker.postMessage.bind(mockWorker);
 
-      mockWorker.postMessage = function(data: any) {
+      mockWorker.postMessage = function (data: any) {
         setTimeout(() => {
           this.simulateMessage({
             id: data.id,
             type: data.type,
             success: false,
-            error: 'Analysis failed',
-            timestamp: Date.now()
+            error: "Analysis failed",
+            timestamp: Date.now(),
           });
         }, 10);
       };
 
-      await expect(client.extractBPM(testAudioBuffer)).rejects.toThrow('Analysis failed');
+      await expect(client.extractBPM(testAudioBuffer)).rejects.toThrow(
+        "Analysis failed",
+      );
 
       const stats = client.getStatus().stats;
       expect(stats.failedRequests).toBe(1);
@@ -552,7 +580,7 @@ describe('MusicAnalyzerClient', () => {
       mockWorker.postMessage = originalPostMessage;
     });
 
-    it('should clear statistics', async () => {
+    it("should clear statistics", async () => {
       await client.extractBPM(testAudioBuffer);
 
       let stats = client.getStatus().stats;
@@ -568,45 +596,43 @@ describe('MusicAnalyzerClient', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle worker errors', async () => {
+  describe("Error Handling", () => {
+    it("should handle worker errors", async () => {
       const mockWorker = (client as any).worker;
 
       // Simulate worker error
       setTimeout(() => {
-        mockWorker.simulateError('Worker crashed');
+        mockWorker.simulateError("Worker crashed");
       }, 10);
 
       // Subsequent requests should be handled gracefully
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Client should attempt to recover
       expect(() => client.getStatus()).not.toThrow();
     });
 
-    it('should handle malformed worker responses', async () => {
+    it("should handle malformed worker responses", async () => {
       const mockWorker = (client as any).worker;
 
       // Mock malformed response
       const originalPostMessage = mockWorker.postMessage.bind(mockWorker);
-      mockWorker.postMessage = function(data: any) {
+      mockWorker.postMessage = function (data: any) {
         setTimeout(() => {
           this.simulateMessage({
-            id: 'wrong-id',
-            invalid: 'response'
+            id: "wrong-id",
+            invalid: "response",
           });
         }, 10);
       };
 
       // Should handle gracefully (request will timeout)
-      await expect(
-        client.extractBPM(testAudioBuffer)
-      ).rejects.toThrow();
+      await expect(client.extractBPM(testAudioBuffer)).rejects.toThrow();
 
       mockWorker.postMessage = originalPostMessage;
     });
 
-    it('should validate input parameters', async () => {
+    it("should validate input parameters", async () => {
       const emptyBuffer = new Float32Array(0);
 
       // Should not throw, but pass empty buffer to worker
@@ -614,10 +640,10 @@ describe('MusicAnalyzerClient', () => {
     });
   });
 
-  describe('Resource Management', () => {
-    it('should destroy worker properly', () => {
+  describe("Resource Management", () => {
+    it("should destroy worker properly", () => {
       const mockWorker = (client as any).worker;
-      const terminateSpy = jest.spyOn(mockWorker, 'terminate');
+      const terminateSpy = jest.spyOn(mockWorker, "terminate");
 
       client.destroy();
 
@@ -626,19 +652,17 @@ describe('MusicAnalyzerClient', () => {
       expect((client as any).isInitialized).toBe(false);
     });
 
-    it('should handle multiple destroy calls', () => {
+    it("should handle multiple destroy calls", () => {
       client.destroy();
 
       expect(() => client.destroy()).not.toThrow();
     });
 
-    it('should prevent operations after destroy', async () => {
+    it("should prevent operations after destroy", async () => {
       client.destroy();
 
       // Should throw or handle gracefully after destroy
-      await expect(
-        client.extractBPM(testAudioBuffer)
-      ).rejects.toThrow();
+      await expect(client.extractBPM(testAudioBuffer)).rejects.toThrow();
     });
   });
 });

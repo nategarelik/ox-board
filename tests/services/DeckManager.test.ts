@@ -1,7 +1,7 @@
-import { DeckManager } from '../../app/services/DeckManager';
-import { AudioService } from '../../app/services/AudioService';
+import { DeckManager } from "@/services/DeckManager";
+import { AudioService } from "@/services/AudioService";
 
-describe('DeckManager', () => {
+describe("DeckManager", () => {
   let deckManager: DeckManager;
   let audioService: AudioService;
 
@@ -19,28 +19,28 @@ describe('DeckManager', () => {
     audioService.cleanup();
   });
 
-  describe('getInstance', () => {
-    it('should return singleton instance', () => {
+  describe("getInstance", () => {
+    it("should return singleton instance", () => {
       const instance1 = DeckManager.getInstance();
       const instance2 = DeckManager.getInstance();
       expect(instance1).toBe(instance2);
     });
 
-    it('should create instance when AudioService is initialized', () => {
+    it("should create instance when AudioService is initialized", () => {
       expect(deckManager).toBeDefined();
       expect(deckManager).toBeInstanceOf(DeckManager);
     });
   });
 
-  describe('deck operations', () => {
-    it('should have two decks initialized', () => {
+  describe("deck operations", () => {
+    it("should have two decks initialized", () => {
       const decks = deckManager.getDecks();
       expect(decks).toHaveLength(2);
       expect(decks[0].id).toBe(1);
       expect(decks[1].id).toBe(2);
     });
 
-    it('should get deck by id', () => {
+    it("should get deck by id", () => {
       const deck1 = deckManager.getDeck(1);
       const deck2 = deckManager.getDeck(2);
 
@@ -50,18 +50,18 @@ describe('DeckManager', () => {
       expect(deck2?.id).toBe(2);
     });
 
-    it('should return undefined for invalid deck id', () => {
+    it("should return undefined for invalid deck id", () => {
       const deck = deckManager.getDeck(99);
       expect(deck).toBeUndefined();
     });
 
-    it('should set deck volume', () => {
+    it("should set deck volume", () => {
       deckManager.setDeckVolume(1, 0.7);
       const deck = deckManager.getDeck(1);
       expect(deck?.volume).toBe(0.7);
     });
 
-    it('should clamp deck volume between 0 and 1', () => {
+    it("should clamp deck volume between 0 and 1", () => {
       deckManager.setDeckVolume(1, -0.5);
       const deck1 = deckManager.getDeck(1);
       expect(deck1?.volume).toBe(0);
@@ -71,7 +71,7 @@ describe('DeckManager', () => {
       expect(deck2?.volume).toBe(1);
     });
 
-    it('should toggle play state', () => {
+    it("should toggle play state", () => {
       const deck = deckManager.getDeck(1);
       const initialState = deck?.isPlaying || false;
 
@@ -83,14 +83,14 @@ describe('DeckManager', () => {
     });
   });
 
-  describe('cue points', () => {
-    it('should add cue point to deck', () => {
+  describe("cue points", () => {
+    it("should add cue point to deck", () => {
       deckManager.addCuePoint(1, 10.5);
       const deck = deckManager.getDeck(1);
       expect(deck?.cuePoints).toContain(10.5);
     });
 
-    it('should handle multiple cue points', () => {
+    it("should handle multiple cue points", () => {
       deckManager.addCuePoint(1, 10);
       deckManager.addCuePoint(1, 20);
       deckManager.addCuePoint(1, 30);
@@ -100,8 +100,8 @@ describe('DeckManager', () => {
     });
   });
 
-  describe('loop controls', () => {
-    it('should set loop start and end', () => {
+  describe("loop controls", () => {
+    it("should set loop start and end", () => {
       deckManager.setLoop(1, 5, 10);
       const deck = deckManager.getDeck(1);
 
@@ -109,7 +109,7 @@ describe('DeckManager', () => {
       expect(deck?.loopEnd).toBe(10);
     });
 
-    it('should clear loop', () => {
+    it("should clear loop", () => {
       deckManager.setLoop(1, 5, 10);
       deckManager.clearLoop(1);
 
@@ -119,14 +119,14 @@ describe('DeckManager', () => {
     });
   });
 
-  describe('playback rate', () => {
-    it('should set playback rate', () => {
+  describe("playback rate", () => {
+    it("should set playback rate", () => {
       deckManager.setPlaybackRate(1, 1.2);
       const deck = deckManager.getDeck(1);
       expect(deck?.playbackRate).toBe(1.2);
     });
 
-    it('should clamp playback rate between 0.5 and 2', () => {
+    it("should clamp playback rate between 0.5 and 2", () => {
       deckManager.setPlaybackRate(1, 0.3);
       const deck1 = deckManager.getDeck(1);
       expect(deck1?.playbackRate).toBe(0.5);

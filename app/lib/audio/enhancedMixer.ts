@@ -1,7 +1,7 @@
 import * as Tone from "tone";
-import { StemPlayer, StemPlayerConfig } from './stemPlayer';
-import { DemucsOutput, StemType, StemLoadResult } from './demucsProcessor';
-import { Crossfader } from './crossfader';
+import { StemPlayer, StemPlayerConfig } from "./stemPlayer";
+import { DemucsOutput, StemType, StemLoadResult } from "./demucsProcessor";
+import { Crossfader } from "./crossfader";
 
 export interface ChannelEQ {
   low: number;
@@ -49,7 +49,7 @@ interface Channel {
 export interface StemMixerConfig {
   stemPlayerConfig?: Partial<StemPlayerConfig>;
   autoStemDetection?: boolean;
-  stemMixMode?: 'separate' | 'combined';
+  stemMixMode?: "separate" | "combined";
 }
 
 export class EnhancedAudioMixer {
@@ -70,13 +70,13 @@ export class EnhancedAudioMixer {
   constructor(stemMixerConfig: StemMixerConfig = {}) {
     this.stemMixerConfig = {
       autoStemDetection: true,
-      stemMixMode: 'separate',
-      ...stemMixerConfig
+      stemMixMode: "separate",
+      ...stemMixerConfig,
     };
 
     this.crossfaderConfig = {
       position: 0.5,
-      curve: "linear"
+      curve: "linear",
     };
 
     this.masterConfig = {
@@ -87,7 +87,7 @@ export class EnhancedAudioMixer {
       compressorRatio: 4,
       compressorThreshold: -24,
       compressorAttack: 0.003,
-      compressorRelease: 0.25
+      compressorRelease: 0.25,
     };
 
     // Defer node initialization until user interaction
@@ -104,12 +104,12 @@ export class EnhancedAudioMixer {
           mid: 0,
           high: 0,
           lowFrequency: 320,
-          highFrequency: 3200
+          highFrequency: 3200,
         }),
         filter: new Tone.Filter({
           frequency: 1000,
           type: "lowpass",
-          Q: 1
+          Q: 1,
         }),
         cueGain: new Tone.Gain(0),
         channelOut: new Tone.Gain(1),
@@ -120,8 +120,8 @@ export class EnhancedAudioMixer {
           filterFreq: 1000,
           filterResonance: 1,
           cueEnable: false,
-          stemPlayerEnabled: false
-        }
+          stemPlayerEnabled: false,
+        },
       };
 
       // Connect channel signal chain
@@ -164,8 +164,9 @@ export class EnhancedAudioMixer {
 
     try {
       // Ensure we're in a user gesture context
-      if (Tone.context.state === 'suspended') {
-        await Tone.context.resume();
+      const context = Tone.getContext();
+      if (context.rawContext.state === "suspended") {
+        await context.resume();
       }
 
       // Start Tone.js audio context
@@ -181,8 +182,10 @@ export class EnhancedAudioMixer {
       // Initialize stem players for enabled channels
       await this.initializeStemPlayers();
     } catch (error) {
-      console.error('Failed to initialize audio:', error);
-      throw new Error('Audio initialization requires user interaction. Please click "Start DJ Session" to begin.');
+      console.error("Failed to initialize audio:", error);
+      throw new Error(
+        'Audio initialization requires user interaction. Please click "Start DJ Session" to begin.',
+      );
     }
   }
 
@@ -194,7 +197,7 @@ export class EnhancedAudioMixer {
       ratio: this.masterConfig.compressorRatio,
       threshold: this.masterConfig.compressorThreshold,
       attack: this.masterConfig.compressorAttack,
-      release: this.masterConfig.compressorRelease
+      release: this.masterConfig.compressorRelease,
     });
     this.masterOut = new Tone.Gain(1);
     this.cueOut = new Tone.Gain(1);
@@ -228,9 +231,11 @@ export class EnhancedAudioMixer {
 
       // Set up event listeners
       this.setupStemPlayerEvents(channel, ch.stemPlayer);
-
     } catch (error) {
-      console.error(`Failed to enable stem player for channel ${channel}:`, error);
+      console.error(
+        `Failed to enable stem player for channel ${channel}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -249,27 +254,32 @@ export class EnhancedAudioMixer {
 
       // Update config
       ch.config.stemPlayerEnabled = false;
-
     } catch (error) {
-      console.error(`Failed to disable stem player for channel ${channel}:`, error);
+      console.error(
+        `Failed to disable stem player for channel ${channel}:`,
+        error,
+      );
     }
   }
 
   private setupStemPlayerEvents(channel: number, stemPlayer: StemPlayer): void {
-    stemPlayer.on('error', (data: any) => {
+    stemPlayer.on("error", (data: any) => {
       console.error(`StemPlayer error on channel ${channel}:`, data);
     });
 
-    stemPlayer.on('stemsLoaded', (data: any) => {
+    stemPlayer.on("stemsLoaded", (data: any) => {
       console.log(`Stems loaded on channel ${channel}:`, data);
     });
 
-    stemPlayer.on('playStateChanged', (data: any) => {
+    stemPlayer.on("playStateChanged", (data: any) => {
       console.log(`Playback state changed on channel ${channel}:`, data);
     });
   }
 
-  async loadStemsToChannel(channel: number, demucsOutput: DemucsOutput): Promise<StemLoadResult[]> {
+  async loadStemsToChannel(
+    channel: number,
+    demucsOutput: DemucsOutput,
+  ): Promise<StemLoadResult[]> {
     if (channel < 0 || channel >= 4) {
       throw new Error(`Invalid channel: ${channel}`);
     }
@@ -280,19 +290,23 @@ export class EnhancedAudioMixer {
     }
 
     if (!ch.stemPlayer) {
-      throw new Error(`Failed to initialize stem player for channel ${channel}`);
+      throw new Error(
+        `Failed to initialize stem player for channel ${channel}`,
+      );
     }
 
     try {
       const results = await ch.stemPlayer.loadStems(demucsOutput);
-      const failedLoads = results.filter(r => !r.success);
+      const failedLoads = results.filter((r) => !r.success);
 
       if (failedLoads.length > 0) {
-        console.warn(`Some stems failed to load on channel ${channel}:`, failedLoads);
+        console.warn(
+          `Some stems failed to load on channel ${channel}:`,
+          failedLoads,
+        );
       }
 
       return results;
-
     } catch (error) {
       console.error(`Failed to load stems to channel ${channel}:`, error);
       throw error;
@@ -300,42 +314,67 @@ export class EnhancedAudioMixer {
   }
 
   // Stem Control Methods
-  setStemVolume(channel: number, stemType: StemType | 'original', volume: number): void {
+  setStemVolume(
+    channel: number,
+    stemType: StemType | "original",
+    volume: number,
+  ): void {
     const ch = this.channels[channel];
     if (!ch?.stemPlayer) return;
 
     ch.stemPlayer.setStemVolume(stemType, volume);
   }
 
-  setStemMute(channel: number, stemType: StemType | 'original', muted: boolean): void {
+  setStemMute(
+    channel: number,
+    stemType: StemType | "original",
+    muted: boolean,
+  ): void {
     const ch = this.channels[channel];
     if (!ch?.stemPlayer) return;
 
     ch.stemPlayer.setStemMute(stemType, muted);
   }
 
-  setStemSolo(channel: number, stemType: StemType | 'original', soloed: boolean): void {
+  setStemSolo(
+    channel: number,
+    stemType: StemType | "original",
+    soloed: boolean,
+  ): void {
     const ch = this.channels[channel];
     if (!ch?.stemPlayer) return;
 
     ch.stemPlayer.setStemSolo(stemType, soloed);
   }
 
-  setStemPan(channel: number, stemType: StemType | 'original', pan: number): void {
+  setStemPan(
+    channel: number,
+    stemType: StemType | "original",
+    pan: number,
+  ): void {
     const ch = this.channels[channel];
     if (!ch?.stemPlayer) return;
 
     ch.stemPlayer.setStemPan(stemType, pan);
   }
 
-  setStemEQ(channel: number, stemType: StemType | 'original', band: 'low' | 'mid' | 'high', value: number): void {
+  setStemEQ(
+    channel: number,
+    stemType: StemType | "original",
+    band: "low" | "mid" | "high",
+    value: number,
+  ): void {
     const ch = this.channels[channel];
     if (!ch?.stemPlayer) return;
 
     ch.stemPlayer.setStemEQ(stemType, band, value);
   }
 
-  setStemPlaybackRate(channel: number, stemType: StemType | 'original', rate: number): void {
+  setStemPlaybackRate(
+    channel: number,
+    stemType: StemType | "original",
+    rate: number,
+  ): void {
     const ch = this.channels[channel];
     if (!ch?.stemPlayer) return;
 
@@ -388,7 +427,7 @@ export class EnhancedAudioMixer {
     return ch.stemPlayer.getState();
   }
 
-  getStemControls(channel: number, stemType: StemType | 'original') {
+  getStemControls(channel: number, stemType: StemType | "original") {
     const ch = this.channels[channel];
     if (!ch?.stemPlayer) return null;
 
@@ -404,7 +443,9 @@ export class EnhancedAudioMixer {
     return ch?.stemPlayer?.areStemsLoaded() || false;
   }
 
-  getStemPlayerSyncStatus(channel: number): 'synced' | 'drifting' | 'error' | null {
+  getStemPlayerSyncStatus(
+    channel: number,
+  ): "synced" | "drifting" | "error" | null {
     const ch = this.channels[channel];
     return ch?.stemPlayer?.getSyncStatus() || null;
   }
@@ -425,19 +466,24 @@ export class EnhancedAudioMixer {
     this.channels[channel].config.eq[band] = dbValue;
 
     switch (band) {
-      case 'low':
+      case "low":
         this.channels[channel].eq3.low.value = dbValue;
         break;
-      case 'mid':
+      case "mid":
         this.channels[channel].eq3.mid.value = dbValue;
         break;
-      case 'high':
+      case "high":
         this.channels[channel].eq3.high.value = dbValue;
         break;
     }
   }
 
-  setChannelFilter(channel: number, type: ChannelConfig['filterType'], freq?: number, resonance?: number): void {
+  setChannelFilter(
+    channel: number,
+    type: ChannelConfig["filterType"],
+    freq?: number,
+    resonance?: number,
+  ): void {
     if (channel < 0 || channel >= 4) return;
 
     const ch = this.channels[channel];
@@ -490,7 +536,6 @@ export class EnhancedAudioMixer {
     return (x - 0.1) / 0.8;
   }
 
-
   setMasterGain(gain: number): void {
     const value = Math.max(0, Math.min(1, gain));
     this.masterConfig.gain = value;
@@ -501,7 +546,10 @@ export class EnhancedAudioMixer {
     this.masterConfig.limiterEnabled = enabled;
 
     if (threshold !== undefined) {
-      this.masterConfig.limiterThreshold = Math.max(-30, Math.min(0, threshold));
+      this.masterConfig.limiterThreshold = Math.max(
+        -30,
+        Math.min(0, threshold),
+      );
       this.masterLimiter.threshold.value = this.masterConfig.limiterThreshold;
     }
   }
@@ -511,7 +559,7 @@ export class EnhancedAudioMixer {
     ratio?: number,
     threshold?: number,
     attack?: number,
-    release?: number
+    release?: number,
   ): void {
     this.masterConfig.compressorEnabled = enabled;
 
@@ -521,8 +569,12 @@ export class EnhancedAudioMixer {
     }
 
     if (threshold !== undefined) {
-      this.masterConfig.compressorThreshold = Math.max(-60, Math.min(0, threshold));
-      this.masterCompressor.threshold.value = this.masterConfig.compressorThreshold;
+      this.masterConfig.compressorThreshold = Math.max(
+        -60,
+        Math.min(0, threshold),
+      );
+      this.masterCompressor.threshold.value =
+        this.masterConfig.compressorThreshold;
     }
 
     if (attack !== undefined) {
@@ -594,10 +646,10 @@ export class EnhancedAudioMixer {
     // Reset all channels
     for (let i = 0; i < 4; i++) {
       this.setChannelGain(i, 0.75);
-      this.setChannelEQ(i, 'low', 0);
-      this.setChannelEQ(i, 'mid', 0);
-      this.setChannelEQ(i, 'high', 0);
-      this.setChannelFilter(i, 'off');
+      this.setChannelEQ(i, "low", 0);
+      this.setChannelEQ(i, "mid", 0);
+      this.setChannelEQ(i, "high", 0);
+      this.setChannelFilter(i, "off");
       this.setCueChannel(i, false);
 
       // Reset stem players
@@ -608,7 +660,7 @@ export class EnhancedAudioMixer {
 
     // Reset crossfader
     this.setCrossfaderPosition(0.5);
-    this.setCrossfaderCurve('linear');
+    this.setCrossfaderCurve("linear");
 
     // Reset master
     this.setMasterGain(0.8);
@@ -625,7 +677,7 @@ export class EnhancedAudioMixer {
       position: this.crossfaderConfig.position,
       curve: this.crossfaderConfig.curve as any,
       cutLag: 0,
-      hamsterMode: false
+      hamsterMode: false,
     });
 
     // Disconnect old crossfader
@@ -659,7 +711,9 @@ export class EnhancedAudioMixer {
     this.useCustomCrossfader = false;
   }
 
-  setCrossfaderCurve(curve: 'linear' | 'logarithmic' | 'exponential' | 'scratch' | 'smooth'): void {
+  setCrossfaderCurve(
+    curve: "linear" | "logarithmic" | "exponential" | "scratch" | "smooth",
+  ): void {
     if (this.customCrossfader) {
       this.customCrossfader.setCurve(curve);
     }
@@ -677,7 +731,7 @@ export class EnhancedAudioMixer {
     }
   }
 
-  crossfaderCut(deck: 'A' | 'B', duration: number = 0): void {
+  crossfaderCut(deck: "A" | "B", duration: number = 0): void {
     if (this.customCrossfader) {
       this.customCrossfader.cut(deck, duration);
     }
@@ -693,7 +747,7 @@ export class EnhancedAudioMixer {
     if (this.customCrossfader) {
       return {
         gainA: this.customCrossfader.getGainA(),
-        gainB: this.customCrossfader.getGainB()
+        gainB: this.customCrossfader.getGainB(),
       };
     }
     return { gainA: 0.5, gainB: 0.5 };
@@ -708,7 +762,7 @@ export class EnhancedAudioMixer {
     });
 
     // Disconnect and dispose all nodes
-    this.channels.forEach(channel => {
+    this.channels.forEach((channel) => {
       channel.input.dispose();
       channel.gain.dispose();
       channel.eq3.dispose();
@@ -733,4 +787,4 @@ export class EnhancedAudioMixer {
 }
 
 // Re-export the original AudioMixer for backward compatibility
-export { AudioMixer } from './mixer';
+export { AudioMixer } from "./mixer";

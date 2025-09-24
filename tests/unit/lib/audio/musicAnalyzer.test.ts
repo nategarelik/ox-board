@@ -11,8 +11,15 @@
  * - Real-time analysis
  */
 
-import { describe, beforeEach, afterEach, it, expect, jest } from '@jest/globals';
-import { MusicAnalyzer } from '../musicAnalyzer';
+import {
+  describe,
+  beforeEach,
+  afterEach,
+  it,
+  expect,
+  jest,
+} from "@jest/globals";
+import { MusicAnalyzer } from "@/lib/audio/musicAnalyzer";
 
 // Mock Essentia.js
 const mockEssentia = {
@@ -43,21 +50,50 @@ const mockEssentia = {
   Tristimulus: jest.fn(),
   Windowing: jest.fn(),
   FrameCutter: jest.fn(),
-  EqualLoudness: jest.fn()
+  EqualLoudness: jest.fn(),
+  equalLoudness: jest.fn((input) => input), // Return the input as-is
+  beatTracker: jest.fn(() => [0.5, 1.0, 1.5, 2.0, 2.5]),
+  bpmHistogram: jest.fn(() => ({ bpmPeaks: [120], bpmAmplitudes: [0.9] })),
+  beatTrackerDegara: jest.fn(() => [0.5, 1.0, 1.5, 2.0, 2.5]),
+  // Add algorithms property for MusicAnalyzer to access
+  algorithms: {
+    equalLoudness: jest.fn((input) => input),
+    beatTracker: jest.fn(() => [0.5, 1.0, 1.5, 2.0, 2.5]),
+    bpmHistogram: jest.fn(() => ({ bpmPeaks: [120], bpmAmplitudes: [0.9] })),
+    keyExtractor: jest.fn(() => ({ key: "C", scale: "major", strength: 0.9 })),
+    spectrum: jest.fn(() => new Float32Array(512)),
+    spectralCentroid: jest.fn(() => 2000),
+    rollOff: jest.fn(() => 5000),
+    bandwidth: jest.fn(() => 1500),
+    flatness: jest.fn(() => 0.5),
+    flux: jest.fn(() => 0.1),
+    energy: jest.fn(() => 0.7),
+    rms: jest.fn(() => 0.3),
+    zcr: jest.fn(() => 0.05),
+    harmonicPeaks: jest.fn(() => ({
+      frequencies: [440, 880],
+      magnitudes: [0.8, 0.4],
+    })),
+    inharmonicity: jest.fn(() => 0.05),
+    oddToEvenHarmonicEnergyRatio: jest.fn(() => 0.6),
+    tristimulus: jest.fn(() => [0.3, 0.4, 0.3]),
+  },
 };
 
 const mockEssentiaWASM = {
-  init: jest.fn().mockResolvedValue(undefined),
-  delete: jest.fn()
+  init: jest.fn().mockResolvedValue(undefined) as jest.MockedFunction<
+    () => Promise<void>
+  >,
+  delete: jest.fn(),
 };
 
 // Mock the entire module
-jest.mock('essentia.js', () => ({
+jest.mock("essentia.js", () => ({
   Essentia: jest.fn(() => mockEssentia),
-  EssentiaWASM: jest.fn(() => mockEssentiaWASM)
+  EssentiaWASM: jest.fn(() => mockEssentiaWASM),
 }));
 
-describe('MusicAnalyzer', () => {
+describe("MusicAnalyzer", () => {
   let analyzer: MusicAnalyzer;
   let testAudioBuffer: Float32Array;
 
@@ -72,7 +108,8 @@ describe('MusicAnalyzer', () => {
     testAudioBuffer = new Float32Array(sampleRate * duration);
 
     for (let i = 0; i < testAudioBuffer.length; i++) {
-      testAudioBuffer[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate) * 0.5;
+      testAudioBuffer[i] =
+        Math.sin((2 * Math.PI * frequency * i) / sampleRate) * 0.5;
     }
 
     analyzer = new MusicAnalyzer();
@@ -85,13 +122,13 @@ describe('MusicAnalyzer', () => {
     }
   });
 
-  describe('Initialization', () => {
-    it('should initialize Essentia.js successfully', async () => {
+  describe("Initialization", () => {
+    it("should initialize Essentia.js successfully", async () => {
       expect(mockEssentiaWASM.init).toHaveBeenCalled();
       expect(analyzer).toBeDefined();
     });
 
-    it('should wait for initialization before analysis', async () => {
+    it("should wait for initialization before analysis", async () => {
       const newAnalyzer = new MusicAnalyzer();
 
       // Should not throw when waiting
@@ -100,38 +137,40 @@ describe('MusicAnalyzer', () => {
       newAnalyzer.destroy();
     });
 
-    it('should handle initialization timeout', async () => {
+    it("should handle initialization timeout", async () => {
       const slowAnalyzer = new MusicAnalyzer();
 
       // Mock slow initialization
-      mockEssentiaWASM.init.mockImplementation(() =>
-        new Promise(resolve => setTimeout(resolve, 15000))
+      mockEssentiaWASM.init.mockImplementation(
+        () => new Promise((resolve) => setTimeout(resolve, 15000)),
       );
 
-      await expect(slowAnalyzer.waitForInitialization()).rejects.toThrow('timeout');
+      await expect(slowAnalyzer.waitForInitialization()).rejects.toThrow(
+        "timeout",
+      );
 
       slowAnalyzer.destroy();
     });
   });
 
-  describe('BPM Detection', () => {
+  describe("BPM Detection", () => {
     beforeEach(() => {
       // Mock BPM detection results
       mockEssentia.EqualLoudness.mockReturnValue(testAudioBuffer);
       mockEssentia.BeatsLoudness.mockReturnValue({
         beats: [0.5, 1.0, 1.5, 2.0, 2.5], // 120 BPM
-        loudness: [0.8, 0.9, 0.8, 0.9, 0.8]
+        loudness: [0.8, 0.9, 0.8, 0.9, 0.8],
       });
       mockEssentia.BpmHistogram.mockReturnValue({
         bpmPeaks: [120, 60, 240],
-        bpmAmplitudes: [0.9, 0.3, 0.2]
+        bpmAmplitudes: [0.9, 0.3, 0.2],
       });
       mockEssentia.BeatTrackerDegara.mockReturnValue({
-        beats: [0.5, 1.0, 1.5, 2.0, 2.5]
+        beats: [0.5, 1.0, 1.5, 2.0, 2.5],
       });
     });
 
-    it('should extract BPM accurately', async () => {
+    it("should extract BPM accurately", async () => {
       const result = await analyzer.extractBPM(testAudioBuffer);
 
       expect(result.bpm).toBeCloseTo(120, 1);
@@ -142,11 +181,11 @@ describe('MusicAnalyzer', () => {
       expect(result.timeSignature).toEqual([4, 4]);
     });
 
-    it('should handle BPM in valid range', async () => {
+    it("should handle BPM in valid range", async () => {
       // Test with different BPM values
       mockEssentia.BpmHistogram.mockReturnValue({
         bpmPeaks: [80, 160, 240],
-        bpmAmplitudes: [0.9, 0.5, 0.3]
+        bpmAmplitudes: [0.9, 0.5, 0.3],
       });
 
       const result = await analyzer.extractBPM(testAudioBuffer);
@@ -155,34 +194,34 @@ describe('MusicAnalyzer', () => {
       expect(result.bpm).toBeLessThanOrEqual(200);
     });
 
-    it('should provide confidence scores', async () => {
+    it("should provide confidence scores", async () => {
       const result = await analyzer.extractBPM(testAudioBuffer);
 
       expect(result.confidence).toBeGreaterThanOrEqual(0);
       expect(result.confidence).toBeLessThanOrEqual(1);
     });
 
-    it('should generate beat grid and downbeats', async () => {
+    it("should generate beat grid and downbeats", async () => {
       const result = await analyzer.extractBPM(testAudioBuffer);
 
       expect(result.beatGrid).toBeInstanceOf(Array);
       expect(result.downbeats).toBeInstanceOf(Array);
 
       // Downbeats should be subset of beat grid
-      result.downbeats.forEach(downbeat => {
-        const nearestBeat = result.beatGrid.find(beat =>
-          Math.abs(beat - downbeat) < 0.1
+      result.downbeats.forEach((downbeat) => {
+        const nearestBeat = result.beatGrid.find(
+          (beat) => Math.abs(beat - downbeat) < 0.1,
         );
         expect(nearestBeat).toBeDefined();
       });
     });
 
-    it('should handle empty audio gracefully', async () => {
+    it("should handle empty audio gracefully", async () => {
       const emptyBuffer = new Float32Array(1024);
 
       mockEssentia.BpmHistogram.mockReturnValue({
         bpmPeaks: [],
-        bpmAmplitudes: []
+        bpmAmplitudes: [],
       });
 
       const result = await analyzer.extractBPM(emptyBuffer);
@@ -192,37 +231,52 @@ describe('MusicAnalyzer', () => {
     });
   });
 
-  describe('Key Detection', () => {
+  describe("Key Detection", () => {
     beforeEach(() => {
       // Mock key detection results
       mockEssentia.KeyExtractor.mockReturnValue({
-        key: 'A',
-        scale: 'minor',
-        strength: 0.85
+        key: "A",
+        scale: "minor",
+        strength: 0.85,
       });
       mockEssentia.ChromaExtractor.mockReturnValue({
-        chroma: new Float32Array([0.1, 0.2, 0.3, 0.8, 0.4, 0.2, 0.1, 0.3, 0.2, 0.9, 0.3, 0.2])
+        chroma: new Float32Array([
+          0.1, 0.2, 0.3, 0.8, 0.4, 0.2, 0.1, 0.3, 0.2, 0.9, 0.3, 0.2,
+        ]),
       });
     });
 
-    it('should detect musical key accurately', async () => {
+    it("should detect musical key accurately", async () => {
       const result = await analyzer.detectKey(testAudioBuffer);
 
-      expect(result.key).toBe('A');
-      expect(result.scale).toBe('minor');
+      expect(result.key).toBe("A");
+      expect(result.scale).toBe("minor");
       expect(result.confidence).toBeCloseTo(0.85, 2);
       expect(result.chroma).toBeInstanceOf(Float32Array);
       expect(result.chroma.length).toBe(12);
     });
 
-    it('should handle all 12 chromatic keys', async () => {
-      const keys = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    it("should handle all 12 chromatic keys", async () => {
+      const keys = [
+        "C",
+        "C#",
+        "D",
+        "D#",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "G#",
+        "A",
+        "A#",
+        "B",
+      ];
 
       for (const key of keys) {
         mockEssentia.KeyExtractor.mockReturnValue({
           key,
-          scale: 'major',
-          strength: 0.8
+          scale: "major",
+          strength: 0.8,
         });
 
         const result = await analyzer.detectKey(testAudioBuffer);
@@ -230,29 +284,29 @@ describe('MusicAnalyzer', () => {
       }
     });
 
-    it('should detect both major and minor scales', async () => {
+    it("should detect both major and minor scales", async () => {
       // Test minor scale
       mockEssentia.KeyExtractor.mockReturnValue({
-        key: 'D',
-        scale: 'minor',
-        strength: 0.8
+        key: "D",
+        scale: "minor",
+        strength: 0.8,
       });
 
       const minorResult = await analyzer.detectKey(testAudioBuffer);
-      expect(minorResult.scale).toBe('minor');
+      expect(minorResult.scale).toBe("minor");
 
       // Test major scale
       mockEssentia.KeyExtractor.mockReturnValue({
-        key: 'C',
-        scale: 'major',
-        strength: 0.8
+        key: "C",
+        scale: "major",
+        strength: 0.8,
       });
 
       const majorResult = await analyzer.detectKey(testAudioBuffer);
-      expect(majorResult.scale).toBe('major');
+      expect(majorResult.scale).toBe("major");
     });
 
-    it('should provide key strength values', async () => {
+    it("should provide key strength values", async () => {
       const result = await analyzer.detectKey(testAudioBuffer);
 
       expect(result.keyStrength).toBeGreaterThanOrEqual(0);
@@ -260,7 +314,7 @@ describe('MusicAnalyzer', () => {
     });
   });
 
-  describe('Spectral Features', () => {
+  describe("Spectral Features", () => {
     beforeEach(() => {
       // Mock spectral analysis
       mockEssentia.Windowing.mockReturnValue(testAudioBuffer);
@@ -275,7 +329,7 @@ describe('MusicAnalyzer', () => {
       mockEssentia.ZeroCrossingRate.mockReturnValue(0.1);
     });
 
-    it('should calculate spectral features', async () => {
+    it("should calculate spectral features", async () => {
       const result = await analyzer.getSpectralFeatures(testAudioBuffer);
 
       expect(result.energy).toBeCloseTo(0.5, 1);
@@ -288,7 +342,7 @@ describe('MusicAnalyzer', () => {
       expect(result.zcr).toBeCloseTo(0.1, 1);
     });
 
-    it('should handle different frame sizes', async () => {
+    it("should handle different frame sizes", async () => {
       // Test with smaller audio buffer
       const smallBuffer = new Float32Array(512);
       smallBuffer.fill(0.1);
@@ -296,11 +350,11 @@ describe('MusicAnalyzer', () => {
       const result = await analyzer.getSpectralFeatures(smallBuffer);
 
       expect(result).toBeDefined();
-      expect(typeof result.energy).toBe('number');
-      expect(typeof result.centroid).toBe('number');
+      expect(typeof result.energy).toBe("number");
+      expect(typeof result.centroid).toBe("number");
     });
 
-    it('should validate spectral feature ranges', async () => {
+    it("should validate spectral feature ranges", async () => {
       const result = await analyzer.getSpectralFeatures(testAudioBuffer);
 
       // Energy should be positive
@@ -320,23 +374,23 @@ describe('MusicAnalyzer', () => {
     });
   });
 
-  describe('Onset Detection', () => {
+  describe("Onset Detection", () => {
     beforeEach(() => {
       // Mock onset detection
       mockEssentia.OnsetDetection.mockReturnValue({
         onsets: [0.1, 0.5, 1.0, 1.5, 2.0],
-        strengths: [0.8, 0.9, 0.7, 0.8, 0.6]
+        strengths: [0.8, 0.9, 0.7, 0.8, 0.6],
       });
       mockEssentia.OnsetDetectionGlobal.mockReturnValue({
         onsets: [0.15, 0.55, 1.05],
-        strengths: [0.7, 0.8, 0.6]
+        strengths: [0.7, 0.8, 0.6],
       });
       mockEssentia.NoveltyCurve.mockReturnValue(
-        new Float32Array(100).map((_, i) => Math.sin(i * 0.1) * 0.5 + 0.5)
+        new Float32Array(100).map((_, i) => Math.sin(i * 0.1) * 0.5 + 0.5),
       );
     });
 
-    it('should detect onsets accurately', async () => {
+    it("should detect onsets accurately", async () => {
       const result = await analyzer.detectOnsets(testAudioBuffer);
 
       expect(result.onsets).toBeInstanceOf(Array);
@@ -347,16 +401,16 @@ describe('MusicAnalyzer', () => {
       expect(result.peaks).toBeInstanceOf(Array);
     });
 
-    it('should provide onset strengths', async () => {
+    it("should provide onset strengths", async () => {
       const result = await analyzer.detectOnsets(testAudioBuffer);
 
-      result.strength.forEach(strength => {
+      result.strength.forEach((strength) => {
         expect(strength).toBeGreaterThanOrEqual(0);
         expect(strength).toBeLessThanOrEqual(1);
       });
     });
 
-    it('should sort onsets chronologically', async () => {
+    it("should sort onsets chronologically", async () => {
       const result = await analyzer.detectOnsets(testAudioBuffer);
 
       for (let i = 1; i < result.onsets.length; i++) {
@@ -364,46 +418,52 @@ describe('MusicAnalyzer', () => {
       }
     });
 
-    it('should remove duplicate onsets', async () => {
+    it("should remove duplicate onsets", async () => {
       // Mock with duplicate onsets
       mockEssentia.OnsetDetection.mockReturnValue({
         onsets: [0.5, 0.5, 1.0, 1.0],
-        strengths: [0.8, 0.7, 0.9, 0.6]
+        strengths: [0.8, 0.7, 0.9, 0.6],
       });
 
       const result = await analyzer.detectOnsets(testAudioBuffer);
 
       // Should keep only unique onsets (within precision)
-      const uniqueOnsets = new Set(result.onsets.map(o => Math.round(o * 1000)));
+      const uniqueOnsets = new Set(
+        result.onsets.map((o) => Math.round(o * 1000)),
+      );
       expect(uniqueOnsets.size).toBeLessThanOrEqual(result.onsets.length);
     });
   });
 
-  describe('Complete Track Analysis', () => {
+  describe("Complete Track Analysis", () => {
     beforeEach(() => {
       // Mock all analysis components
       mockEssentia.EqualLoudness.mockReturnValue(testAudioBuffer);
       mockEssentia.BpmHistogram.mockReturnValue({
-        bpmPeaks: [128], bpmAmplitudes: [0.9]
+        bpmPeaks: [128],
+        bpmAmplitudes: [0.9],
       });
       mockEssentia.BeatsLoudness.mockReturnValue({
-        beats: [0.5, 1.0, 1.5, 2.0]
+        beats: [0.5, 1.0, 1.5, 2.0],
       });
       mockEssentia.KeyExtractor.mockReturnValue({
-        key: 'G', scale: 'major', strength: 0.8
+        key: "G",
+        scale: "major",
+        strength: 0.8,
       });
       mockEssentia.ChromaExtractor.mockReturnValue({
-        chroma: new Float32Array(12).fill(0.1)
+        chroma: new Float32Array(12).fill(0.1),
       });
       mockEssentia.Windowing.mockReturnValue(testAudioBuffer);
       mockEssentia.Spectrum.mockReturnValue(new Float32Array(1024).fill(0.1));
       mockEssentia.Energy.mockReturnValue(0.6);
       mockEssentia.OnsetDetection.mockReturnValue({
-        onsets: [0.5, 1.0, 1.5], strengths: [0.8, 0.9, 0.7]
+        onsets: [0.5, 1.0, 1.5],
+        strengths: [0.8, 0.9, 0.7],
       });
     });
 
-    it('should perform complete track analysis', async () => {
+    it("should perform complete track analysis", async () => {
       const result = await analyzer.analyzeTrack(testAudioBuffer);
 
       expect(result).toBeDefined();
@@ -418,7 +478,7 @@ describe('MusicAnalyzer', () => {
       expect(result.timestamp).toBeGreaterThan(0);
     });
 
-    it('should generate mixing suggestions', async () => {
+    it("should generate mixing suggestions", async () => {
       const result = await analyzer.analyzeTrack(testAudioBuffer);
 
       expect(result.mixing.compatibleKeys).toBeInstanceOf(Array);
@@ -429,12 +489,12 @@ describe('MusicAnalyzer', () => {
       expect(result.mixing.transitionPoints).toBeInstanceOf(Array);
     });
 
-    it('should respect analysis options', async () => {
+    it("should respect analysis options", async () => {
       const options = {
         minBPM: 100,
         maxBPM: 140,
         enablePhraseDetection: false,
-        enableHarmonicAnalysis: false
+        enableHarmonicAnalysis: false,
       };
 
       const result = await analyzer.analyzeTrack(testAudioBuffer, options);
@@ -444,26 +504,27 @@ describe('MusicAnalyzer', () => {
       expect(result.harmonic.inharmonicity).toBe(0);
     });
 
-    it('should handle analysis errors gracefully', async () => {
+    it("should handle analysis errors gracefully", async () => {
       // Mock error in BPM detection
       mockEssentia.BpmHistogram.mockImplementation(() => {
-        throw new Error('BPM detection failed');
+        throw new Error("BPM detection failed");
       });
 
       await expect(analyzer.analyzeTrack(testAudioBuffer)).rejects.toThrow();
     });
   });
 
-  describe('Real-time Analysis', () => {
+  describe("Real-time Analysis", () => {
     beforeEach(() => {
       // Mock real-time analysis components
       mockEssentia.BpmHistogram.mockReturnValue({
-        bpmPeaks: [125], bpmAmplitudes: [0.8]
+        bpmPeaks: [125],
+        bpmAmplitudes: [0.8],
       });
       mockEssentia.Energy.mockReturnValue(0.7);
     });
 
-    it('should perform real-time analysis', async () => {
+    it("should perform real-time analysis", async () => {
       const result = await analyzer.analyzeRealTime(testAudioBuffer);
 
       expect(result.bpm).toBeDefined();
@@ -477,7 +538,7 @@ describe('MusicAnalyzer', () => {
       expect(result.phrases).toBeUndefined();
     });
 
-    it('should be faster than full analysis', async () => {
+    it("should be faster than full analysis", async () => {
       const startTime = performance.now();
       await analyzer.analyzeRealTime(testAudioBuffer);
       const realTimeTime = performance.now() - startTime;
@@ -491,18 +552,18 @@ describe('MusicAnalyzer', () => {
     });
   });
 
-  describe('Beat Phase Tracking', () => {
+  describe("Beat Phase Tracking", () => {
     beforeEach(() => {
       // Set up beat tracker state
       (analyzer as any).beatTracker = {
         lastBeat: 0.5,
         beatInterval: 0.46875, // 128 BPM
         phase: 0,
-        confidence: 0.9
+        confidence: 0.9,
       };
     });
 
-    it('should calculate beat phase accurately', () => {
+    it("should calculate beat phase accurately", () => {
       const currentTime = 1.0;
       const phase = analyzer.getBeatPhase(currentTime);
 
@@ -510,14 +571,14 @@ describe('MusicAnalyzer', () => {
       expect(phase).toBeLessThanOrEqual(1);
     });
 
-    it('should predict next beat time', () => {
+    it("should predict next beat time", () => {
       const currentTime = 1.0;
       const nextBeatTime = analyzer.getNextBeatTime(currentTime);
 
       expect(nextBeatTime).toBeGreaterThan(currentTime);
     });
 
-    it('should handle zero beat interval', () => {
+    it("should handle zero beat interval", () => {
       (analyzer as any).beatTracker.beatInterval = 0;
 
       const phase = analyzer.getBeatPhase(1.0);
@@ -528,38 +589,58 @@ describe('MusicAnalyzer', () => {
     });
   });
 
-  describe('Key Compatibility', () => {
-    it('should identify compatible keys', () => {
+  describe("Key Compatibility", () => {
+    it("should identify compatible keys", () => {
       // Test Camelot wheel compatibility
-      expect(analyzer.isCompatibleKey('C major', 'G major')).toBe(true);
-      expect(analyzer.isCompatibleKey('A minor', 'C major')).toBe(true);
-      expect(analyzer.isCompatibleKey('C major', 'F# major')).toBe(false);
+      expect(analyzer.isCompatibleKey("C major", "G major")).toBe(true);
+      expect(analyzer.isCompatibleKey("A minor", "C major")).toBe(true);
+      expect(analyzer.isCompatibleKey("C major", "F# major")).toBe(false);
     });
 
-    it('should handle invalid keys', () => {
-      expect(analyzer.isCompatibleKey('Invalid', 'C major')).toBe(false);
-      expect(analyzer.isCompatibleKey('C major', 'Invalid')).toBe(false);
+    it("should handle invalid keys", () => {
+      expect(analyzer.isCompatibleKey("Invalid", "C major")).toBe(false);
+      expect(analyzer.isCompatibleKey("C major", "Invalid")).toBe(false);
     });
 
-    it('should validate all Camelot wheel positions', () => {
+    it("should validate all Camelot wheel positions", () => {
       const validKeys = [
-        'C major', 'G major', 'D major', 'A major', 'E major', 'B major',
-        'F# major', 'C# major', 'G# major', 'D# major', 'A# major', 'F major',
-        'A minor', 'E minor', 'B minor', 'F# minor', 'C# minor', 'G# minor',
-        'D# minor', 'A# minor', 'F minor', 'C minor', 'G minor', 'D minor'
+        "C major",
+        "G major",
+        "D major",
+        "A major",
+        "E major",
+        "B major",
+        "F# major",
+        "C# major",
+        "G# major",
+        "D# major",
+        "A# major",
+        "F major",
+        "A minor",
+        "E minor",
+        "B minor",
+        "F# minor",
+        "C# minor",
+        "G# minor",
+        "D# minor",
+        "A# minor",
+        "F minor",
+        "C minor",
+        "G minor",
+        "D minor",
       ];
 
-      validKeys.forEach(key1 => {
-        validKeys.forEach(key2 => {
+      validKeys.forEach((key1) => {
+        validKeys.forEach((key2) => {
           const compatible = analyzer.isCompatibleKey(key1, key2);
-          expect(typeof compatible).toBe('boolean');
+          expect(typeof compatible).toBe("boolean");
         });
       });
     });
   });
 
-  describe('Performance Requirements', () => {
-    it('should analyze 30-second preview in under 100ms', async () => {
+  describe("Performance Requirements", () => {
+    it("should analyze 30-second preview in under 100ms", async () => {
       // Create 30-second buffer
       const longBuffer = new Float32Array(44100 * 30);
       longBuffer.fill(0.1);
@@ -571,7 +652,7 @@ describe('MusicAnalyzer', () => {
       expect(analysisTime).toBeLessThan(100);
     });
 
-    it('should complete full track analysis in under 500ms', async () => {
+    it("should complete full track analysis in under 500ms", async () => {
       const startTime = performance.now();
       await analyzer.analyzeTrack(testAudioBuffer);
       const analysisTime = performance.now() - startTime;
@@ -579,7 +660,7 @@ describe('MusicAnalyzer', () => {
       expect(analysisTime).toBeLessThan(500);
     });
 
-    it('should handle memory efficiently', () => {
+    it("should handle memory efficiently", () => {
       // Check that analyzer doesn't leak memory
       const initialMemory = process.memoryUsage().heapUsed;
 
@@ -596,17 +677,19 @@ describe('MusicAnalyzer', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle Essentia initialization failure', async () => {
-      mockEssentiaWASM.init.mockRejectedValue(new Error('WASM init failed'));
+  describe("Error Handling", () => {
+    it("should handle Essentia initialization failure", async () => {
+      (mockEssentiaWASM.init as jest.MockedFunction<any>).mockRejectedValue(
+        new Error("WASM init failed"),
+      );
 
       const failingAnalyzer = new MusicAnalyzer();
       await expect(failingAnalyzer.waitForInitialization()).rejects.toThrow();
     });
 
-    it('should provide fallback values on analysis failure', async () => {
+    it("should provide fallback values on analysis failure", async () => {
       mockEssentia.BpmHistogram.mockImplementation(() => {
-        throw new Error('BPM analysis failed');
+        throw new Error("BPM analysis failed");
       });
 
       const result = await analyzer.extractBPM(testAudioBuffer);
@@ -615,20 +698,22 @@ describe('MusicAnalyzer', () => {
       expect(result.confidence).toBe(0);
     });
 
-    it('should handle empty or invalid audio data', async () => {
+    it("should handle empty or invalid audio data", async () => {
       const emptyBuffer = new Float32Array(0);
 
       await expect(analyzer.extractBPM(emptyBuffer)).resolves.toBeDefined();
       await expect(analyzer.detectKey(emptyBuffer)).resolves.toBeDefined();
-      await expect(analyzer.getSpectralFeatures(emptyBuffer)).resolves.toBeDefined();
+      await expect(
+        analyzer.getSpectralFeatures(emptyBuffer),
+      ).resolves.toBeDefined();
     });
   });
 
-  describe('Resource Management', () => {
-    it('should reset internal state', () => {
+  describe("Resource Management", () => {
+    it("should reset internal state", () => {
       // Add some history
       (analyzer as any).bpmHistory = [120, 125, 128];
-      (analyzer as any).keyHistory = ['C major', 'G major'];
+      (analyzer as any).keyHistory = ["C major", "G major"];
 
       analyzer.reset();
 
@@ -636,7 +721,7 @@ describe('MusicAnalyzer', () => {
       expect((analyzer as any).keyHistory).toEqual([]);
     });
 
-    it('should cleanup resources on destroy', () => {
+    it("should cleanup resources on destroy", () => {
       analyzer.destroy();
 
       expect(mockEssentiaWASM.delete).toHaveBeenCalled();

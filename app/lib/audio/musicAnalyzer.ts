@@ -11,7 +11,7 @@
  * - Energy level analysis
  */
 
-import type { Essentia, EssentiaWASM } from 'essentia.js';
+import type { Essentia, EssentiaWASM } from "essentia.js";
 
 export interface BPMAnalysis {
   bpm: number;
@@ -24,7 +24,7 @@ export interface BPMAnalysis {
 
 export interface KeyAnalysis {
   key: string;
-  scale: 'major' | 'minor';
+  scale: "major" | "minor";
   confidence: number;
   chroma: Float32Array;
   keyStrength: number;
@@ -60,7 +60,7 @@ export interface PhraseAnalysis {
     start: number;
     end: number;
     length: number;
-    type: '8bar' | '16bar' | '32bar' | 'verse' | 'chorus' | 'bridge';
+    type: "8bar" | "16bar" | "32bar" | "verse" | "chorus" | "bridge";
   }>;
   structure: string[];
 }
@@ -95,14 +95,45 @@ export interface AnalysisOptions {
   enableHarmonicAnalysis?: boolean;
 }
 
-const CHROMATIC_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const CHROMATIC_NOTES = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+];
 const CAMELOT_WHEEL = {
-  'C major': '8B', 'G major': '9B', 'D major': '10B', 'A major': '11B',
-  'E major': '12B', 'B major': '1B', 'F# major': '2B', 'C# major': '3B',
-  'G# major': '4B', 'D# major': '5B', 'A# major': '6B', 'F major': '7B',
-  'A minor': '8A', 'E minor': '9A', 'B minor': '10A', 'F# minor': '11A',
-  'C# minor': '12A', 'G# minor': '1A', 'D# minor': '2A', 'A# minor': '3A',
-  'F minor': '4A', 'C minor': '5A', 'G minor': '6A', 'D minor': '7A'
+  "C major": "8B",
+  "G major": "9B",
+  "D major": "10B",
+  "A major": "11B",
+  "E major": "12B",
+  "B major": "1B",
+  "F# major": "2B",
+  "C# major": "3B",
+  "G# major": "4B",
+  "D# major": "5B",
+  "A# major": "6B",
+  "F major": "7B",
+  "A minor": "8A",
+  "E minor": "9A",
+  "B minor": "10A",
+  "F# minor": "11A",
+  "C# minor": "12A",
+  "G# minor": "1A",
+  "D# minor": "2A",
+  "A# minor": "3A",
+  "F minor": "4A",
+  "C minor": "5A",
+  "G minor": "6A",
+  "D minor": "7A",
 };
 
 export class MusicAnalyzer {
@@ -130,7 +161,7 @@ export class MusicAnalyzer {
     lastBeat: 0,
     beatInterval: 0,
     phase: 0,
-    confidence: 0
+    confidence: 0,
   };
 
   constructor() {
@@ -154,10 +185,10 @@ export class MusicAnalyzer {
       this.initializeAlgorithms();
 
       this.isInitialized = true;
-      console.log('Essentia.js initialized successfully');
+      console.log("Essentia.js initialized successfully");
     } catch (error) {
-      console.error('Failed to initialize Essentia.js:', error);
-      throw new Error('Essentia.js initialization failed');
+      console.error("Failed to initialize Essentia.js:", error);
+      throw new Error("Essentia.js initialization failed");
     }
   }
 
@@ -168,7 +199,8 @@ export class MusicAnalyzer {
     this.algorithms.beatTracker = this.essentia.BeatsLoudness;
     this.algorithms.bpmHistogram = this.essentia.BpmHistogram;
     this.algorithms.beatTrackerDegara = this.essentia.BeatTrackerDegara;
-    this.algorithms.beatTrackerMultiFeature = this.essentia.BeatTrackerMultiFeature;
+    this.algorithms.beatTrackerMultiFeature =
+      this.essentia.BeatTrackerMultiFeature;
     this.algorithms.noveltyCurve = this.essentia.NoveltyCurve;
     this.algorithms.onsetDetection = this.essentia.OnsetDetection;
     this.algorithms.onsetDetectionGlobal = this.essentia.OnsetDetectionGlobal;
@@ -194,7 +226,8 @@ export class MusicAnalyzer {
     // Harmonic analysis
     this.algorithms.harmonicPeaks = this.essentia.HarmonicPeaks;
     this.algorithms.inharmonicity = this.essentia.Inharmonicity;
-    this.algorithms.oddToEvenHarmonicEnergyRatio = this.essentia.OddToEvenHarmonicEnergyRatio;
+    this.algorithms.oddToEvenHarmonicEnergyRatio =
+      this.essentia.OddToEvenHarmonicEnergyRatio;
     this.algorithms.tristimulus = this.essentia.Tristimulus;
 
     // Audio processing
@@ -217,7 +250,7 @@ export class MusicAnalyzer {
       // Timeout after 10 seconds
       setTimeout(() => {
         clearInterval(checkInterval);
-        reject(new Error('Essentia.js initialization timeout'));
+        reject(new Error("Essentia.js initialization timeout"));
       }, 10000);
     });
   }
@@ -259,7 +292,8 @@ export class MusicAnalyzer {
         this.bpmHistory.shift();
       }
 
-      const smoothedBPM = this.bpmHistory.reduce((a, b) => a + b) / this.bpmHistory.length;
+      const smoothedBPM =
+        this.bpmHistory.reduce((a, b) => a + b) / this.bpmHistory.length;
 
       // Generate beat grid
       const beatInterval = 60 / smoothedBPM;
@@ -295,17 +329,17 @@ export class MusicAnalyzer {
         beatGrid,
         downbeats,
         phase: this.beatTracker.phase,
-        timeSignature: [4, 4] // Assume 4/4 for now
+        timeSignature: [4, 4], // Assume 4/4 for now
       };
     } catch (error) {
-      console.error('BPM extraction failed:', error);
+      console.error("BPM extraction failed:", error);
       return {
         bpm: 120,
         confidence: 0,
         beatGrid: [],
         downbeats: [],
         phase: 0,
-        timeSignature: [4, 4]
+        timeSignature: [4, 4],
       };
     }
   }
@@ -333,44 +367,48 @@ export class MusicAnalyzer {
 
       // Find most common key in recent history
       const keyCount: { [key: string]: number } = {};
-      this.keyHistory.forEach(key => {
+      this.keyHistory.forEach((key) => {
         keyCount[key] = (keyCount[key] || 0) + 1;
       });
 
       const mostCommonKey = Object.keys(keyCount).reduce((a, b) =>
-        keyCount[a] > keyCount[b] ? a : b
+        keyCount[a] > keyCount[b] ? a : b,
       );
 
-      const [finalKey, finalScale] = mostCommonKey.split(' ');
+      const [finalKey, finalScale] = mostCommonKey.split(" ");
 
       return {
         key: finalKey,
-        scale: finalScale as 'major' | 'minor',
+        scale: finalScale as "major" | "minor",
         confidence: strength,
         chroma: chromaResult.chroma,
-        keyStrength: strength
+        keyStrength: strength,
       };
     } catch (error) {
-      console.error('Key detection failed:', error);
+      console.error("Key detection failed:", error);
       return {
-        key: 'C',
-        scale: 'major',
+        key: "C",
+        scale: "major",
         confidence: 0,
         chroma: new Float32Array(12),
-        keyStrength: 0
+        keyStrength: 0,
       };
     }
   }
 
-  public async analyzeBeatGrid(audioBuffer: Float32Array): Promise<{ beatPositions: number[]; downbeats: number[] }> {
+  public async analyzeBeatGrid(
+    audioBuffer: Float32Array,
+  ): Promise<{ beatPositions: number[]; downbeats: number[] }> {
     const bpmAnalysis = await this.extractBPM(audioBuffer);
     return {
       beatPositions: bpmAnalysis.beatGrid,
-      downbeats: bpmAnalysis.downbeats
+      downbeats: bpmAnalysis.downbeats,
     };
   }
 
-  public async getSpectralFeatures(audioBuffer: Float32Array): Promise<SpectralFeatures> {
+  public async getSpectralFeatures(
+    audioBuffer: Float32Array,
+  ): Promise<SpectralFeatures> {
     await this.waitForInitialization();
 
     try {
@@ -429,12 +467,12 @@ export class MusicAnalyzer {
 
           validFrames++;
         } catch (frameError) {
-          console.warn('Frame analysis failed:', frameError);
+          console.warn("Frame analysis failed:", frameError);
         }
       }
 
       if (validFrames === 0) {
-        throw new Error('No valid frames for spectral analysis');
+        throw new Error("No valid frames for spectral analysis");
       }
 
       return {
@@ -445,10 +483,10 @@ export class MusicAnalyzer {
         flatness: totalFlatness / validFrames,
         flux: totalFlux / validFrames,
         rms: totalRMS / validFrames,
-        zcr: totalZCR / validFrames
+        zcr: totalZCR / validFrames,
       };
     } catch (error) {
-      console.error('Spectral analysis failed:', error);
+      console.error("Spectral analysis failed:", error);
       return {
         energy: 0,
         centroid: 0,
@@ -457,12 +495,14 @@ export class MusicAnalyzer {
         flatness: 0,
         flux: 0,
         rms: 0,
-        zcr: 0
+        zcr: 0,
       };
     }
   }
 
-  public async detectOnsets(audioBuffer: Float32Array): Promise<OnsetDetection> {
+  public async detectOnsets(
+    audioBuffer: Float32Array,
+  ): Promise<OnsetDetection> {
     await this.waitForInitialization();
 
     try {
@@ -471,7 +511,9 @@ export class MusicAnalyzer {
       const onsetsGlobal = this.algorithms.onsetDetectionGlobal(audioBuffer);
 
       // Generate novelty curve for visualization
-      const novelty = this.algorithms.noveltyCurve ? this.algorithms.noveltyCurve(audioBuffer) : new Float32Array(0);
+      const novelty = this.algorithms.noveltyCurve
+        ? this.algorithms.noveltyCurve(audioBuffer)
+        : new Float32Array(0);
 
       // Combine onset detection results
       const allOnsets = [...onsets.onsets, ...onsetsGlobal.onsets];
@@ -483,24 +525,34 @@ export class MusicAnalyzer {
         const roundedOnset = Math.round(onset * 1000) / 1000; // Round to ms precision
         const strength = allStrengths[i] || 0;
 
-        if (!onsetMap.has(roundedOnset) || onsetMap.get(roundedOnset)! < strength) {
+        if (
+          !onsetMap.has(roundedOnset) ||
+          onsetMap.get(roundedOnset)! < strength
+        ) {
           onsetMap.set(roundedOnset, strength);
         }
       });
 
       const uniqueOnsets = Array.from(onsetMap.keys()).sort((a, b) => a - b);
-      const uniqueStrengths = uniqueOnsets.map(onset => onsetMap.get(onset)!);
+      const uniqueStrengths = uniqueOnsets.map((onset) => onsetMap.get(onset)!);
 
       // Find peaks in novelty curve
       const peaks: number[] = [];
       const noveltyArray = novelty ? Array.from(novelty) : [];
-      const threshold = noveltyArray.length > 0 ? Math.max(...noveltyArray as number[]) * 0.3 : 0; // 30% of max
+      const threshold =
+        noveltyArray.length > 0
+          ? Math.max(...(noveltyArray as number[])) * 0.3
+          : 0; // 30% of max
 
       for (let i = 1; i < novelty.length - 1; i++) {
-        if (novelty[i] > novelty[i - 1] &&
-            novelty[i] > novelty[i + 1] &&
-            novelty[i] > threshold) {
-          peaks.push(i * (audioBuffer.length / this.sampleRate) / novelty.length);
+        if (
+          novelty[i] > novelty[i - 1] &&
+          novelty[i] > novelty[i + 1] &&
+          novelty[i] > threshold
+        ) {
+          peaks.push(
+            (i * (audioBuffer.length / this.sampleRate)) / novelty.length,
+          );
         }
       }
 
@@ -508,20 +560,22 @@ export class MusicAnalyzer {
         onsets: uniqueOnsets,
         strength: uniqueStrengths,
         novelty,
-        peaks
+        peaks,
       };
     } catch (error) {
-      console.error('Onset detection failed:', error);
+      console.error("Onset detection failed:", error);
       return {
         onsets: [],
         strength: [],
         novelty: new Float32Array(0),
-        peaks: []
+        peaks: [],
       };
     }
   }
 
-  private async analyzeHarmonics(audioBuffer: Float32Array): Promise<HarmonicAnalysis> {
+  private async analyzeHarmonics(
+    audioBuffer: Float32Array,
+  ): Promise<HarmonicAnalysis> {
     await this.waitForInitialization();
 
     try {
@@ -548,19 +602,19 @@ export class MusicAnalyzer {
             // Calculate inharmonicity
             const inharmonicity = this.algorithms.inharmonicity(
               harmonicPeaks.frequencies,
-              harmonicPeaks.magnitudes
+              harmonicPeaks.magnitudes,
             );
 
             // Calculate odd-to-even harmonic ratio
             const oddToEven = this.algorithms.oddToEvenHarmonicEnergyRatio(
               harmonicPeaks.frequencies,
-              harmonicPeaks.magnitudes
+              harmonicPeaks.magnitudes,
             );
 
             // Calculate tristimulus values
             const tristimulus = this.algorithms.tristimulus(
               harmonicPeaks.frequencies,
-              harmonicPeaks.magnitudes
+              harmonicPeaks.magnitudes,
             );
 
             totalInharmonicity += inharmonicity;
@@ -571,7 +625,7 @@ export class MusicAnalyzer {
             validFrames++;
           }
         } catch (frameError) {
-          console.warn('Harmonic frame analysis failed:', frameError);
+          console.warn("Harmonic frame analysis failed:", frameError);
         }
       }
 
@@ -580,7 +634,7 @@ export class MusicAnalyzer {
           harmonicChangeRate: 0,
           inharmonicity: 0,
           oddToEvenRatio: 1,
-          tristimulus: [0.33, 0.33, 0.33]
+          tristimulus: [0.33, 0.33, 0.33],
         };
       }
 
@@ -591,26 +645,31 @@ export class MusicAnalyzer {
         tristimulus: [
           totalTristimulus[0] / validFrames,
           totalTristimulus[1] / validFrames,
-          totalTristimulus[2] / validFrames
-        ]
+          totalTristimulus[2] / validFrames,
+        ],
       };
     } catch (error) {
-      console.error('Harmonic analysis failed:', error);
+      console.error("Harmonic analysis failed:", error);
       return {
         harmonicChangeRate: 0,
         inharmonicity: 0,
         oddToEvenRatio: 1,
-        tristimulus: [0.33, 0.33, 0.33]
+        tristimulus: [0.33, 0.33, 0.33],
       };
     }
   }
 
-  private generateMixingSuggestions(key: KeyAnalysis, bpm: BPMAnalysis, spectral: SpectralFeatures): MixingSuggestions {
+  private generateMixingSuggestions(
+    key: KeyAnalysis,
+    bpm: BPMAnalysis,
+    spectral: SpectralFeatures,
+  ): MixingSuggestions {
     const currentKey = `${key.key} ${key.scale}`;
     const compatibleKeys: string[] = [];
 
     // Find compatible keys using Camelot wheel
-    const currentCamelot = CAMELOT_WHEEL[currentKey as keyof typeof CAMELOT_WHEEL];
+    const currentCamelot =
+      CAMELOT_WHEEL[currentKey as keyof typeof CAMELOT_WHEEL];
     if (currentCamelot) {
       const wheelPos = parseInt(currentCamelot);
       const wheelType = currentCamelot.slice(-1);
@@ -636,7 +695,7 @@ export class MusicAnalyzer {
     const bpmVariation = bpm.bpm * 0.06;
     const bpmRange: [number, number] = [
       bpm.bpm - bpmVariation,
-      bpm.bpm + bpmVariation
+      bpm.bpm + bpmVariation,
     ];
 
     // Energy matching based on spectral features
@@ -647,7 +706,7 @@ export class MusicAnalyzer {
 
     // Find transition points (typically at phrase boundaries)
     const transitionPoints: number[] = [];
-    const barLength = 60 / bpm.bpm * 4; // 4 beats per bar
+    const barLength = (60 / bpm.bpm) * 4; // 4 beats per bar
 
     // Add transition points every 8, 16, and 32 bars
     for (let bars = 8; bars <= 64; bars += 8) {
@@ -659,19 +718,22 @@ export class MusicAnalyzer {
       bpmRange,
       energyMatch,
       harmonyScore,
-      transitionPoints
+      transitionPoints,
     };
   }
 
-  private detectPhrases(audioBuffer: Float32Array, bpm: number): PhraseAnalysis {
+  private detectPhrases(
+    audioBuffer: Float32Array,
+    bpm: number,
+  ): PhraseAnalysis {
     const phrases: Array<{
       start: number;
       end: number;
       length: number;
-      type: '8bar' | '16bar' | '32bar' | 'verse' | 'chorus' | 'bridge';
+      type: "8bar" | "16bar" | "32bar" | "verse" | "chorus" | "bridge";
     }> = [];
 
-    const barLength = 60 / bpm * 4; // 4 beats per bar in seconds
+    const barLength = (60 / bpm) * 4; // 4 beats per bar in seconds
     const duration = audioBuffer.length / this.sampleRate;
 
     // Simple phrase detection based on typical song structure
@@ -680,28 +742,34 @@ export class MusicAnalyzer {
 
     while (currentTime < duration) {
       let phraseLength = 16 * barLength; // Default 16-bar phrase
-      let phraseType: '8bar' | '16bar' | '32bar' | 'verse' | 'chorus' | 'bridge' = '16bar';
+      let phraseType:
+        | "8bar"
+        | "16bar"
+        | "32bar"
+        | "verse"
+        | "chorus"
+        | "bridge" = "16bar";
 
       // Determine phrase type based on position in song
       const progress = currentTime / duration;
 
       if (progress < 0.1) {
-        phraseType = 'verse';
+        phraseType = "verse";
         phraseLength = 16 * barLength;
       } else if (progress < 0.3) {
-        phraseType = 'chorus';
+        phraseType = "chorus";
         phraseLength = 16 * barLength;
       } else if (progress < 0.5) {
-        phraseType = 'verse';
+        phraseType = "verse";
         phraseLength = 16 * barLength;
       } else if (progress < 0.7) {
-        phraseType = 'chorus';
+        phraseType = "chorus";
         phraseLength = 16 * barLength;
       } else if (progress < 0.8) {
-        phraseType = 'bridge';
+        phraseType = "bridge";
         phraseLength = 8 * barLength;
       } else {
-        phraseType = 'chorus';
+        phraseType = "chorus";
         phraseLength = 16 * barLength;
       }
 
@@ -709,7 +777,7 @@ export class MusicAnalyzer {
         start: currentTime,
         end: Math.min(currentTime + phraseLength, duration),
         length: Math.min(phraseLength, duration - currentTime),
-        type: phraseType
+        type: phraseType,
       });
 
       structure.push(phraseType);
@@ -721,7 +789,7 @@ export class MusicAnalyzer {
 
   public async analyzeTrack(
     audioBuffer: Float32Array,
-    options: AnalysisOptions = {}
+    options: AnalysisOptions = {},
   ): Promise<MusicAnalysisResult> {
     const startTime = performance.now();
 
@@ -732,7 +800,7 @@ export class MusicAnalyzer {
       minBPM: 60,
       maxBPM: 200,
       enablePhraseDetection: true,
-      enableHarmonicAnalysis: true
+      enableHarmonicAnalysis: true,
     };
 
     const config = { ...defaultOptions, ...options };
@@ -743,7 +811,7 @@ export class MusicAnalyzer {
         this.extractBPM(audioBuffer),
         this.detectKey(audioBuffer),
         this.getSpectralFeatures(audioBuffer),
-        this.detectOnsets(audioBuffer)
+        this.detectOnsets(audioBuffer),
       ]);
 
       // Run optional analyses
@@ -753,7 +821,7 @@ export class MusicAnalyzer {
             harmonicChangeRate: 0,
             inharmonicity: 0,
             oddToEvenRatio: 1,
-            tristimulus: [0.33, 0.33, 0.33] as [number, number, number]
+            tristimulus: [0.33, 0.33, 0.33] as [number, number, number],
           };
 
       const phrases = config.enablePhraseDetection
@@ -774,36 +842,37 @@ export class MusicAnalyzer {
         phrases,
         mixing,
         duration: audioBuffer.length / this.sampleRate,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     } catch (error) {
-      console.error('Track analysis failed:', error);
+      console.error("Track analysis failed:", error);
       throw error;
     }
   }
 
   public async analyzeRealTime(
     audioBuffer: Float32Array,
-    options: AnalysisOptions = {}
+    options: AnalysisOptions = {},
   ): Promise<Partial<MusicAnalysisResult>> {
     const config = { ...options, realTime: true };
 
     // For real-time analysis, only compute essential features
     const [bpm, spectral] = await Promise.all([
       this.extractBPM(audioBuffer),
-      this.getSpectralFeatures(audioBuffer)
+      this.getSpectralFeatures(audioBuffer),
     ]);
 
     // Update energy history for real-time visualization
     this.energyHistory.push(spectral.energy);
-    if (this.energyHistory.length > 30) { // Keep 30 frames of history
+    if (this.energyHistory.length > 30) {
+      // Keep 30 frames of history
       this.energyHistory.shift();
     }
 
     return {
       bpm,
       spectral,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -811,14 +880,19 @@ export class MusicAnalyzer {
     if (this.beatTracker.beatInterval === 0) return 0;
 
     const timeSinceLastBeat = currentTime - this.beatTracker.lastBeat;
-    return (timeSinceLastBeat % this.beatTracker.beatInterval) / this.beatTracker.beatInterval;
+    return (
+      (timeSinceLastBeat % this.beatTracker.beatInterval) /
+      this.beatTracker.beatInterval
+    );
   }
 
   public getNextBeatTime(currentTime: number): number {
     if (this.beatTracker.beatInterval === 0) return currentTime;
 
     const timeSinceLastBeat = currentTime - this.beatTracker.lastBeat;
-    const timeToNextBeat = this.beatTracker.beatInterval - (timeSinceLastBeat % this.beatTracker.beatInterval);
+    const timeToNextBeat =
+      this.beatTracker.beatInterval -
+      (timeSinceLastBeat % this.beatTracker.beatInterval);
 
     return currentTime + timeToNextBeat;
   }
@@ -835,9 +909,11 @@ export class MusicAnalyzer {
     const type2 = camelot2.slice(-1);
 
     // Compatible if same position different type, or adjacent positions same type
-    return (pos1 === pos2 && type1 !== type2) ||
-           (Math.abs(pos1 - pos2) <= 1 && type1 === type2) ||
-           (Math.abs(pos1 - pos2) === 11 && type1 === type2); // Wrap around
+    return (
+      (pos1 === pos2 && type1 !== type2) ||
+      (Math.abs(pos1 - pos2) <= 1 && type1 === type2) ||
+      (Math.abs(pos1 - pos2) === 11 && type1 === type2)
+    ); // Wrap around
   }
 
   public reset(): void {
@@ -850,15 +926,17 @@ export class MusicAnalyzer {
       lastBeat: 0,
       beatInterval: 0,
       phase: 0,
-      confidence: 0
+      confidence: 0,
     };
   }
 
   public destroy(): void {
     this.reset();
-    if (this.essentiaWASM) {
+    if (this.essentiaWASM && typeof this.essentiaWASM.delete === "function") {
       this.essentiaWASM.delete();
     }
+    this.essentia = null;
+    this.essentiaWASM = null;
   }
 }
 

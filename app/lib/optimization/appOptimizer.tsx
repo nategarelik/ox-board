@@ -6,10 +6,10 @@
  * the optimization suite for the entire application.
  */
 
-'use client';
+"use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { optimizationManager } from './index';
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { optimizationManager } from "./index";
 
 interface AppOptimizerProps {
   children: React.ReactNode;
@@ -22,7 +22,7 @@ interface AppOptimizerProps {
 interface PerformanceStatus {
   initialized: boolean;
   monitoring: boolean;
-  status: 'good' | 'fair' | 'poor';
+  status: "good" | "fair" | "poor";
   fps: number;
   memory: number;
   latency: number;
@@ -34,16 +34,16 @@ export const AppOptimizer: React.FC<AppOptimizerProps> = ({
   enableMonitoring = true,
   enableBenchmarking = false,
   audioContext,
-  onPerformanceAlert
+  onPerformanceAlert,
 }) => {
   const [status, setStatus] = useState<PerformanceStatus>({
     initialized: false,
     monitoring: false,
-    status: 'good',
+    status: "good",
     fps: 0,
     memory: 0,
     latency: 0,
-    alerts: 0
+    alerts: 0,
   });
 
   const [isInitializing, setIsInitializing] = useState(false);
@@ -63,16 +63,22 @@ export const AppOptimizer: React.FC<AppOptimizerProps> = ({
         await optimizationManager.initialize({
           enableMonitoring,
           enableBenchmarking,
-          audioContext
+          audioContext,
         });
 
         if (mounted) {
-          setStatus(prev => ({ ...prev, initialized: true, monitoring: enableMonitoring }));
+          setStatus((prev) => ({
+            ...prev,
+            initialized: true,
+            monitoring: enableMonitoring,
+          }));
         }
       } catch (error) {
-        console.error('Failed to initialize optimization suite:', error);
+        console.error("Failed to initialize optimization suite:", error);
         if (mounted) {
-          setInitError(error instanceof Error ? error.message : 'Unknown error');
+          setInitError(
+            error instanceof Error ? error.message : "Unknown error",
+          );
         }
       } finally {
         if (mounted) {
@@ -86,7 +92,13 @@ export const AppOptimizer: React.FC<AppOptimizerProps> = ({
     return () => {
       mounted = false;
     };
-  }, [enableMonitoring, enableBenchmarking, audioContext]);
+  }, [
+    enableMonitoring,
+    enableBenchmarking,
+    audioContext,
+    isInitializing,
+    status.initialized,
+  ]);
 
   // Performance monitoring
   useEffect(() => {
@@ -95,21 +107,24 @@ export const AppOptimizer: React.FC<AppOptimizerProps> = ({
     const interval = setInterval(() => {
       const optimizationStatus = optimizationManager.getOptimizationStatus();
 
-      setStatus(prev => ({
+      setStatus((prev) => ({
         ...prev,
         status: optimizationStatus.performance.overall,
         fps: optimizationStatus.performance.fps.value,
         memory: optimizationStatus.memory.usage,
         latency: optimizationStatus.metrics.latency.gesture || 0,
-        alerts: optimizationStatus.performance.recommendations.length
+        alerts: optimizationStatus.performance.recommendations.length,
       }));
 
       // Trigger performance alerts
-      if (optimizationStatus.performance.overall === 'poor' && onPerformanceAlert) {
+      if (
+        optimizationStatus.performance.overall === "poor" &&
+        onPerformanceAlert
+      ) {
         onPerformanceAlert({
-          type: 'performance_degradation',
+          type: "performance_degradation",
           status: optimizationStatus.performance.overall,
-          recommendations: optimizationStatus.performance.recommendations
+          recommendations: optimizationStatus.performance.recommendations,
         });
       }
     }, 5000); // Update every 5 seconds
@@ -133,7 +148,7 @@ export const AppOptimizer: React.FC<AppOptimizerProps> = ({
     try {
       return await optimizationManager.validatePerformance();
     } catch (error) {
-      console.error('Performance validation failed:', error);
+      console.error("Performance validation failed:", error);
       return null;
     }
   }, [status.initialized]);
@@ -145,18 +160,21 @@ export const AppOptimizer: React.FC<AppOptimizerProps> = ({
     try {
       await optimizationManager.optimizeForPerformance();
     } catch (error) {
-      console.error('Performance optimization failed:', error);
+      console.error("Performance optimization failed:", error);
     }
   }, [status.initialized]);
 
   // Context value for child components
-  const optimizationContext = useMemo(() => ({
-    status,
-    validatePerformance,
-    optimizeForPerformance,
-    initialized: status.initialized,
-    error: initError
-  }), [status, validatePerformance, optimizeForPerformance, initError]);
+  const optimizationContext = useMemo(
+    () => ({
+      status,
+      validatePerformance,
+      optimizeForPerformance,
+      initialized: status.initialized,
+      error: initError,
+    }),
+    [status, validatePerformance, optimizeForPerformance, initError],
+  );
 
   // Error boundary for optimization failures
   if (initError) {
@@ -198,7 +216,7 @@ export const AppOptimizer: React.FC<AppOptimizerProps> = ({
     <OptimizationContext.Provider value={optimizationContext}>
       <div className="min-h-screen bg-gray-900 relative">
         {/* Performance status indicator (development only) */}
-        {process.env.NODE_ENV === 'development' && status.initialized && (
+        {process.env.NODE_ENV === "development" && status.initialized && (
           <PerformanceStatusIndicator status={status} />
         )}
 
@@ -211,16 +229,20 @@ export const AppOptimizer: React.FC<AppOptimizerProps> = ({
 
 // Performance status indicator for development
 const PerformanceStatusIndicator: React.FC<{ status: PerformanceStatus }> = ({
-  status
+  status,
 }) => {
   const [expanded, setExpanded] = useState(false);
 
   const getStatusColor = () => {
     switch (status.status) {
-      case 'good': return 'bg-green-500';
-      case 'fair': return 'bg-yellow-500';
-      case 'poor': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case "good":
+        return "bg-green-500";
+      case "fair":
+        return "bg-yellow-500";
+      case "poor":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
@@ -228,7 +250,7 @@ const PerformanceStatusIndicator: React.FC<{ status: PerformanceStatus }> = ({
     <div className="fixed top-4 right-4 z-50">
       <div
         className={`rounded-lg border border-gray-600 shadow-lg transition-all duration-200 ${
-          expanded ? 'bg-gray-800 p-4' : 'bg-gray-900 p-2'
+          expanded ? "bg-gray-800 p-4" : "bg-gray-900 p-2"
         }`}
       >
         <div
@@ -296,7 +318,7 @@ export const OptimizationContext = React.createContext<{
 export const useOptimizationContext = () => {
   const context = React.useContext(OptimizationContext);
   if (!context) {
-    throw new Error('useOptimizationContext must be used within AppOptimizer');
+    throw new Error("useOptimizationContext must be used within AppOptimizer");
   }
   return context;
 };
@@ -308,21 +330,25 @@ export const withPerformanceOptimization = <P extends object>(
     memo?: boolean;
     lazy?: boolean;
     trackRendering?: boolean;
-  }
+  },
 ) => {
   const {
     memo: enableMemo = true,
     lazy = false,
-    trackRendering = true
+    trackRendering = true,
   } = options || {};
 
   const OptimizedComponent = React.forwardRef<any, P>((props, ref) => {
     // Track rendering performance
     useEffect(() => {
       if (trackRendering) {
-        optimizationManager.startLatencyMeasurement(`component_${Component.name}_render`);
+        optimizationManager.startLatencyMeasurement(
+          `component_${Component.name}_render`,
+        );
         return () => {
-          optimizationManager.endLatencyMeasurement(`component_${Component.name}_render`);
+          optimizationManager.endLatencyMeasurement(
+            `component_${Component.name}_render`,
+          );
         };
       }
     });

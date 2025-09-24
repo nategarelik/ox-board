@@ -38,13 +38,13 @@ export interface DemucsOutput {
       duration: number;
     };
     /** Processing status */
-    status: 'completed' | 'failed' | 'processing';
+    status: "completed" | "failed" | "processing";
     /** Error message if processing failed */
     error?: string;
   };
 }
 
-export type StemType = 'drums' | 'bass' | 'melody' | 'vocals';
+export type StemType = "drums" | "bass" | "melody" | "vocals";
 
 export interface StemLoadResult {
   /** Whether the load was successful */
@@ -73,7 +73,7 @@ export interface DemucsProcessor {
       model?: string;
       overlap?: number;
       splitSize?: number;
-    }
+    },
   ): Promise<DemucsOutput>;
 
   /**
@@ -123,8 +123,13 @@ export class DefaultDemucsProcessor implements DemucsProcessor {
       model?: string;
       overlap?: number;
       splitSize?: number;
-    }
+    },
   ): Promise<DemucsOutput> {
+    // Validate input file
+    if (!audioFile || audioFile.size === 0) {
+      throw new Error("Invalid audio file: File is empty or missing");
+    }
+
     // Frequency-based simulation for demonstration
     // Real implementation would call Demucs backend or WASM
     const processId = Math.random().toString(36).substr(2, 9);
@@ -141,7 +146,7 @@ export class DefaultDemucsProcessor implements DemucsProcessor {
       // Simulate realistic processing progress
       for (let i = 0; i <= 100; i += 10) {
         this.activeProcesses.set(processId, i);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
       // Create simulated stem data using frequency filtering
@@ -150,7 +155,7 @@ export class DefaultDemucsProcessor implements DemucsProcessor {
         audioBuffer: audioBuffer,
         duration: audioBuffer.duration,
         sampleRate: audioBuffer.sampleRate,
-        hasAudio
+        hasAudio,
       });
 
       const result: DemucsOutput = {
@@ -161,22 +166,23 @@ export class DefaultDemucsProcessor implements DemucsProcessor {
         original: createStemData(),
         metadata: {
           processingTime: 1000,
-          model: options?.model || 'htdemucs',
+          model: options?.model || "htdemucs",
           inputFile: {
             name: audioFile.name,
             size: audioFile.size,
-            duration: audioBuffer.duration
+            duration: audioBuffer.duration,
           },
-          status: 'completed'
-        }
+          status: "completed",
+        },
       };
 
       this.activeProcesses.delete(processId);
       return result;
-
     } catch (error) {
       this.activeProcesses.delete(processId);
-      throw new Error(`Demucs processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Demucs processing failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -186,7 +192,7 @@ export class DefaultDemucsProcessor implements DemucsProcessor {
   }
 
   getSupportedFormats(): string[] {
-    return ['.mp3', '.wav', '.flac', '.m4a', '.ogg'];
+    return [".mp3", ".wav", ".flac", ".m4a", ".ogg"];
   }
 
   cancelProcessing(processId: string): void {

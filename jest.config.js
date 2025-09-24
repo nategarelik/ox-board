@@ -1,66 +1,66 @@
-const nextJest = require('next/jest')
+const nextJest = require("next/jest");
 
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.js and .env files
-  dir: './',
-})
+  dir: "./",
+});
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
   // Add more setup options before each test is run
-  setupFilesAfterEnv: ['<rootDir>/tests/setup/jest.setup.js'],
+  setupFilesAfterEnv: ["<rootDir>/tests/setup/jest.setup.js"],
 
   // if using TypeScript with a baseUrl set to the root directory then you need the below for alias' to work
-  moduleDirectories: ['node_modules', '<rootDir>/'],
+  moduleDirectories: ["node_modules", "<rootDir>/"],
 
   // Handle module aliases and assets
-  moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/$1',
-    '^@/components/(.*)$': '<rootDir>/app/components/$1',
-    '^@/lib/(.*)$': '<rootDir>/app/lib/$1',
-    '^@/stores/(.*)$': '<rootDir>/app/stores/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/tests/__mocks__/fileMock.js',
+  moduleNameMapper: {
+    "^@/components/(.*)$": "<rootDir>/app/components/$1",
+    "^@/lib/(.*)$": "<rootDir>/app/lib/$1",
+    "^@/stores/(.*)$": "<rootDir>/app/stores/$1",
+    "^@/hooks/(.*)$": "<rootDir>/app/hooks/$1",
+    "^@/services/(.*)$": "<rootDir>/app/services/$1",
+    "^@/types/(.*)$": "<rootDir>/app/types/$1",
+    "^@/app/(.*)$": "<rootDir>/app/$1",
+    "^@/(.*)$": "<rootDir>/app/$1",
+    tone: "<rootDir>/tests/__mocks__/toneMock.ts",
+    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+    "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$":
+      "<rootDir>/tests/__mocks__/fileMock.js",
   },
 
   // Test environment
-  testEnvironment: 'jsdom',
+  testEnvironment: "jsdom",
 
   // Test patterns
-  testMatch: [
-    '<rootDir>/tests/**/*.{spec,test}.{js,jsx,ts,tsx}',
-  ],
+  testMatch: ["<rootDir>/tests/**/*.{spec,test}.{js,jsx,ts,tsx}"],
 
   // Patterns to ignore
-  testPathIgnorePatterns: [
-    '<rootDir>/.next/',
-    '<rootDir>/node_modules/',
-  ],
+  testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/"],
 
   // Transform ignore patterns - allow transformation of specific node_modules
   transformIgnorePatterns: [
-    'node_modules/(?!(tone|standardized-audio-context|automation-events|tslib)/)',
+    "node_modules/(?!(tone|standardized-audio-context|automation-events|tslib)/)",
   ],
 
   // Transform files
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['ts-jest', {
-      useESM: true,
-      tsconfig: {
-        jsx: 'react-jsx',
+    "^.+\\.(js|jsx|ts|tsx)$": [
+      "ts-jest",
+      {
+        useESM: true,
+        tsconfig: {
+          jsx: "react-jsx",
+        },
       },
-    }],
+    ],
   },
 
   // File extensions to consider
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
 
   // Collect coverage from
-  collectCoverageFrom: [
-    'app/**/*.{ts,tsx}',
-    '!app/**/*.d.ts',
-    '!tests/**',
-  ],
+  collectCoverageFrom: ["app/**/*.{ts,tsx}", "!app/**/*.d.ts", "!tests/**"],
 
   // Coverage thresholds
   coverageThreshold: {
@@ -76,18 +76,18 @@ const customJestConfig = {
   verbose: true,
 
   // Setup files
-  setupFiles: ['<rootDir>/tests/setup/jest.polyfills.js'],
+  setupFiles: ["<rootDir>/tests/setup/jest.polyfills.js"],
 
   // Test timeout
   testTimeout: 10000,
 
   // Global variables
   globals: {
-    'ts-jest': {
+    "ts-jest": {
       useESM: true,
     },
   },
-}
+};
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig)
+module.exports = createJestConfig(customJestConfig);

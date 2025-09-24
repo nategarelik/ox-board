@@ -1,5 +1,10 @@
-import { useRef, useCallback, useState, useEffect } from 'react';
-import { HandLandmarkSmoother, Point2D, KalmanConfig, GESTURE_SMOOTHING_CONFIG } from '../lib/gesture/smoothing';
+import { useRef, useCallback, useState, useEffect } from "react";
+import {
+  HandLandmarkSmoother,
+  Point2D,
+  KalmanConfig,
+  GESTURE_SMOOTHING_CONFIG,
+} from "../lib/gesture/smoothing";
 
 export interface GestureData {
   leftHand: Point2D[] | null;
@@ -9,9 +14,9 @@ export interface GestureData {
 }
 
 export interface GestureControl {
-  type: 'volume' | 'crossfader' | 'eq' | 'effect';
+  type: "volume" | "crossfader" | "eq" | "effect";
   value: number;
-  hand: 'left' | 'right';
+  hand: "left" | "right";
   gesture: string;
 }
 
@@ -32,7 +37,7 @@ const LANDMARK_IDS = {
   INDEX_MCP: 5,
   MIDDLE_MCP: 9,
   RING_MCP: 13,
-  PINKY_MCP: 17
+  PINKY_MCP: 17,
 };
 
 export function useGestures(config: UseGesturesConfig = {}) {
@@ -40,7 +45,7 @@ export function useGestures(config: UseGesturesConfig = {}) {
     smoothingConfig = GESTURE_SMOOTHING_CONFIG,
     minConfidence = 0.7,
     gestureThreshold = 0.1,
-    updateInterval = 16 // ~60fps
+    updateInterval = 16, // ~60fps
   } = config;
 
   const [gestureData, setGestureData] = useState<GestureData | null>(null);
@@ -51,134 +56,144 @@ export function useGestures(config: UseGesturesConfig = {}) {
   const rightHandSmoother = useRef(new HandLandmarkSmoother(smoothingConfig));
   const lastUpdateTime = useRef(0);
 
-  const processHandLandmarks = useCallback((
-    landmarks: any[],
-    hand: 'left' | 'right'
-  ): Point2D[] => {
-    const points: Point2D[] = landmarks.map(landmark => ({
-      x: landmark.x,
-      y: landmark.y
-    }));
+  const processHandLandmarks = useCallback(
+    (landmarks: any[], hand: "left" | "right"): Point2D[] => {
+      const points: Point2D[] = landmarks.map((landmark) => ({
+        x: landmark.x,
+        y: landmark.y,
+      }));
 
-    const landmarkIds = Array.from({ length: landmarks.length }, (_, i) => i);
-    const smoother = hand === 'left' ? leftHandSmoother.current : rightHandSmoother.current;
+      const landmarkIds = Array.from({ length: landmarks.length }, (_, i) => i);
+      const smoother =
+        hand === "left" ? leftHandSmoother.current : rightHandSmoother.current;
 
-    return smoother.smoothLandmarks(points, landmarkIds);
-  }, []);
+      return smoother.smoothLandmarks(points, landmarkIds);
+    },
+    [],
+  );
 
-  const detectGestures = useCallback((
-    landmarks: Point2D[],
-    hand: 'left' | 'right'
-  ): GestureControl[] => {
-    const controls: GestureControl[] = [];
+  const detectGestures = useCallback(
+    (landmarks: Point2D[], hand: "left" | "right"): GestureControl[] => {
+      const controls: GestureControl[] = [];
 
-    if (landmarks.length < 21) return controls;
+      if (landmarks.length < 21) return controls;
 
-    // Volume control - Index finger Y position
-    const indexY = landmarks[LANDMARK_IDS.INDEX_TIP].y;
-    const wristY = landmarks[LANDMARK_IDS.WRIST].y;
-    const volumeRange = Math.abs(wristY - 0.2); // Normalize range
-    const volumeValue = Math.max(0, Math.min(1, 1 - (indexY - 0.2) / volumeRange));
+      // Volume control - Index finger Y position
+      const indexY = landmarks[LANDMARK_IDS.INDEX_TIP].y;
+      const wristY = landmarks[LANDMARK_IDS.WRIST].y;
+      const volumeRange = Math.abs(wristY - 0.2); // Normalize range
+      const volumeValue = Math.max(
+        0,
+        Math.min(1, 1 - (indexY - 0.2) / volumeRange),
+      );
 
-    controls.push({
-      type: 'volume',
-      value: volumeValue,
-      hand,
-      gesture: 'index_vertical'
-    });
-
-    // Crossfader - Wrist X position
-    const wristX = landmarks[LANDMARK_IDS.WRIST].x;
-    const crossfaderValue = Math.max(0, Math.min(1, wristX));
-
-    if (hand === 'right') {
       controls.push({
-        type: 'crossfader',
-        value: crossfaderValue,
+        type: "volume",
+        value: volumeValue,
         hand,
-        gesture: 'wrist_horizontal'
+        gesture: "index_vertical",
       });
-    }
 
-    // EQ control - Middle finger for mids
-    const middleY = landmarks[LANDMARK_IDS.MIDDLE_TIP].y;
-    const eqValue = Math.max(0, Math.min(1, 1 - (middleY - 0.2) / volumeRange));
+      // Crossfader - Wrist X position
+      const wristX = landmarks[LANDMARK_IDS.WRIST].x;
+      const crossfaderValue = Math.max(0, Math.min(1, wristX));
 
-    controls.push({
-      type: 'eq',
-      value: eqValue,
-      hand,
-      gesture: 'middle_vertical'
-    });
+      if (hand === "right") {
+        controls.push({
+          type: "crossfader",
+          value: crossfaderValue,
+          hand,
+          gesture: "wrist_horizontal",
+        });
+      }
 
-    // Effect intensity - Pinch gesture (thumb to index distance)
-    const thumbTip = landmarks[LANDMARK_IDS.THUMB_TIP];
-    const indexTip = landmarks[LANDMARK_IDS.INDEX_TIP];
-    const pinchDistance = Math.sqrt(
-      Math.pow(thumbTip.x - indexTip.x, 2) +
-      Math.pow(thumbTip.y - indexTip.y, 2)
-    );
-    const effectValue = Math.max(0, Math.min(1, 1 - pinchDistance * 5));
+      // EQ control - Middle finger for mids
+      const middleY = landmarks[LANDMARK_IDS.MIDDLE_TIP].y;
+      const eqValue = Math.max(
+        0,
+        Math.min(1, 1 - (middleY - 0.2) / volumeRange),
+      );
 
-    if (pinchDistance < 0.15) {
       controls.push({
-        type: 'effect',
-        value: effectValue,
+        type: "eq",
+        value: eqValue,
         hand,
-        gesture: 'pinch'
+        gesture: "middle_vertical",
       });
-    }
 
-    return controls;
-  }, []);
+      // Effect intensity - Pinch gesture (thumb to index distance)
+      const thumbTip = landmarks[LANDMARK_IDS.THUMB_TIP];
+      const indexTip = landmarks[LANDMARK_IDS.INDEX_TIP];
+      const pinchDistance = Math.sqrt(
+        Math.pow(thumbTip.x - indexTip.x, 2) +
+          Math.pow(thumbTip.y - indexTip.y, 2),
+      );
+      const effectValue = Math.max(0, Math.min(1, 1 - pinchDistance * 5));
 
-  const updateGestures = useCallback((results: any) => {
-    const now = Date.now();
+      if (pinchDistance < 0.15) {
+        controls.push({
+          type: "effect",
+          value: effectValue,
+          hand,
+          gesture: "pinch",
+        });
+      }
 
-    // Throttle updates
-    if (now - lastUpdateTime.current < updateInterval) {
-      return;
-    }
-    lastUpdateTime.current = now;
+      return controls;
+    },
+    [],
+  );
 
-    setIsProcessing(true);
+  const updateGestures = useCallback(
+    (results: any) => {
+      const now = Date.now();
 
-    try {
-      const leftHandLandmarks = results.leftHandLandmarks || null;
-      const rightHandLandmarks = results.rightHandLandmarks || null;
-      const confidence = results.confidence || 1.0;
-
-      if (confidence < minConfidence) {
-        setIsProcessing(false);
+      // Throttle updates
+      if (now - lastUpdateTime.current < updateInterval) {
         return;
       }
+      lastUpdateTime.current = now;
 
-      let leftHand: Point2D[] | null = null;
-      let rightHand: Point2D[] | null = null;
-      const newControls: GestureControl[] = [];
+      setIsProcessing(true);
 
-      if (leftHandLandmarks) {
-        leftHand = processHandLandmarks(leftHandLandmarks, 'left');
-        newControls.push(...detectGestures(leftHand, 'left'));
+      try {
+        const leftHandLandmarks = results.leftHandLandmarks || null;
+        const rightHandLandmarks = results.rightHandLandmarks || null;
+        const confidence = results.confidence || 1.0;
+
+        if (confidence < minConfidence) {
+          setIsProcessing(false);
+          return;
+        }
+
+        let leftHand: Point2D[] | null = null;
+        let rightHand: Point2D[] | null = null;
+        const newControls: GestureControl[] = [];
+
+        if (leftHandLandmarks) {
+          leftHand = processHandLandmarks(leftHandLandmarks, "left");
+          newControls.push(...detectGestures(leftHand, "left"));
+        }
+
+        if (rightHandLandmarks) {
+          rightHand = processHandLandmarks(rightHandLandmarks, "right");
+          newControls.push(...detectGestures(rightHand, "right"));
+        }
+
+        setGestureData({
+          leftHand,
+          rightHand,
+          timestamp: now,
+          confidence,
+        });
+
+        setControls(newControls);
+      } finally {
+        setIsProcessing(false);
       }
-
-      if (rightHandLandmarks) {
-        rightHand = processHandLandmarks(rightHandLandmarks, 'right');
-        newControls.push(...detectGestures(rightHand, 'right'));
-      }
-
-      setGestureData({
-        leftHand,
-        rightHand,
-        timestamp: now,
-        confidence
-      });
-
-      setControls(newControls);
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [minConfidence, updateInterval, processHandLandmarks, detectGestures]);
+    },
+    [minConfidence, updateInterval, detectGestures, processHandLandmarks],
+  );
 
   const reset = useCallback(() => {
     leftHandSmoother.current.reset();
@@ -188,24 +203,27 @@ export function useGestures(config: UseGesturesConfig = {}) {
     lastUpdateTime.current = 0;
   }, []);
 
-  const getControlValue = useCallback((
-    type: GestureControl['type'],
-    hand?: 'left' | 'right'
-  ): number | undefined => {
-    const control = controls.find(c =>
-      c.type === type && (!hand || c.hand === hand)
-    );
-    return control?.value;
-  }, [controls]);
+  const getControlValue = useCallback(
+    (
+      type: GestureControl["type"],
+      hand?: "left" | "right",
+    ): number | undefined => {
+      const control = controls.find(
+        (c) => c.type === type && (!hand || c.hand === hand),
+      );
+      return control?.value;
+    },
+    [controls],
+  );
 
-  const isGestureActive = useCallback((
-    gesture: string,
-    hand?: 'left' | 'right'
-  ): boolean => {
-    return controls.some(c =>
-      c.gesture === gesture && (!hand || c.hand === hand)
-    );
-  }, [controls]);
+  const isGestureActive = useCallback(
+    (gesture: string, hand?: "left" | "right"): boolean => {
+      return controls.some(
+        (c) => c.gesture === gesture && (!hand || c.hand === hand),
+      );
+    },
+    [controls],
+  );
 
   // Cleanup on unmount
   useEffect(() => {
@@ -224,7 +242,7 @@ export function useGestures(config: UseGesturesConfig = {}) {
     isGestureActive,
     stats: {
       leftHandFilters: leftHandSmoother.current.getActiveFilterCount(),
-      rightHandFilters: rightHandSmoother.current.getActiveFilterCount()
-    }
+      rightHandFilters: rightHandSmoother.current.getActiveFilterCount(),
+    },
   };
 }

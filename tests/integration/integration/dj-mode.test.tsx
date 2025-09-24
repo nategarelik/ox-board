@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import DJInterface from "../../components/DJ/DJInterface";
-import { ViewMode } from "../../types/dj";
+import ProfessionalDJInterface from "@/components/DJ/ProfessionalDJInterface";
+import { ViewMode } from "@/types/dj";
 
 // Mock dynamic imports
 jest.mock("next/dynamic", () => ({
@@ -19,8 +19,30 @@ describe("DJ Mode Integration Tests", () => {
     gestureEnabled: true,
     gestureMapperEnabled: false,
     decks: [
-      { id: "A", volume: 0.8, isPlaying: false },
-      { id: "B", volume: 0.7, isPlaying: false },
+      {
+        id: 0,
+        track: null,
+        isPlaying: false,
+        currentTime: 0,
+        playbackRate: 1.0,
+        volume: 0.8,
+        cuePoints: [],
+        loopStart: null,
+        loopEnd: null,
+        stemPlayerEnabled: false,
+      },
+      {
+        id: 1,
+        track: null,
+        isPlaying: false,
+        currentTime: 0,
+        playbackRate: 1.0,
+        volume: 0.7,
+        cuePoints: [],
+        loopStart: null,
+        loopEnd: null,
+        stemPlayerEnabled: false,
+      },
     ],
     viewMode: "decks" as ViewMode,
   };
@@ -36,7 +58,7 @@ describe("DJ Mode Integration Tests", () => {
   };
 
   const mockGestureData = {
-    gestureData: {},
+    gestureData: null,
     controls: [],
     updateGestures: jest.fn(),
     reset: jest.fn(),
@@ -48,7 +70,7 @@ describe("DJ Mode Integration Tests", () => {
 
   it("renders DJ interface with all components", () => {
     render(
-      <DJInterface
+      <ProfessionalDJInterface
         djState={mockDjState}
         djActions={mockDjActions}
         gestureData={mockGestureData}
@@ -60,7 +82,7 @@ describe("DJ Mode Integration Tests", () => {
 
   it("handles gesture detection and updates", () => {
     const { container } = render(
-      <DJInterface
+      <ProfessionalDJInterface
         djState={mockDjState}
         djActions={mockDjActions}
         gestureData={mockGestureData}
@@ -79,7 +101,7 @@ describe("DJ Mode Integration Tests", () => {
 
   it("calls updateGestureControls when gestures are detected", () => {
     render(
-      <DJInterface
+      <ProfessionalDJInterface
         djState={mockDjState}
         djActions={mockDjActions}
         gestureData={mockGestureData}
@@ -87,7 +109,26 @@ describe("DJ Mode Integration Tests", () => {
     );
 
     // Mock gesture update
-    mockGestureData.controls = [0.5, 0.5, 0.5];
+    mockGestureData.controls = [
+      {
+        type: "volume" as const,
+        value: 0.5,
+        hand: "left" as const,
+        gesture: "index_vertical",
+      },
+      {
+        type: "volume" as const,
+        value: 0.5,
+        hand: "right" as const,
+        gesture: "index_vertical",
+      },
+      {
+        type: "crossfader" as const,
+        value: 0.5,
+        hand: "right" as const,
+        gesture: "wrist_horizontal",
+      },
+    ];
 
     // Trigger would normally come from camera feed
     // In test, we verify the handler exists
@@ -96,7 +137,7 @@ describe("DJ Mode Integration Tests", () => {
 
   it("handles different view modes", () => {
     const { rerender } = render(
-      <DJInterface
+      <ProfessionalDJInterface
         djState={mockDjState}
         djActions={mockDjActions}
         gestureData={mockGestureData}
@@ -106,7 +147,7 @@ describe("DJ Mode Integration Tests", () => {
     // Test mixer view
     const mixerState = { ...mockDjState, viewMode: "mixer" as ViewMode };
     rerender(
-      <DJInterface
+      <ProfessionalDJInterface
         djState={mixerState}
         djActions={mockDjActions}
         gestureData={mockGestureData}
@@ -118,7 +159,7 @@ describe("DJ Mode Integration Tests", () => {
     // Test stems view
     const stemsState = { ...mockDjState, viewMode: "stems" as ViewMode };
     rerender(
-      <DJInterface
+      <ProfessionalDJInterface
         djState={stemsState}
         djActions={mockDjActions}
         gestureData={mockGestureData}
@@ -130,7 +171,7 @@ describe("DJ Mode Integration Tests", () => {
 
   it("maintains state when camera is toggled", () => {
     const { rerender } = render(
-      <DJInterface
+      <ProfessionalDJInterface
         djState={mockDjState}
         djActions={mockDjActions}
         gestureData={mockGestureData}
@@ -140,7 +181,7 @@ describe("DJ Mode Integration Tests", () => {
     // Turn off camera
     const offState = { ...mockDjState, cameraActive: false };
     rerender(
-      <DJInterface
+      <ProfessionalDJInterface
         djState={offState}
         djActions={mockDjActions}
         gestureData={mockGestureData}
@@ -151,7 +192,7 @@ describe("DJ Mode Integration Tests", () => {
 
     // Turn camera back on
     rerender(
-      <DJInterface
+      <ProfessionalDJInterface
         djState={mockDjState}
         djActions={mockDjActions}
         gestureData={mockGestureData}

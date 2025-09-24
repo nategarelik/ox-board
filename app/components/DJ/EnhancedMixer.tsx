@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useCallback, useEffect, useState } from 'react';
-import useEnhancedDJStore from '@/app/stores/enhancedDjStoreWithGestures';
-import { Volume2, Headphones, Disc3, Activity } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from "react";
+import useEnhancedDJStore from "@/stores/enhancedDjStoreWithGestures";
+import { Volume2, Headphones, Disc3, Activity } from "lucide-react";
 
 interface ChannelStripProps {
   channel: number;
@@ -10,11 +10,7 @@ interface ChannelStripProps {
 }
 
 const ChannelStrip: React.FC<ChannelStripProps> = ({ channel, label }) => {
-  const {
-    channelConfigs,
-    setChannelGain,
-    setChannelEQ
-  } = useEnhancedDJStore();
+  const { channelConfigs, setChannelGain, setChannelEQ } = useEnhancedDJStore();
 
   const config = channelConfigs[channel];
 
@@ -31,13 +27,13 @@ const ChannelStrip: React.FC<ChannelStripProps> = ({ channel, label }) => {
             min="-20"
             max="20"
             value={config?.eq.high || 0}
-            onChange={(e) => setChannelEQ(channel, 'high', parseFloat(e.target.value))}
+            onChange={(e) =>
+              setChannelEQ(channel, "high", parseFloat(e.target.value))
+            }
             className="vertical-slider"
-            style={{ writingMode: 'vertical-lr' }}
+            style={{ writingMode: "vertical-lr" }}
           />
-          <span className="text-xs font-mono mt-1">
-            {config?.eq.high || 0}
-          </span>
+          <span className="text-xs font-mono mt-1">{config?.eq.high || 0}</span>
         </div>
 
         <div className="flex flex-col items-center flex-1">
@@ -47,13 +43,13 @@ const ChannelStrip: React.FC<ChannelStripProps> = ({ channel, label }) => {
             min="-20"
             max="20"
             value={config?.eq.mid || 0}
-            onChange={(e) => setChannelEQ(channel, 'mid', parseFloat(e.target.value))}
+            onChange={(e) =>
+              setChannelEQ(channel, "mid", parseFloat(e.target.value))
+            }
             className="vertical-slider"
-            style={{ writingMode: 'vertical-lr' }}
+            style={{ writingMode: "vertical-lr" }}
           />
-          <span className="text-xs font-mono mt-1">
-            {config?.eq.mid || 0}
-          </span>
+          <span className="text-xs font-mono mt-1">{config?.eq.mid || 0}</span>
         </div>
 
         <div className="flex flex-col items-center flex-1">
@@ -63,21 +59,21 @@ const ChannelStrip: React.FC<ChannelStripProps> = ({ channel, label }) => {
             min="-20"
             max="20"
             value={config?.eq.low || 0}
-            onChange={(e) => setChannelEQ(channel, 'low', parseFloat(e.target.value))}
+            onChange={(e) =>
+              setChannelEQ(channel, "low", parseFloat(e.target.value))
+            }
             className="vertical-slider"
-            style={{ writingMode: 'vertical-lr' }}
+            style={{ writingMode: "vertical-lr" }}
           />
-          <span className="text-xs font-mono mt-1">
-            {config?.eq.low || 0}
-          </span>
+          <span className="text-xs font-mono mt-1">{config?.eq.low || 0}</span>
         </div>
       </div>
 
       {/* Filter Controls */}
       <div className="mb-3">
         <select
-          value={config?.filterType || 'off'}
-          onChange={(e) => console.log('Filter change:', e.target.value)}
+          value={config?.filterType || "off"}
+          onChange={(e) => console.log("Filter change:", e.target.value)}
           className="w-full bg-gray-800 rounded px-2 py-1 text-xs"
         >
           <option value="off">Filter OFF</option>
@@ -96,7 +92,7 @@ const ChannelStrip: React.FC<ChannelStripProps> = ({ channel, label }) => {
           value={config?.gain || 0.75}
           onChange={(e) => setChannelGain(channel, parseFloat(e.target.value))}
           className="vertical-slider h-24"
-          style={{ writingMode: 'vertical-lr' }}
+          style={{ writingMode: "vertical-lr" }}
         />
         <span className="text-xs font-mono mt-1">
           {((config?.gain || 0.75) * 100).toFixed(0)}%
@@ -105,11 +101,11 @@ const ChannelStrip: React.FC<ChannelStripProps> = ({ channel, label }) => {
 
       {/* Cue Button */}
       <button
-        onClick={() => console.log('Cue channel:', channel)}
+        onClick={() => console.log("Cue channel:", channel)}
         className={`p-2 rounded ${
           config?.cueEnable
-            ? 'bg-ox-warning text-black'
-            : 'bg-gray-800 hover:bg-gray-700'
+            ? "bg-ox-warning text-black"
+            : "bg-gray-800 hover:bg-gray-700"
         } transition-colors`}
       >
         <Headphones size={14} />
@@ -124,7 +120,7 @@ export const EnhancedMixer: React.FC = () => {
     masterConfig,
     setCrossfaderPosition,
     setMasterGain,
-    decks
+    decks,
   } = useEnhancedDJStore();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -137,7 +133,7 @@ export const EnhancedMixer: React.FC = () => {
     if (!deck1?.track || !deck2?.track) return null;
 
     if (deck1.isPlaying && deck2.isPlaying) {
-      return { status: 'drifting', color: 'text-yellow-500' };
+      return { status: "drifting", color: "text-yellow-500" };
     }
     return null;
   }, [decks]);
@@ -157,7 +153,10 @@ export const EnhancedMixer: React.FC = () => {
       )}
 
       {/* Channel Strips */}
-      <div className="grid grid-cols-4 gap-3 mb-4" style={{ minHeight: '300px' }}>
+      <div
+        className="grid grid-cols-4 gap-3 mb-4"
+        style={{ minHeight: "300px" }}
+      >
         <ChannelStrip channel={0} label="CH 1" />
         <ChannelStrip channel={1} label="CH 2" />
         <ChannelStrip channel={2} label="CH 3" />
@@ -171,7 +170,7 @@ export const EnhancedMixer: React.FC = () => {
             <span className="text-xs text-gray-400">CROSSFADER</span>
             <select
               value={crossfaderConfig.curve}
-              onChange={(e) => console.log('Curve change:', e.target.value)}
+              onChange={(e) => console.log("Curve change:", e.target.value)}
               className="bg-gray-800 rounded px-2 py-1 text-xs"
             >
               <option value="linear">Linear</option>
@@ -187,7 +186,9 @@ export const EnhancedMixer: React.FC = () => {
               max="1"
               step="0.01"
               value={crossfaderConfig.position}
-              onChange={(e) => setCrossfaderPosition(parseFloat(e.target.value))}
+              onChange={(e) =>
+                setCrossfaderPosition(parseFloat(e.target.value))
+              }
               className="w-full"
             />
             <div className="flex justify-between text-xs text-gray-600 mt-1">
@@ -234,7 +235,7 @@ export const EnhancedMixer: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={masterConfig.limiterEnabled}
-                  onChange={(e) => console.log('Limiter:', e.target.checked)}
+                  onChange={(e) => console.log("Limiter:", e.target.checked)}
                   className="rounded"
                 />
                 <span>Limiter</span>
@@ -247,7 +248,7 @@ export const EnhancedMixer: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={masterConfig.compressorEnabled}
-                  onChange={(e) => console.log('Compressor:', e.target.checked)}
+                  onChange={(e) => console.log("Compressor:", e.target.checked)}
                   className="rounded"
                 />
                 <span>Compressor</span>
@@ -258,7 +259,6 @@ export const EnhancedMixer: React.FC = () => {
             </div>
           </div>
         )}
-
       </div>
 
       <style jsx>{`

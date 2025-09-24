@@ -1,11 +1,18 @@
-'use client';
+"use client";
 
-import React, { memo, useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { StemType } from '../lib/audio/demucsProcessor';
-import useEnhancedDJStore from '../stores/enhancedDjStoreWithGestures';
-import StemControls from './StemControls';
-import StemWaveform from './StemWaveform';
-import StemMixer from './StemMixer';
+import React, {
+  memo,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
+import { StemType } from "../lib/audio/demucsProcessor";
+import useEnhancedDJStore from "../stores/enhancedDjStoreWithGestures";
+import StemControls from "./StemControls";
+import StemWaveform from "./StemWaveform";
+import StemMixer from "./StemMixer";
 
 interface StemVisualizerPanelProps {
   className?: string;
@@ -20,7 +27,7 @@ interface PanelLayout {
   showControls: boolean;
   showWaveforms: boolean;
   showMixer: boolean;
-  orientation: 'horizontal' | 'vertical';
+  orientation: "horizontal" | "vertical";
   compactMode: boolean;
 }
 
@@ -32,17 +39,17 @@ const defaultLayout: PanelLayout = {
   showControls: true,
   showWaveforms: true,
   showMixer: true,
-  orientation: 'horizontal',
-  compactMode: false
+  orientation: "horizontal",
+  compactMode: false,
 };
 
 const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
-  className = '',
+  className = "",
   defaultExpanded = true,
   enableKeyboardShortcuts = true,
   enableTouchGestures = true,
   maxWidth = 1400,
-  maxHeight = 800
+  maxHeight = 800,
 }) => {
   const {
     decks,
@@ -51,24 +58,32 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
     setSelectedDeck,
     setStemViewMode,
     enableStemPlayer,
-    disableStemPlayer
+    disableStemPlayer,
   } = useEnhancedDJStore();
 
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [layout, setLayout] = useState<PanelLayout>(defaultLayout);
-  const [activeChannel, setActiveChannel] = useState(0);
+  const [activeChannel, setActiveChannel] = useState(selectedDeck ?? 0);
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
     startX: number;
     startY: number;
-    element: 'panel' | 'divider' | null;
+    element: "panel" | "divider" | null;
   }>({
     isDragging: false,
     startX: 0,
     startY: 0,
-    element: null
+    element: null,
   });
 
+  const setChannel = useCallback(
+    (index: number) => {
+      const clamped = Math.max(0, Math.min(decks.length - 1, index));
+      setActiveChannel(clamped);
+      setSelectedDeck(clamped);
+    },
+    [decks.length, setSelectedDeck],
+  );
   const panelRef = useRef<HTMLDivElement>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
@@ -79,14 +94,14 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
     const updateViewportSize = () => {
       setViewportSize({
         width: window.innerWidth,
-        height: window.innerHeight
+        height: window.innerHeight,
       });
     };
 
     updateViewportSize();
-    window.addEventListener('resize', updateViewportSize);
+    window.addEventListener("resize", updateViewportSize);
 
-    return () => window.removeEventListener('resize', updateViewportSize);
+    return () => window.removeEventListener("resize", updateViewportSize);
   }, []);
 
   // Auto-adjust layout based on viewport size
@@ -94,27 +109,41 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
     const isSmallScreen = viewportSize.width < 768;
     const isMediumScreen = viewportSize.width < 1200;
 
-    setLayout(prev => ({
+    setLayout((prev) => ({
       ...prev,
       compactMode: isSmallScreen,
-      orientation: isSmallScreen ? 'vertical' : 'horizontal',
-      showWaveforms: !isSmallScreen || prev.showWaveforms
+      orientation: isSmallScreen ? "vertical" : "horizontal",
+      showWaveforms: !isSmallScreen || prev.showWaveforms,
     }));
   }, [viewportSize]);
 
   // Keyboard shortcuts
-  const keyboardShortcuts = useMemo<KeyboardShortcuts>(() => ({
-    'KeyS': () => setIsExpanded(prev => !prev), // Toggle stem panel
-    'KeyV': () => setStemViewMode(stemViewMode === 'individual' ? 'combined' : 'individual'),
-    'Digit1': () => setActiveChannel(0),
-    'Digit2': () => setActiveChannel(1),
-    'Digit3': () => setActiveChannel(2),
-    'Digit4': () => setActiveChannel(3),
-    'KeyC': () => setLayout(prev => ({ ...prev, compactMode: !prev.compactMode })),
-    'KeyH': () => setLayout(prev => ({ ...prev, orientation: prev.orientation === 'horizontal' ? 'vertical' : 'horizontal' })),
-    'KeyM': () => setLayout(prev => ({ ...prev, showMixer: !prev.showMixer })),
-    'KeyW': () => setLayout(prev => ({ ...prev, showWaveforms: !prev.showWaveforms })),
-  }), [stemViewMode, setStemViewMode]);
+  const keyboardShortcuts = useMemo<KeyboardShortcuts>(
+    () => ({
+      KeyS: () => setIsExpanded((prev) => !prev), // Toggle stem panel
+      KeyV: () =>
+        setStemViewMode(
+          stemViewMode === "individual" ? "combined" : "individual",
+        ),
+      Digit1: () => setChannel(0),
+      Digit2: () => setChannel(1),
+      Digit3: () => setChannel(2),
+      Digit4: () => setChannel(3),
+      KeyC: () =>
+        setLayout((prev) => ({ ...prev, compactMode: !prev.compactMode })),
+      KeyH: () =>
+        setLayout((prev) => ({
+          ...prev,
+          orientation:
+            prev.orientation === "horizontal" ? "vertical" : "horizontal",
+        })),
+      KeyM: () =>
+        setLayout((prev) => ({ ...prev, showMixer: !prev.showMixer })),
+      KeyW: () =>
+        setLayout((prev) => ({ ...prev, showWaveforms: !prev.showWaveforms })),
+    }),
+    [stemViewMode, setStemViewMode, setChannel],
+  );
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -123,11 +152,11 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
     const handleKeyDown = (event: KeyboardEvent) => {
       // Only handle shortcuts when panel is focused or no input is focused
       const activeElement = document.activeElement;
-      const isInputFocused = activeElement && (
-        activeElement.tagName === 'INPUT' ||
-        activeElement.tagName === 'TEXTAREA' ||
-        (activeElement as HTMLElement).contentEditable === 'true'
-      );
+      const isInputFocused =
+        activeElement &&
+        (activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA" ||
+          (activeElement as HTMLElement).contentEditable === "true");
 
       if (isInputFocused) return;
 
@@ -138,60 +167,68 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [enableKeyboardShortcuts, keyboardShortcuts]);
 
   // Touch gesture handling
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
+    null,
+  );
 
-  const handleTouchStart = useCallback((event: React.TouchEvent) => {
-    if (!enableTouchGestures || event.touches.length !== 1) return;
+  const handleTouchStart = useCallback(
+    (event: React.TouchEvent) => {
+      if (!enableTouchGestures || event.touches.length !== 1) return;
 
-    const touch = event.touches[0];
-    touchStartRef.current = {
-      x: touch.clientX,
-      y: touch.clientY,
-      time: Date.now()
-    };
-  }, [enableTouchGestures]);
+      const touch = event.touches[0];
+      touchStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        time: Date.now(),
+      };
+    },
+    [enableTouchGestures],
+  );
 
-  const handleTouchEnd = useCallback((event: React.TouchEvent) => {
-    if (!enableTouchGestures || !touchStartRef.current) return;
+  const handleTouchEnd = useCallback(
+    (event: React.TouchEvent) => {
+      if (!enableTouchGestures || !touchStartRef.current) return;
 
-    const touch = event.changedTouches[0];
-    const deltaX = touch.clientX - touchStartRef.current.x;
-    const deltaY = touch.clientY - touchStartRef.current.y;
-    const deltaTime = Date.now() - touchStartRef.current.time;
+      const touch = event.changedTouches[0];
+      const deltaX = touch.clientX - touchStartRef.current.x;
+      const deltaY = touch.clientY - touchStartRef.current.y;
+      const deltaTime = Date.now() - touchStartRef.current.time;
 
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    const velocity = distance / deltaTime;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      const velocity = distance / deltaTime;
 
-    // Swipe gestures
-    if (velocity > 0.5 && distance > 50) {
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        // Horizontal swipe
-        if (deltaX > 0) {
-          // Swipe right - next channel
-          setActiveChannel(prev => Math.min(3, prev + 1));
+      // Swipe gestures
+      if (velocity > 0.5 && distance > 50) {
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          // Horizontal swipe
+          if (deltaX > 0) {
+            // Swipe right - next channel
+            setChannel(Math.min(decks.length - 1, activeChannel + 1));
+          } else {
+            // Swipe left - previous channel
+            setChannel(Math.max(0, activeChannel - 1));
+          }
         } else {
-          // Swipe left - previous channel
-          setActiveChannel(prev => Math.max(0, prev - 1));
-        }
-      } else {
-        // Vertical swipe
-        if (deltaY < 0) {
-          // Swipe up - expand panel
-          setIsExpanded(true);
-        } else {
-          // Swipe down - collapse panel
-          setIsExpanded(false);
+          // Vertical swipe
+          if (deltaY < 0) {
+            // Swipe up - expand panel
+            setIsExpanded(true);
+          } else {
+            // Swipe down - collapse panel
+            setIsExpanded(false);
+          }
         }
       }
-    }
 
-    touchStartRef.current = null;
-  }, [enableTouchGestures]);
+      touchStartRef.current = null;
+    },
+    [enableTouchGestures, decks.length, activeChannel, setChannel],
+  );
 
   // Panel resize handling
   const handlePanelResize = useCallback((entries: ResizeObserverEntry[]) => {
@@ -200,9 +237,17 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
 
       // Auto-adjust layout based on panel size
       if (width < 600) {
-        setLayout(prev => ({ ...prev, compactMode: true, orientation: 'vertical' }));
+        setLayout((prev) => ({
+          ...prev,
+          compactMode: true,
+          orientation: "vertical",
+        }));
       } else if (width > 1000) {
-        setLayout(prev => ({ ...prev, compactMode: false, orientation: 'horizontal' }));
+        setLayout((prev) => ({
+          ...prev,
+          compactMode: false,
+          orientation: "horizontal",
+        }));
       }
     }
   }, []);
@@ -220,31 +265,38 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
     };
   }, [handlePanelResize]);
 
-  const handleChannelToggle = useCallback(async (channel: number) => {
-    const deck = decks[channel];
+  const handleChannelToggle = useCallback(
+    async (channel: number) => {
+      const deck = decks[channel];
 
-    if (deck.stemPlayerEnabled) {
-      disableStemPlayer(channel);
-    } else {
-      try {
-        await enableStemPlayer(channel);
-      } catch (error) {
-        console.error(`Failed to enable stem player for channel ${channel}:`, error);
+      if (deck.stemPlayerEnabled) {
+        disableStemPlayer(channel);
+      } else {
+        try {
+          await enableStemPlayer(channel);
+        } catch (error) {
+          console.error(
+            `Failed to enable stem player for channel ${channel}:`,
+            error,
+          );
+        }
       }
-    }
-  }, [decks, enableStemPlayer, disableStemPlayer]);
+    },
+    [decks, enableStemPlayer, disableStemPlayer],
+  );
 
   const renderChannelTabs = () => (
     <div className="flex bg-gray-800 border-b border-gray-700">
       {decks.map((deck, index) => (
         <button
           key={index}
-          onClick={() => setActiveChannel(index)}
+          onClick={() => setChannel(index)}
           className={`
             flex-1 px-4 py-3 text-sm font-medium transition-all duration-150
-            ${activeChannel === index
-              ? 'bg-gray-700 text-white border-b-2 border-blue-500'
-              : 'text-gray-400 hover:text-gray-300 hover:bg-gray-750'
+            ${
+              activeChannel === index
+                ? "bg-gray-700 text-white border-b-2 border-blue-500"
+                : "text-gray-400 hover:text-gray-300 hover:bg-gray-750"
             }
           `}
         >
@@ -253,7 +305,7 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
             {deck.track && (
               <div
                 className={`w-2 h-2 rounded-full ${
-                  deck.stemPlayerEnabled ? 'bg-green-500' : 'bg-gray-500'
+                  deck.stemPlayerEnabled ? "bg-green-500" : "bg-gray-500"
                 }`}
               />
             )}
@@ -273,21 +325,21 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
       {/* View mode toggle */}
       <div className="flex bg-gray-700 rounded">
         <button
-          onClick={() => setStemViewMode('individual')}
+          onClick={() => setStemViewMode("individual")}
           className={`px-3 py-1 text-xs rounded-l ${
-            stemViewMode === 'individual'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-300 hover:bg-gray-600'
+            stemViewMode === "individual"
+              ? "bg-blue-600 text-white"
+              : "text-gray-300 hover:bg-gray-600"
           }`}
         >
           Individual
         </button>
         <button
-          onClick={() => setStemViewMode('combined')}
+          onClick={() => setStemViewMode("combined")}
           className={`px-3 py-1 text-xs rounded-r ${
-            stemViewMode === 'combined'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-300 hover:bg-gray-600'
+            stemViewMode === "combined"
+              ? "bg-blue-600 text-white"
+              : "text-gray-300 hover:bg-gray-600"
           }`}
         >
           Combined
@@ -297,27 +349,42 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
       {/* Layout toggles */}
       <div className="flex gap-1 ml-4">
         <button
-          onClick={() => setLayout(prev => ({ ...prev, showControls: !prev.showControls }))}
+          onClick={() =>
+            setLayout((prev) => ({ ...prev, showControls: !prev.showControls }))
+          }
           className={`px-2 py-1 text-xs rounded ${
-            layout.showControls ? 'bg-gray-600 text-white' : 'bg-gray-700 text-gray-400'
+            layout.showControls
+              ? "bg-gray-600 text-white"
+              : "bg-gray-700 text-gray-400"
           }`}
           title="Toggle Controls"
         >
           CTL
         </button>
         <button
-          onClick={() => setLayout(prev => ({ ...prev, showWaveforms: !prev.showWaveforms }))}
+          onClick={() =>
+            setLayout((prev) => ({
+              ...prev,
+              showWaveforms: !prev.showWaveforms,
+            }))
+          }
           className={`px-2 py-1 text-xs rounded ${
-            layout.showWaveforms ? 'bg-gray-600 text-white' : 'bg-gray-700 text-gray-400'
+            layout.showWaveforms
+              ? "bg-gray-600 text-white"
+              : "bg-gray-700 text-gray-400"
           }`}
           title="Toggle Waveforms"
         >
           WAV
         </button>
         <button
-          onClick={() => setLayout(prev => ({ ...prev, showMixer: !prev.showMixer }))}
+          onClick={() =>
+            setLayout((prev) => ({ ...prev, showMixer: !prev.showMixer }))
+          }
           className={`px-2 py-1 text-xs rounded ${
-            layout.showMixer ? 'bg-gray-600 text-white' : 'bg-gray-700 text-gray-400'
+            layout.showMixer
+              ? "bg-gray-600 text-white"
+              : "bg-gray-700 text-gray-400"
           }`}
           title="Toggle Mixer"
         >
@@ -327,21 +394,28 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
 
       {/* Orientation toggle */}
       <button
-        onClick={() => setLayout(prev => ({
-          ...prev,
-          orientation: prev.orientation === 'horizontal' ? 'vertical' : 'horizontal'
-        }))}
+        onClick={() =>
+          setLayout((prev) => ({
+            ...prev,
+            orientation:
+              prev.orientation === "horizontal" ? "vertical" : "horizontal",
+          }))
+        }
         className="px-2 py-1 text-xs bg-gray-700 text-gray-400 rounded hover:bg-gray-600 ml-2"
         title="Toggle Orientation"
       >
-        {layout.orientation === 'horizontal' ? '⟷' : '↕'}
+        {layout.orientation === "horizontal" ? "⟷" : "↕"}
       </button>
 
       {/* Compact mode toggle */}
       <button
-        onClick={() => setLayout(prev => ({ ...prev, compactMode: !prev.compactMode }))}
+        onClick={() =>
+          setLayout((prev) => ({ ...prev, compactMode: !prev.compactMode }))
+        }
         className={`px-2 py-1 text-xs rounded ${
-          layout.compactMode ? 'bg-gray-600 text-white' : 'bg-gray-700 text-gray-400'
+          layout.compactMode
+            ? "bg-gray-600 text-white"
+            : "bg-gray-700 text-gray-400"
         }`}
         title="Toggle Compact Mode"
       >
@@ -354,11 +428,11 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
           onClick={() => handleChannelToggle(activeChannel)}
           className={`px-3 py-1 text-xs rounded font-medium ${
             decks[activeChannel].stemPlayerEnabled
-              ? 'bg-red-600 text-white hover:bg-red-700'
-              : 'bg-green-600 text-white hover:bg-green-700'
+              ? "bg-red-600 text-white hover:bg-red-700"
+              : "bg-green-600 text-white hover:bg-green-700"
           }`}
         >
-          {decks[activeChannel].stemPlayerEnabled ? 'Disable' : 'Enable'} Stems
+          {decks[activeChannel].stemPlayerEnabled ? "Disable" : "Enable"} Stems
         </button>
       </div>
     </div>
@@ -372,7 +446,9 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
         <div className="flex-1 flex items-center justify-center bg-gray-800">
           <div className="text-center text-gray-500">
             <div className="text-lg font-medium mb-2">No Track Loaded</div>
-            <div className="text-sm">Load a track to channel {activeChannel + 1} to see stem controls</div>
+            <div className="text-sm">
+              Load a track to channel {activeChannel + 1} to see stem controls
+            </div>
           </div>
         </div>
       );
@@ -383,7 +459,9 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
         <div className="flex-1 flex items-center justify-center bg-gray-800">
           <div className="text-center text-gray-500">
             <div className="text-lg font-medium mb-2">Stem Player Disabled</div>
-            <div className="text-sm mb-4">Enable stem player to access advanced controls</div>
+            <div className="text-sm mb-4">
+              Enable stem player to access advanced controls
+            </div>
             <button
               onClick={() => handleChannelToggle(activeChannel)}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -395,24 +473,34 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
       );
     }
 
-    const stemTypes: (StemType | 'original')[] = ['drums', 'bass', 'melody', 'vocals', 'original'];
+    const stemTypes: (StemType | "original")[] = [
+      "drums",
+      "bass",
+      "melody",
+      "vocals",
+      "original",
+    ];
 
     return (
       <div
         className={`flex-1 p-4 overflow-auto ${
-          layout.orientation === 'horizontal' ? 'flex flex-row gap-4' : 'flex flex-col gap-4'
+          layout.orientation === "horizontal"
+            ? "flex flex-row gap-4"
+            : "flex flex-col gap-4"
         }`}
         style={{
-          maxWidth: layout.orientation === 'horizontal' ? maxWidth : undefined,
-          maxHeight: layout.orientation === 'vertical' ? maxHeight : undefined
+          maxWidth: layout.orientation === "horizontal" ? maxWidth : undefined,
+          maxHeight: layout.orientation === "vertical" ? maxHeight : undefined,
         }}
       >
         {/* Stem Controls */}
         {layout.showControls && (
-          <div className={`
-            ${layout.orientation === 'horizontal' ? 'flex flex-row gap-4' : 'grid grid-cols-5 gap-2'}
-            ${layout.compactMode ? 'scale-90' : ''}
-          `}>
+          <div
+            className={`
+            ${layout.orientation === "horizontal" ? "flex flex-row gap-4" : "grid grid-cols-5 gap-2"}
+            ${layout.compactMode ? "scale-90" : ""}
+          `}
+          >
             {stemTypes.map((stemType) => (
               <StemControls
                 key={stemType}
@@ -425,14 +513,16 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
 
         {/* Waveforms */}
         {layout.showWaveforms && (
-          <div className={`flex flex-col gap-2 ${layout.orientation === 'horizontal' ? 'flex-1' : ''}`}>
-            {stemViewMode === 'individual' ? (
+          <div
+            className={`flex flex-col gap-2 ${layout.orientation === "horizontal" ? "flex-1" : ""}`}
+          >
+            {stemViewMode === "individual" ? (
               stemTypes.map((stemType) => (
                 <StemWaveform
                   key={stemType}
                   channel={activeChannel}
                   stemType={stemType}
-                  width={layout.orientation === 'horizontal' ? 600 : undefined}
+                  width={layout.orientation === "horizontal" ? 600 : undefined}
                   height={layout.compactMode ? 80 : 120}
                   className="mb-2"
                 />
@@ -453,7 +543,7 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
 
         {/* Mixer */}
         {layout.showMixer && (
-          <div className={layout.orientation === 'horizontal' ? 'w-80' : ''}>
+          <div className={layout.orientation === "horizontal" ? "w-80" : ""}>
             <StemMixer
               channel={activeChannel}
               showAdvancedControls={!layout.compactMode}
@@ -473,8 +563,16 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
         >
           <div className="flex items-center justify-center gap-2">
             <span>Show Stem Controls</span>
-            <svg className="w-4 h-4 transform rotate-180" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            <svg
+              className="w-4 h-4 transform rotate-180"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
         </button>
@@ -490,7 +588,7 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
       onTouchEnd={handleTouchEnd}
       style={{
         maxHeight: isExpanded ? maxHeight : undefined,
-        transition: 'max-height 0.3s ease-in-out'
+        transition: "max-height 0.3s ease-in-out",
       }}
     >
       {/* Header */}
@@ -507,7 +605,11 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
           className="text-gray-400 hover:text-gray-300 transition-colors duration-150"
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            <path
+              fillRule="evenodd"
+              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
           </svg>
         </button>
       </div>
@@ -525,7 +627,8 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
       {enableKeyboardShortcuts && (
         <div className="px-4 py-2 bg-gray-800 border-t border-gray-700">
           <div className="text-xs text-gray-500">
-            Shortcuts: Ctrl+S (toggle), Ctrl+V (view), Ctrl+1-4 (channels), Ctrl+C (compact), Ctrl+H (orientation)
+            Shortcuts: Ctrl+S (toggle), Ctrl+V (view), Ctrl+1-4 (channels),
+            Ctrl+C (compact), Ctrl+H (orientation)
           </div>
         </div>
       )}
@@ -533,5 +636,8 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
   );
 };
 
-export default memo(StemVisualizerPanel);
+const MemoizedStemVisualizerPanel = memo(StemVisualizerPanel);
+MemoizedStemVisualizerPanel.displayName = "StemVisualizerPanel";
+
+export default MemoizedStemVisualizerPanel;
 export { StemVisualizerPanel };

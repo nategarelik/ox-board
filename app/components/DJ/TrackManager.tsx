@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { TrackManagerProps } from '@/app/types/dj'
+import { TrackManagerProps } from "@/types/dj";
 
 export default function TrackManager({ decks, viewMode }: TrackManagerProps) {
   // This component will manage track loading and playlist features
@@ -14,5 +14,5 @@ export default function TrackManager({ decks, viewMode }: TrackManagerProps) {
   // - BPM analysis
   // - Key detection
 
-  return null
+  return null;
 }

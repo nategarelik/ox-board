@@ -1,15 +1,15 @@
-'use client'
+"use client";
 
-import { ViewMode } from '@/app/types/dj'
+import { ViewMode } from "@/types/dj";
 
 interface HeaderProps {
-  isDJModeActive: boolean
-  cameraActive: boolean
-  viewMode: ViewMode
-  onViewModeChange: (mode: ViewMode) => void
-  onStartDJ: () => void
-  onStopDJ: () => void
-  onShowTutorial: () => void
+  isDJModeActive: boolean;
+  cameraActive: boolean;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
+  onStartDJ: () => void;
+  onStopDJ: () => void;
+  onShowTutorial: () => void;
 }
 
 export default function Header({
@@ -19,7 +19,7 @@ export default function Header({
   onViewModeChange,
   onStartDJ,
   onStopDJ,
-  onShowTutorial
+  onShowTutorial,
 }: HeaderProps) {
   return (
     <header className="bg-gradient-to-r from-purple-900 to-blue-900 p-4 shadow-lg">
@@ -31,14 +31,14 @@ export default function Header({
 
         {isDJModeActive && (
           <div className="flex gap-2">
-            {(['decks', 'mixer', 'stems', 'effects'] as const).map((mode) => (
+            {(["decks", "mixer", "stems", "effects"] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => onViewModeChange(mode)}
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   viewMode === mode
-                    ? 'bg-white text-purple-900 font-bold'
-                    : 'bg-purple-700 text-white hover:bg-purple-600'
+                    ? "bg-white text-purple-900 font-bold"
+                    : "bg-purple-700 text-white hover:bg-purple-600"
                 }`}
               >
                 {mode.charAt(0).toUpperCase() + mode.slice(1)}
@@ -65,14 +65,14 @@ export default function Header({
             onClick={isDJModeActive ? onStopDJ : onStartDJ}
             className={`px-6 py-3 rounded-lg font-bold transition-all ${
               isDJModeActive
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-green-600 hover:bg-green-700 text-white animate-pulse'
+                ? "bg-red-600 hover:bg-red-700 text-white"
+                : "bg-green-600 hover:bg-green-700 text-white animate-pulse"
             }`}
           >
-            {isDJModeActive ? 'Stop DJ Mode' : 'Start DJ Mode'}
+            {isDJModeActive ? "Stop DJ Mode" : "Start DJ Mode"}
           </button>
         </div>
       </div>
     </header>
-  )
+  );
 }

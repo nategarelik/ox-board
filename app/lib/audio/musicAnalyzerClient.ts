@@ -12,8 +12,8 @@ import type {
   MusicAnalysisRequest,
   MusicAnalysisResponse,
   BeatPhaseRequest,
-  BeatPhaseResponse
-} from '../workers/musicAnalyzer.worker';
+  BeatPhaseResponse,
+} from "../workers/musicAnalyzer.worker";
 
 import type {
   MusicAnalysisResult,
@@ -21,8 +21,8 @@ import type {
   KeyAnalysis,
   SpectralFeatures,
   OnsetDetection,
-  AnalysisOptions
-} from './musicAnalyzer';
+  AnalysisOptions,
+} from "./musicAnalyzer";
 
 export interface AnalysisStats {
   totalRequests: number;
@@ -39,47 +39,72 @@ export interface WorkerStatus {
   stats: AnalysisStats;
 }
 
+export interface MusicAnalyzerClientOptions {
+  requestTimeoutMs?: number;
+}
+
+interface PendingRequest {
+  resolve: (value: any) => void;
+  reject: (error: Error) => void;
+  timestamp: number;
+  timeoutId: ReturnType<typeof setTimeout>;
+}
+
 export class MusicAnalyzerClient {
   private worker: Worker | null = null;
   private isInitialized = false;
+  private isDestroyed = false;
   private requestCounter = 0;
-  private pendingRequests = new Map<string, {
-    resolve: (value: any) => void;
-    reject: (error: Error) => void;
-    timestamp: number;
-  }>();
+  private readonly requestTimeoutMs: number;
+  private pendingRequests = new Map<string, PendingRequest>();
 
   private stats: AnalysisStats = {
     totalRequests: 0,
     successfulRequests: 0,
     failedRequests: 0,
     averageProcessingTime: 0,
-    lastAnalysisTime: 0
+    lastAnalysisTime: 0,
   };
 
   private processingTimes: number[] = [];
 
-  constructor() {
+  constructor(options: MusicAnalyzerClientOptions = {}) {
+    const timeout = options.requestTimeoutMs ?? 3000;
+    this.requestTimeoutMs = Number.isFinite(timeout)
+      ? Math.max(500, timeout)
+      : 3000;
     this.initializeWorker();
   }
 
   private async initializeWorker(): Promise<void> {
+    if (this.isDestroyed) {
+      return;
+    }
+
+    if (this.worker) {
+      this.isInitialized = true;
+      return;
+    }
+
     try {
       // Check if we're in the browser
-      if (typeof window === 'undefined') {
-        console.warn('Music analyzer worker can only be initialized in browser');
+      if (typeof window === "undefined") {
+        console.warn(
+          "Music analyzer worker can only be initialized in browser",
+        );
         return;
       }
 
-      // Create worker with fallback for Next.js
+      // Create worker with fallback for Next.js 15
       try {
-        // Try the standard way first
+        // Use module worker for better Next.js 15 compatibility
         this.worker = new Worker(
-          new URL('../workers/musicAnalyzer.worker.ts', import.meta.url)
+          new URL("../workers/musicAnalyzer.worker.ts", import.meta.url),
+          { type: "module" },
         );
       } catch (e) {
         // Fallback: Create a simple inline worker for basic functionality
-        console.warn('Using fallback worker implementation');
+        console.warn("Using fallback worker implementation");
         const workerCode = `
           self.onmessage = function(e) {
             const { id, type, audioData, sampleRate } = e.data;
@@ -106,7 +131,7 @@ export class MusicAnalyzerClient {
           };
         `;
 
-        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const blob = new Blob([workerCode], { type: "application/javascript" });
         const workerUrl = URL.createObjectURL(blob);
         this.worker = new Worker(workerUrl);
       }
@@ -115,23 +140,26 @@ export class MusicAnalyzerClient {
       this.worker.onerror = this.handleWorkerError.bind(this);
 
       this.isInitialized = true;
-      console.log('Music analyzer client initialized');
+      console.log("Music analyzer client initialized");
     } catch (error) {
-      console.error('Failed to initialize music analyzer worker:', error);
+      console.error("Failed to initialize music analyzer worker:", error);
       // Don't throw - allow app to work without worker
       this.isInitialized = false;
     }
   }
 
-  private handleWorkerMessage(event: MessageEvent<MusicAnalysisResponse>): void {
+  private handleWorkerMessage(
+    event: MessageEvent<MusicAnalysisResponse>,
+  ): void {
     const response = event.data;
     const pending = this.pendingRequests.get(response.id);
 
     if (!pending) {
-      console.warn('Received response for unknown request:', response.id);
+      console.warn("Received response for unknown request:", response.id);
       return;
     }
 
+    clearTimeout(pending.timeoutId);
     this.pendingRequests.delete(response.id);
 
     // Update statistics
@@ -143,7 +171,8 @@ export class MusicAnalyzerClient {
       }
 
       this.stats.averageProcessingTime =
-        this.processingTimes.reduce((a, b) => a + b) / this.processingTimes.length;
+        this.processingTimes.reduce((a, b) => a + b) /
+        this.processingTimes.length;
     }
 
     if (response.success) {
@@ -152,42 +181,61 @@ export class MusicAnalyzerClient {
       pending.resolve(response.result);
     } else {
       this.stats.failedRequests++;
-      pending.reject(new Error(response.error || 'Analysis failed'));
+      pending.reject(new Error(response.error || "Analysis failed"));
     }
   }
 
   private handleWorkerError(error: ErrorEvent): void {
-    console.error('Music analyzer worker error:', error);
+    console.error("Music analyzer worker error:", error);
 
     // Reject all pending requests
-    this.pendingRequests.forEach(pending => {
-      pending.reject(new Error('Worker error: ' + error.message));
+    this.pendingRequests.forEach((pending) => {
+      clearTimeout(pending.timeoutId);
+      pending.reject(new Error("Worker error: " + error.message));
     });
     this.pendingRequests.clear();
 
     // Try to reinitialize worker
     this.isInitialized = false;
-    setTimeout(() => {
-      this.initializeWorker();
-    }, 1000);
+    if (!this.isDestroyed) {
+      setTimeout(() => {
+        if (!this.isDestroyed) {
+          this.initializeWorker();
+        }
+      }, 1000);
+    }
   }
 
   private async sendRequest<T>(
     type: string,
     audioData: Float32Array,
     sampleRate: number,
-    options?: any
+    options?: any,
   ): Promise<T> {
+    if (this.isDestroyed) {
+      return Promise.reject(
+        new Error("MusicAnalyzerClient has been destroyed"),
+      );
+    }
+
     if (!this.isInitialized || !this.worker) {
       await this.initializeWorker();
     }
 
+    if (this.isDestroyed) {
+      return Promise.reject(
+        new Error("MusicAnalyzerClient has been destroyed"),
+      );
+    }
+
     if (!this.worker) {
-      console.warn('Music analyzer worker not available, returning default values');
+      console.warn(
+        "Music analyzer worker not available, returning default values",
+      );
       // Return sensible defaults when worker is not available
       return {
         bpm: { bpm: 120, confidence: 0.5 },
-        key: { key: 'C', scale: 'major', confidence: 0.5 }
+        key: { key: "C", scale: "major", confidence: 0.5 },
       } as any;
     }
 
@@ -197,23 +245,23 @@ export class MusicAnalyzerClient {
       type: type as any,
       audioData,
       sampleRate,
-      ...options
+      ...options,
     };
 
     return new Promise<T>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        if (this.pendingRequests.has(id)) {
+          this.pendingRequests.delete(id);
+          reject(new Error("Request timeout"));
+        }
+      }, this.requestTimeoutMs);
+
       this.pendingRequests.set(id, {
         resolve,
         reject,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        timeoutId,
       });
-
-      // Set timeout for request
-      setTimeout(() => {
-        if (this.pendingRequests.has(id)) {
-          this.pendingRequests.delete(id);
-          reject(new Error('Request timeout'));
-        }
-      }, 30000); // 30 second timeout
 
       this.worker!.postMessage(request);
     });
@@ -225,13 +273,13 @@ export class MusicAnalyzerClient {
   public async analyzeTrack(
     audioData: Float32Array,
     sampleRate: number = 44100,
-    options?: AnalysisOptions
+    options?: AnalysisOptions,
   ): Promise<MusicAnalysisResult> {
     return this.sendRequest<MusicAnalysisResult>(
-      'analyze',
+      "analyze",
       audioData,
       sampleRate,
-      { options }
+      { options },
     );
   }
 
@@ -241,13 +289,13 @@ export class MusicAnalyzerClient {
   public async analyzeRealTime(
     audioData: Float32Array,
     sampleRate: number = 44100,
-    options?: AnalysisOptions
+    options?: AnalysisOptions,
   ): Promise<Partial<MusicAnalysisResult>> {
     return this.sendRequest<Partial<MusicAnalysisResult>>(
-      'realtime',
+      "realtime",
       audioData,
       sampleRate,
-      { options }
+      { options },
     );
   }
 
@@ -256,9 +304,9 @@ export class MusicAnalyzerClient {
    */
   public async extractBPM(
     audioData: Float32Array,
-    sampleRate: number = 44100
+    sampleRate: number = 44100,
   ): Promise<BPMAnalysis> {
-    return this.sendRequest<BPMAnalysis>('bpm', audioData, sampleRate);
+    return this.sendRequest<BPMAnalysis>("bpm", audioData, sampleRate);
   }
 
   /**
@@ -266,9 +314,9 @@ export class MusicAnalyzerClient {
    */
   public async detectKey(
     audioData: Float32Array,
-    sampleRate: number = 44100
+    sampleRate: number = 44100,
   ): Promise<KeyAnalysis> {
-    return this.sendRequest<KeyAnalysis>('key', audioData, sampleRate);
+    return this.sendRequest<KeyAnalysis>("key", audioData, sampleRate);
   }
 
   /**
@@ -276,9 +324,13 @@ export class MusicAnalyzerClient {
    */
   public async getSpectralFeatures(
     audioData: Float32Array,
-    sampleRate: number = 44100
+    sampleRate: number = 44100,
   ): Promise<SpectralFeatures> {
-    return this.sendRequest<SpectralFeatures>('spectral', audioData, sampleRate);
+    return this.sendRequest<SpectralFeatures>(
+      "spectral",
+      audioData,
+      sampleRate,
+    );
   }
 
   /**
@@ -286,9 +338,9 @@ export class MusicAnalyzerClient {
    */
   public async detectOnsets(
     audioData: Float32Array,
-    sampleRate: number = 44100
+    sampleRate: number = 44100,
   ): Promise<OnsetDetection> {
-    return this.sendRequest<OnsetDetection>('onsets', audioData, sampleRate);
+    return this.sendRequest<OnsetDetection>("onsets", audioData, sampleRate);
   }
 
   /**
@@ -297,13 +349,13 @@ export class MusicAnalyzerClient {
   public async getBeatPhase(
     audioData: Float32Array,
     currentTime: number,
-    sampleRate: number = 44100
+    sampleRate: number = 44100,
   ): Promise<BeatPhaseResponse> {
     return this.sendRequest<BeatPhaseResponse>(
-      'beatphase',
+      "beatphase",
       audioData,
       sampleRate,
-      { currentTime }
+      { currentTime },
     );
   }
 
@@ -313,12 +365,30 @@ export class MusicAnalyzerClient {
   public static isCompatibleKey(key1: string, key2: string): boolean {
     // Camelot wheel compatibility
     const CAMELOT_WHEEL: { [key: string]: string } = {
-      'C major': '8B', 'G major': '9B', 'D major': '10B', 'A major': '11B',
-      'E major': '12B', 'B major': '1B', 'F# major': '2B', 'C# major': '3B',
-      'G# major': '4B', 'D# major': '5B', 'A# major': '6B', 'F major': '7B',
-      'A minor': '8A', 'E minor': '9A', 'B minor': '10A', 'F# minor': '11A',
-      'C# minor': '12A', 'G# minor': '1A', 'D# minor': '2A', 'A# minor': '3A',
-      'F minor': '4A', 'C minor': '5A', 'G minor': '6A', 'D minor': '7A'
+      "C major": "8B",
+      "G major": "9B",
+      "D major": "10B",
+      "A major": "11B",
+      "E major": "12B",
+      "B major": "1B",
+      "F# major": "2B",
+      "C# major": "3B",
+      "G# major": "4B",
+      "D# major": "5B",
+      "A# major": "6B",
+      "F major": "7B",
+      "A minor": "8A",
+      "E minor": "9A",
+      "B minor": "10A",
+      "F# minor": "11A",
+      "C# minor": "12A",
+      "G# minor": "1A",
+      "D# minor": "2A",
+      "A# minor": "3A",
+      "F minor": "4A",
+      "C minor": "5A",
+      "G minor": "6A",
+      "D minor": "7A",
     };
 
     const camelot1 = CAMELOT_WHEEL[key1];
@@ -332,9 +402,11 @@ export class MusicAnalyzerClient {
     const type2 = camelot2.slice(-1);
 
     // Compatible if same position different type, or adjacent positions same type
-    return (pos1 === pos2 && type1 !== type2) ||
-           (Math.abs(pos1 - pos2) <= 1 && type1 === type2) ||
-           (Math.abs(pos1 - pos2) === 11 && type1 === type2); // Wrap around
+    return (
+      (pos1 === pos2 && type1 !== type2) ||
+      (Math.abs(pos1 - pos2) <= 1 && type1 === type2) ||
+      (Math.abs(pos1 - pos2) === 11 && type1 === type2)
+    ); // Wrap around
   }
 
   /**
@@ -343,7 +415,7 @@ export class MusicAnalyzerClient {
   public static getBPMMatchPercentage(bpm1: number, bpm2: number): number {
     const diff = Math.abs(bpm1 - bpm2);
     const maxBPM = Math.max(bpm1, bpm2);
-    const percentage = 1 - (diff / maxBPM);
+    const percentage = 1 - diff / maxBPM;
     return Math.max(0, Math.min(1, percentage));
   }
 
@@ -363,7 +435,7 @@ export class MusicAnalyzerClient {
       isInitialized: this.isInitialized,
       isProcessing: this.pendingRequests.size > 0,
       queueSize: this.pendingRequests.size,
-      stats: { ...this.stats }
+      stats: { ...this.stats },
     };
   }
 
@@ -376,7 +448,7 @@ export class MusicAnalyzerClient {
       successfulRequests: 0,
       failedRequests: 0,
       averageProcessingTime: 0,
-      lastAnalysisTime: 0
+      lastAnalysisTime: 0,
     };
     this.processingTimes = [];
   }
@@ -385,8 +457,9 @@ export class MusicAnalyzerClient {
    * Cancel all pending requests
    */
   public cancelAll(): void {
-    this.pendingRequests.forEach(pending => {
-      pending.reject(new Error('Request cancelled'));
+    this.pendingRequests.forEach((pending) => {
+      clearTimeout(pending.timeoutId);
+      pending.reject(new Error("Request cancelled"));
     });
     this.pendingRequests.clear();
   }
@@ -395,6 +468,11 @@ export class MusicAnalyzerClient {
    * Destroy worker and cleanup
    */
   public destroy(): void {
+    if (this.isDestroyed) {
+      return;
+    }
+
+    this.isDestroyed = true;
     this.cancelAll();
 
     if (this.worker) {

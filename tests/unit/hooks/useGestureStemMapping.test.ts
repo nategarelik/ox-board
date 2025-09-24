@@ -3,13 +3,13 @@
  * Focuses on performance optimization and integration
  */
 
-import { renderHook, act } from '@testing-library/react';
-import { useGestureStemMapping } from '../useGestureStemMapping';
-import { HandResult, HandLandmark } from '../../lib/gesture/recognition';
-import { Point2D } from '../../lib/gesture/smoothing';
+import { renderHook, act } from "@testing-library/react";
+import { useGestureStemMapping } from "@/hooks/useGestureStemMapping";
+import { HandResult, HandLandmark } from "@/lib/gesture/recognition";
+import { Point2D } from "@/lib/gesture/smoothing";
 
 // Mock the enhanced DJ store
-jest.mock('../../stores/enhancedDjStoreWithGestures', () => ({
+jest.mock("@/stores/enhancedDjStoreWithGestures", () => ({
   __esModule: true,
   default: jest.fn(() => ({
     gestureStemMapper: null,
@@ -19,26 +19,29 @@ jest.mock('../../stores/enhancedDjStoreWithGestures', () => ({
     processHandGestures: jest.fn(),
     initializeGestureMapper: jest.fn(),
     setGestureMapperEnabled: jest.fn(),
-    setGestureScreenDimensions: jest.fn()
-  }))
+    setGestureScreenDimensions: jest.fn(),
+  })),
 }));
 
 // Mock hand creation helper
-const createMockHand = (handedness: 'Left' | 'Right', confidence: number = 0.9): HandResult => {
+const createMockHand = (
+  handedness: "Left" | "Right",
+  confidence: number = 0.9,
+): HandResult => {
   const landmarks: Point2D[] = Array.from({ length: 21 }, (_, i) => ({
-    x: 0.5 + (i * 0.01),
-    y: 0.5 + (i * 0.01)
+    x: 0.5 + i * 0.01,
+    y: 0.5 + i * 0.01,
   }));
 
   return {
     landmarks,
     handedness,
     confidence,
-    worldLandmarks: landmarks.map(p => ({ x: p.x, y: p.y, z: 0 }))
+    worldLandmarks: landmarks.map((p) => ({ x: p.x, y: p.y, z: 0 })),
   };
 };
 
-describe('useGestureStemMapping', () => {
+describe("useGestureStemMapping", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
@@ -48,7 +51,7 @@ describe('useGestureStemMapping', () => {
     jest.useRealTimers();
   });
 
-  it('should initialize with default configuration', () => {
+  it("should initialize with default configuration", () => {
     const { result } = renderHook(() => useGestureStemMapping());
 
     expect(result.current.config.performanceMode).toBe(true);
@@ -57,12 +60,12 @@ describe('useGestureStemMapping', () => {
     expect(result.current.config.throttleInterval).toBe(16);
   });
 
-  it('should initialize with custom configuration', () => {
+  it("should initialize with custom configuration", () => {
     const customConfig = {
       performanceMode: false,
       maxLatency: 100,
       smoothingEnabled: false,
-      throttleInterval: 32
+      throttleInterval: 32,
     };
 
     const { result } = renderHook(() => useGestureStemMapping(customConfig));
@@ -73,7 +76,7 @@ describe('useGestureStemMapping', () => {
     expect(result.current.config.throttleInterval).toBe(32);
   });
 
-  it('should initialize gesture mapper on mount', () => {
+  it("should initialize gesture mapper on mount", () => {
     const mockInitializeGestureMapper = jest.fn();
     const mockStore = {
       gestureStemMapper: null,
@@ -83,24 +86,28 @@ describe('useGestureStemMapping', () => {
       processHandGestures: jest.fn(),
       initializeGestureMapper: mockInitializeGestureMapper,
       setGestureMapperEnabled: jest.fn(),
-      setGestureScreenDimensions: jest.fn()
+      setGestureScreenDimensions: jest.fn(),
     };
 
-    require('../../stores/enhancedDjStoreWithGestures').default.mockReturnValue(mockStore);
+    require("@/stores/enhancedDjStoreWithGestures").default.mockReturnValue(
+      mockStore,
+    );
 
     renderHook(() => useGestureStemMapping());
 
     expect(mockInitializeGestureMapper).toHaveBeenCalledWith({
       latencyTarget: 50,
       smoothingEnabled: true,
-      gestureConfidenceThreshold: 0.7
+      gestureConfidenceThreshold: 0.7,
     });
   });
 
-  it.skip('should throttle gesture processing based on interval', async () => {
+  it.skip("should throttle gesture processing based on interval", async () => {
     // Mock performance.now() to control timing
     let currentTime = 0;
-    const perfSpy = jest.spyOn(performance, 'now').mockImplementation(() => currentTime);
+    const perfSpy = jest
+      .spyOn(performance, "now")
+      .mockImplementation(() => currentTime);
 
     const mockProcessHandGestures = jest.fn().mockResolvedValue(undefined);
     const mockStore = {
@@ -111,18 +118,22 @@ describe('useGestureStemMapping', () => {
       processHandGestures: mockProcessHandGestures,
       initializeGestureMapper: jest.fn(),
       setGestureMapperEnabled: jest.fn(),
-      setGestureScreenDimensions: jest.fn()
+      setGestureScreenDimensions: jest.fn(),
     };
 
-    require('../../stores/enhancedDjStoreWithGestures').default.mockReturnValue(mockStore);
+    require("@/stores/enhancedDjStoreWithGestures").default.mockReturnValue(
+      mockStore,
+    );
 
-    const { result } = renderHook(() => useGestureStemMapping({
-      throttleInterval: 100, // 100ms throttle
-      performanceMode: false // Disable performance mode to avoid skipping
-    }));
+    const { result } = renderHook(() =>
+      useGestureStemMapping({
+        throttleInterval: 100, // 100ms throttle
+        performanceMode: false, // Disable performance mode to avoid skipping
+      }),
+    );
 
-    const leftHand = createMockHand('Left');
-    const rightHand = createMockHand('Right');
+    const leftHand = createMockHand("Left");
+    const rightHand = createMockHand("Right");
 
     // Process first gesture at time 0
     currentTime = 0;
@@ -154,9 +165,9 @@ describe('useGestureStemMapping', () => {
     perfSpy.mockRestore();
   });
 
-  it('should skip processing when already processing in performance mode', async () => {
-    const mockProcessHandGestures = jest.fn().mockImplementation(() =>
-      new Promise(resolve => setTimeout(resolve, 200)) // Slow processing
+  it("should skip processing when already processing in performance mode", async () => {
+    const mockProcessHandGestures = jest.fn().mockImplementation(
+      () => new Promise((resolve) => setTimeout(resolve, 200)), // Slow processing
     );
 
     const mockStore = {
@@ -167,17 +178,21 @@ describe('useGestureStemMapping', () => {
       processHandGestures: mockProcessHandGestures,
       initializeGestureMapper: jest.fn(),
       setGestureMapperEnabled: jest.fn(),
-      setGestureScreenDimensions: jest.fn()
+      setGestureScreenDimensions: jest.fn(),
     };
 
-    require('../../stores/enhancedDjStoreWithGestures').default.mockReturnValue(mockStore);
+    require("@/stores/enhancedDjStoreWithGestures").default.mockReturnValue(
+      mockStore,
+    );
 
-    const { result } = renderHook(() => useGestureStemMapping({
-      performanceMode: true,
-      throttleInterval: 0 // No throttling
-    }));
+    const { result } = renderHook(() =>
+      useGestureStemMapping({
+        performanceMode: true,
+        throttleInterval: 0, // No throttling
+      }),
+    );
 
-    const leftHand = createMockHand('Left');
+    const leftHand = createMockHand("Left");
 
     // Start first processing
     act(() => {
@@ -193,7 +208,7 @@ describe('useGestureStemMapping', () => {
     expect(mockProcessHandGestures).toHaveBeenCalledTimes(1);
   });
 
-  it('should apply smoothing when enabled', async () => {
+  it("should apply smoothing when enabled", async () => {
     const mockProcessHandGestures = jest.fn();
     const mockStore = {
       gestureStemMapper: { dispose: jest.fn() },
@@ -203,17 +218,21 @@ describe('useGestureStemMapping', () => {
       processHandGestures: mockProcessHandGestures,
       initializeGestureMapper: jest.fn(),
       setGestureMapperEnabled: jest.fn(),
-      setGestureScreenDimensions: jest.fn()
+      setGestureScreenDimensions: jest.fn(),
     };
 
-    require('../../stores/enhancedDjStoreWithGestures').default.mockReturnValue(mockStore);
+    require("@/stores/enhancedDjStoreWithGestures").default.mockReturnValue(
+      mockStore,
+    );
 
-    const { result } = renderHook(() => useGestureStemMapping({
-      smoothingEnabled: true,
-      throttleInterval: 0
-    }));
+    const { result } = renderHook(() =>
+      useGestureStemMapping({
+        smoothingEnabled: true,
+        throttleInterval: 0,
+      }),
+    );
 
-    const leftHand = createMockHand('Left');
+    const leftHand = createMockHand("Left");
 
     await act(async () => {
       result.current.processGesturesSync(leftHand, null);
@@ -227,7 +246,7 @@ describe('useGestureStemMapping', () => {
     expect(callArgs[1]).toBeNull(); // Right hand should be null
   });
 
-  it('should track performance metrics', async () => {
+  it("should track performance metrics", async () => {
     const mockStore = {
       gestureStemMapper: { dispose: jest.fn() },
       gestureMapperEnabled: true,
@@ -236,15 +255,17 @@ describe('useGestureStemMapping', () => {
       processHandGestures: jest.fn(),
       initializeGestureMapper: jest.fn(),
       setGestureMapperEnabled: jest.fn(),
-      setGestureScreenDimensions: jest.fn()
+      setGestureScreenDimensions: jest.fn(),
     };
 
-    require('../../stores/enhancedDjStoreWithGestures').default.mockReturnValue(mockStore);
+    require("@/stores/enhancedDjStoreWithGestures").default.mockReturnValue(
+      mockStore,
+    );
 
     const { result } = renderHook(() => useGestureStemMapping());
 
     // Process some gestures
-    const leftHand = createMockHand('Left');
+    const leftHand = createMockHand("Left");
 
     await act(async () => {
       await result.current.processGesturesSync(leftHand, null);
@@ -262,7 +283,7 @@ describe('useGestureStemMapping', () => {
     expect(result.current.isPerformant).toBeDefined();
   });
 
-  it('should handle batch processing', async () => {
+  it("should handle batch processing", async () => {
     const mockProcessHandGestures = jest.fn();
     const mockStore = {
       gestureStemMapper: { dispose: jest.fn() },
@@ -272,20 +293,28 @@ describe('useGestureStemMapping', () => {
       processHandGestures: mockProcessHandGestures,
       initializeGestureMapper: jest.fn(),
       setGestureMapperEnabled: jest.fn(),
-      setGestureScreenDimensions: jest.fn()
+      setGestureScreenDimensions: jest.fn(),
     };
 
-    require('../../stores/enhancedDjStoreWithGestures').default.mockReturnValue(mockStore);
+    require("@/stores/enhancedDjStoreWithGestures").default.mockReturnValue(
+      mockStore,
+    );
 
-    const { result } = renderHook(() => useGestureStemMapping({
-      performanceMode: true,
-      throttleInterval: 0
-    }));
+    const { result } = renderHook(() =>
+      useGestureStemMapping({
+        performanceMode: true,
+        throttleInterval: 0,
+      }),
+    );
 
     const gestureBatch = [
-      { leftHand: createMockHand('Left'), rightHand: null, channel: 0 },
-      { leftHand: null, rightHand: createMockHand('Right'), channel: 1 },
-      { leftHand: createMockHand('Left'), rightHand: createMockHand('Right'), channel: 2 }
+      { leftHand: createMockHand("Left"), rightHand: null, channel: 0 },
+      { leftHand: null, rightHand: createMockHand("Right"), channel: 1 },
+      {
+        leftHand: createMockHand("Left"),
+        rightHand: createMockHand("Right"),
+        channel: 2,
+      },
     ];
 
     await act(async () => {
@@ -299,7 +328,7 @@ describe('useGestureStemMapping', () => {
     expect(callArgs[2]).toBe(2); // Should use channel from last gesture
   });
 
-  it('should handle screen dimension updates', () => {
+  it("should handle screen dimension updates", () => {
     const mockSetGestureScreenDimensions = jest.fn();
     const mockStore = {
       gestureStemMapper: { dispose: jest.fn() },
@@ -309,10 +338,12 @@ describe('useGestureStemMapping', () => {
       processHandGestures: jest.fn(),
       initializeGestureMapper: jest.fn(),
       setGestureMapperEnabled: jest.fn(),
-      setGestureScreenDimensions: mockSetGestureScreenDimensions
+      setGestureScreenDimensions: mockSetGestureScreenDimensions,
     };
 
-    require('../../stores/enhancedDjStoreWithGestures').default.mockReturnValue(mockStore);
+    require("@/stores/enhancedDjStoreWithGestures").default.mockReturnValue(
+      mockStore,
+    );
 
     const { result } = renderHook(() => useGestureStemMapping());
 
@@ -323,10 +354,12 @@ describe('useGestureStemMapping', () => {
     expect(mockSetGestureScreenDimensions).toHaveBeenCalledWith(1920, 1080);
   });
 
-  it('should handle high latency recovery', () => {
-    const { result } = renderHook(() => useGestureStemMapping({
-      maxLatency: 50
-    }));
+  it("should handle high latency recovery", () => {
+    const { result } = renderHook(() =>
+      useGestureStemMapping({
+        maxLatency: 50,
+      }),
+    );
 
     // Simulate high latency metrics
     act(() => {
@@ -339,7 +372,7 @@ describe('useGestureStemMapping', () => {
     expect(result.current.isPerformant).toBeDefined();
   });
 
-  it('should schedule gesture processing with animation frames', async () => {
+  it("should schedule gesture processing with animation frames", async () => {
     const mockProcessHandGestures = jest.fn();
     const mockStore = {
       gestureStemMapper: { dispose: jest.fn() },
@@ -349,13 +382,15 @@ describe('useGestureStemMapping', () => {
       processHandGestures: mockProcessHandGestures,
       initializeGestureMapper: jest.fn(),
       setGestureMapperEnabled: jest.fn(),
-      setGestureScreenDimensions: jest.fn()
+      setGestureScreenDimensions: jest.fn(),
     };
 
-    require('../../stores/enhancedDjStoreWithGestures').default.mockReturnValue(mockStore);
+    require("@/stores/enhancedDjStoreWithGestures").default.mockReturnValue(
+      mockStore,
+    );
 
     // Mock requestAnimationFrame
-    const mockRequestAnimationFrame = jest.fn(cb => {
+    const mockRequestAnimationFrame = jest.fn((cb) => {
       setTimeout(cb, 16); // ~60fps
       return 1;
     });
@@ -363,7 +398,7 @@ describe('useGestureStemMapping', () => {
 
     const { result } = renderHook(() => useGestureStemMapping());
 
-    const leftHand = createMockHand('Left');
+    const leftHand = createMockHand("Left");
 
     act(() => {
       result.current.processGestures(leftHand, null);
@@ -377,7 +412,7 @@ describe('useGestureStemMapping', () => {
     });
   });
 
-  it('should enable/disable processing correctly', () => {
+  it("should enable/disable processing correctly", () => {
     const mockSetGestureMapperEnabled = jest.fn();
     const mockStore = {
       gestureStemMapper: { dispose: jest.fn() },
@@ -387,10 +422,12 @@ describe('useGestureStemMapping', () => {
       processHandGestures: jest.fn(),
       initializeGestureMapper: jest.fn(),
       setGestureMapperEnabled: mockSetGestureMapperEnabled,
-      setGestureScreenDimensions: jest.fn()
+      setGestureScreenDimensions: jest.fn(),
     };
 
-    require('../../stores/enhancedDjStoreWithGestures').default.mockReturnValue(mockStore);
+    require("@/stores/enhancedDjStoreWithGestures").default.mockReturnValue(
+      mockStore,
+    );
 
     const { result } = renderHook(() => useGestureStemMapping());
 
@@ -403,7 +440,7 @@ describe('useGestureStemMapping', () => {
     expect(mockSetGestureMapperEnabled).toHaveBeenCalledWith(true);
   });
 
-  it('should cleanup on unmount', () => {
+  it("should cleanup on unmount", () => {
     const mockCancelAnimationFrame = jest.fn();
     global.cancelAnimationFrame = mockCancelAnimationFrame;
 
@@ -415,7 +452,7 @@ describe('useGestureStemMapping', () => {
     expect(true).toBe(true);
   });
 
-  it('should handle disabled state gracefully', async () => {
+  it("should handle disabled state gracefully", async () => {
     const mockProcessHandGestures = jest.fn();
     const mockStore = {
       gestureStemMapper: { dispose: jest.fn() },
@@ -425,18 +462,20 @@ describe('useGestureStemMapping', () => {
       processHandGestures: mockProcessHandGestures,
       initializeGestureMapper: jest.fn(),
       setGestureMapperEnabled: jest.fn(),
-      setGestureScreenDimensions: jest.fn()
+      setGestureScreenDimensions: jest.fn(),
     };
 
-    require('../../stores/enhancedDjStoreWithGestures').default.mockReturnValue(mockStore);
+    require("@/stores/enhancedDjStoreWithGestures").default.mockReturnValue(
+      mockStore,
+    );
 
     const { result } = renderHook(() => useGestureStemMapping());
 
-    const leftHand = createMockHand('Left');
+    const leftHand = createMockHand("Left");
 
     await act(async () => {
       await result.current.processBatch([
-        { leftHand, rightHand: null, channel: 0 }
+        { leftHand, rightHand: null, channel: 0 },
       ]);
     });
 
@@ -444,7 +483,7 @@ describe('useGestureStemMapping', () => {
     expect(mockProcessHandGestures).not.toHaveBeenCalled();
   });
 
-  it('should provide performance status indicators', () => {
+  it("should provide performance status indicators", () => {
     const mockStore = {
       gestureStemMapper: { dispose: jest.fn() },
       gestureMapperEnabled: true,
@@ -453,14 +492,18 @@ describe('useGestureStemMapping', () => {
       processHandGestures: jest.fn(),
       initializeGestureMapper: jest.fn(),
       setGestureMapperEnabled: jest.fn(),
-      setGestureScreenDimensions: jest.fn()
+      setGestureScreenDimensions: jest.fn(),
     };
 
-    require('../../stores/enhancedDjStoreWithGestures').default.mockReturnValue(mockStore);
+    require("@/stores/enhancedDjStoreWithGestures").default.mockReturnValue(
+      mockStore,
+    );
 
-    const { result } = renderHook(() => useGestureStemMapping({
-      maxLatency: 50
-    }));
+    const { result } = renderHook(() =>
+      useGestureStemMapping({
+        maxLatency: 50,
+      }),
+    );
 
     // With default metrics (0 latency), should be performant
     expect(result.current.isPerformant).toBe(true);

@@ -56,7 +56,7 @@ export class AudioMixer {
   constructor() {
     this.crossfaderConfig = {
       position: 0.5,
-      curve: "linear"
+      curve: "linear",
     };
 
     this.masterConfig = {
@@ -67,7 +67,7 @@ export class AudioMixer {
       compressorRatio: 4,
       compressorThreshold: -24,
       compressorAttack: 0.003,
-      compressorRelease: 0.25
+      compressorRelease: 0.25,
     };
 
     // Defer node initialization until user interaction
@@ -84,12 +84,12 @@ export class AudioMixer {
           mid: 0,
           high: 0,
           lowFrequency: 320,
-          highFrequency: 3200
+          highFrequency: 3200,
         }),
         filter: new Tone.Filter({
           frequency: 1000,
           type: "lowpass",
-          Q: 1
+          Q: 1,
         }),
         cueGain: new Tone.Gain(0),
         channelOut: new Tone.Gain(1),
@@ -99,8 +99,8 @@ export class AudioMixer {
           filterType: "off",
           filterFreq: 1000,
           filterResonance: 1,
-          cueEnable: false
-        }
+          cueEnable: false,
+        },
       };
 
       // Connect channel signal chain
@@ -143,15 +143,16 @@ export class AudioMixer {
 
     try {
       // Ensure Tone.js starts with user gesture
-      if (Tone.context.state !== 'running') {
-        console.log('Starting Tone.js audio context...');
+      const context = Tone.getContext();
+      if (context.rawContext.state !== "running") {
+        console.log("Starting Tone.js audio context...");
         await Tone.start();
-        console.log('Tone.js started successfully');
+        console.log("Tone.js started successfully");
       }
 
       // Additional check for suspended context
-      if (Tone.context.state === 'suspended') {
-        await Tone.context.resume();
+      if (context.rawContext.state === "suspended") {
+        await context.resume();
       }
 
       // Now create all audio nodes after AudioContext is ready
@@ -161,8 +162,10 @@ export class AudioMixer {
 
       this.isInitialized = true;
     } catch (error) {
-      console.error('Failed to initialize audio:', error);
-      throw new Error('Audio initialization requires user interaction. Please click "Start DJ Session" to begin.');
+      console.error("Failed to initialize audio:", error);
+      throw new Error(
+        'Audio initialization requires user interaction. Please click "Start DJ Session" to begin.',
+      );
     }
   }
 
@@ -174,7 +177,7 @@ export class AudioMixer {
       ratio: this.masterConfig.compressorRatio,
       threshold: this.masterConfig.compressorThreshold,
       attack: this.masterConfig.compressorAttack,
-      release: this.masterConfig.compressorRelease
+      release: this.masterConfig.compressorRelease,
     });
     this.masterOut = new Tone.Gain(1);
     this.cueOut = new Tone.Gain(1);
@@ -195,19 +198,24 @@ export class AudioMixer {
     this.channels[channel].config.eq[band] = dbValue;
 
     switch (band) {
-      case 'low':
+      case "low":
         this.channels[channel].eq3.low.value = dbValue;
         break;
-      case 'mid':
+      case "mid":
         this.channels[channel].eq3.mid.value = dbValue;
         break;
-      case 'high':
+      case "high":
         this.channels[channel].eq3.high.value = dbValue;
         break;
     }
   }
 
-  setChannelFilter(channel: number, type: ChannelConfig['filterType'], freq?: number, resonance?: number): void {
+  setChannelFilter(
+    channel: number,
+    type: ChannelConfig["filterType"],
+    freq?: number,
+    resonance?: number,
+  ): void {
     if (channel < 0 || channel >= 4) return;
 
     const ch = this.channels[channel];
@@ -260,7 +268,7 @@ export class AudioMixer {
     return (x - 0.1) / 0.8;
   }
 
-  setCrossfaderCurve(curve: CrossfaderConfig['curve']): void {
+  setCrossfaderCurve(curve: CrossfaderConfig["curve"]): void {
     this.crossfaderConfig.curve = curve;
     this.setCrossfaderPosition(this.crossfaderConfig.position);
   }
@@ -275,7 +283,10 @@ export class AudioMixer {
     this.masterConfig.limiterEnabled = enabled;
 
     if (threshold !== undefined) {
-      this.masterConfig.limiterThreshold = Math.max(-30, Math.min(0, threshold));
+      this.masterConfig.limiterThreshold = Math.max(
+        -30,
+        Math.min(0, threshold),
+      );
       this.masterLimiter.threshold.value = this.masterConfig.limiterThreshold;
     }
   }
@@ -285,7 +296,7 @@ export class AudioMixer {
     ratio?: number,
     threshold?: number,
     attack?: number,
-    release?: number
+    release?: number,
   ): void {
     this.masterConfig.compressorEnabled = enabled;
 
@@ -295,8 +306,12 @@ export class AudioMixer {
     }
 
     if (threshold !== undefined) {
-      this.masterConfig.compressorThreshold = Math.max(-60, Math.min(0, threshold));
-      this.masterCompressor.threshold.value = this.masterConfig.compressorThreshold;
+      this.masterConfig.compressorThreshold = Math.max(
+        -60,
+        Math.min(0, threshold),
+      );
+      this.masterCompressor.threshold.value =
+        this.masterConfig.compressorThreshold;
     }
 
     if (attack !== undefined) {
@@ -368,16 +383,16 @@ export class AudioMixer {
     // Reset all channels
     for (let i = 0; i < 4; i++) {
       this.setChannelGain(i, 0.75);
-      this.setChannelEQ(i, 'low', 0);
-      this.setChannelEQ(i, 'mid', 0);
-      this.setChannelEQ(i, 'high', 0);
-      this.setChannelFilter(i, 'off');
+      this.setChannelEQ(i, "low", 0);
+      this.setChannelEQ(i, "mid", 0);
+      this.setChannelEQ(i, "high", 0);
+      this.setChannelFilter(i, "off");
       this.setCueChannel(i, false);
     }
 
     // Reset crossfader
     this.setCrossfaderPosition(0.5);
-    this.setCrossfaderCurve('linear');
+    this.setCrossfaderCurve("linear");
 
     // Reset master
     this.setMasterGain(0.8);
@@ -387,7 +402,7 @@ export class AudioMixer {
 
   dispose(): void {
     // Disconnect and dispose all nodes
-    this.channels.forEach(channel => {
+    this.channels.forEach((channel) => {
       channel.input.dispose();
       channel.gain.dispose();
       channel.eq3.dispose();

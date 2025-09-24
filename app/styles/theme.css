@@ -1,0 +1,159 @@
+/* OX Board Pro - Professional DJ Theme */
+
+:root {
+  /* Core Colors */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #252525;
+  --surface: rgba(255, 255, 255, 0.03);
+  --surface-hover: rgba(255, 255, 255, 0.05);
+
+  /* Neon Accents */
+  --neon-cyan: #00ffff;
+  --neon-magenta: #ff00ff;
+  --neon-yellow: #ffff00;
+  --neon-purple: #9333ea;
+  --neon-green: #00ff88;
+  --neon-orange: #ff6600;
+  --neon-pink: #ff0066;
+
+  /* Semantic Colors */
+  --color-playing: var(--neon-green);
+  --color-cued: var(--neon-cyan);
+  --color-warning: var(--neon-yellow);
+  --color-error: var(--neon-pink);
+  --color-sync: var(--neon-purple);
+
+  /* Typography */
+  --font-display: "Orbitron", monospace;
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", "Courier New", monospace;
+
+  /* Shadows */
+  --shadow-glow-cyan: 0 0 20px rgba(0, 255, 255, 0.4);
+  --shadow-glow-magenta: 0 0 20px rgba(255, 0, 255, 0.4);
+  --shadow-glow-purple: 0 0 20px rgba(147, 51, 234, 0.4);
+  --shadow-depth: 0 4px 24px rgba(0, 0, 0, 0.8);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(20, 20, 20, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --blur-amount: 12px;
+
+  /* Animations */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Layout */
+  --header-height: 40px;
+  --sidebar-width: 320px;
+  --deck-width: 480px;
+  --mixer-width: 360px;
+}
+
+/* Glassmorphism Utility Classes */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--blur-amount));
+  -webkit-backdrop-filter: blur(var(--blur-amount));
+  border: 1px solid var(--glass-border);
+}
+
+.glass-dark {
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Neon Glow Effects */
+.neon-glow-cyan {
+  box-shadow: var(--shadow-glow-cyan);
+  border-color: var(--neon-cyan) !important;
+}
+
+.neon-glow-magenta {
+  box-shadow: var(--shadow-glow-magenta);
+  border-color: var(--neon-magenta) !important;
+}
+
+.neon-glow-purple {
+  box-shadow: var(--shadow-glow-purple);
+  border-color: var(--neon-purple) !important;
+}
+
+/* Text Glow */
+.text-glow-cyan {
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+}
+
+.text-glow-magenta {
+  text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+}
+
+/* Animations */
+@keyframes pulse-neon {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes rotate-vinyl {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-purple);
+}
+
+/* Performance Mode */
+.performance-mode {
+  background: linear-gradient(45deg, #0a0a0a, #1a0a1a, #0a0a1a);
+  animation: gradient-shift 10s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}

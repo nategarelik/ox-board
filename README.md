@@ -16,6 +16,7 @@ A revolutionary open-source browser-based DJ platform that replaces expensive ph
 ## 🚀 Features
 
 ### Implemented (75% Complete)
+
 - ✅ **MediaPipe Hand Tracking** - Real-time gesture detection via webcam
 - ✅ **4-Channel Audio Mixer** - Professional mixing capabilities with Tone.js
 - ✅ **Gesture Recognition** - Kalman-filtered smooth control mapping
@@ -24,12 +25,14 @@ A revolutionary open-source browser-based DJ platform that replaces expensive ph
 - ✅ **Dynamic UI** - Responsive interface with Next.js 15
 
 ### In Progress (20%)
+
 - 🔄 Track loading and playback
 - 🔄 Audio effects (reverb, delay, filters)
 - 🔄 3D visualizations with Three.js
 - 🔄 Tutorial system
 
 ### Planned (5%)
+
 - 📋 Recording capabilities
 - 📋 Collaborative sessions
 - 📋 Track library with cloud storage
@@ -39,7 +42,7 @@ A revolutionary open-source browser-based DJ platform that replaces expensive ph
 
 - **Framework**: Next.js 15.0.3 with App Router
 - **Language**: TypeScript (strict mode)
-- **UI**: React 19.0.0, Tailwind CSS
+- **UI**: React 18.2.0, Tailwind CSS
 - **Hand Tracking**: MediaPipe Hands
 - **Audio**: Tone.js
 - **State**: Zustand
@@ -64,6 +67,7 @@ Open [http://localhost:3000](http://localhost:3000) and allow camera access to s
 ## 📦 Installation
 
 ### Prerequisites
+
 - Node.js 18+ and npm 9+
 - Webcam (built-in or external)
 - Modern browser (Chrome 90+, Firefox 88+, Safari 15+, Edge 90+)
@@ -92,13 +96,13 @@ npm start
 
 ## 🎮 Gesture Controls
 
-| Gesture | Control | Description |
-|---------|---------|-------------|
-| ✋ Open Palm | Stop | Pause playback |
-| ✊ Closed Fist | Play | Start playback |
-| 👆 Index Finger Height | Volume | Control channel volume |
-| ↔️ Wrist Position | Crossfader | Blend between decks |
-| 🤏 Pinch | Effects | Apply audio effects |
+| Gesture                | Control    | Description            |
+| ---------------------- | ---------- | ---------------------- |
+| ✋ Open Palm           | Stop       | Pause playback         |
+| ✊ Closed Fist         | Play       | Start playback         |
+| 👆 Index Finger Height | Volume     | Control channel volume |
+| ↔️ Wrist Position      | Crossfader | Blend between decks    |
+| 🤏 Pinch               | Effects    | Apply audio effects    |
 
 ## 🏗️ Project Structure
 
@@ -125,12 +129,14 @@ ox-board/
 ## 🔧 Development
 
 ### Prerequisites
+
 - Node.js 18+
 - Webcam
 - Modern browser (Chrome 90+ recommended)
 - 4GB+ RAM
 
 ### Environment Variables
+
 Create a `.env.local` file:
 
 ```env
@@ -164,6 +170,7 @@ npm run test:coverage # Test coverage report
 We welcome contributions from the community! See our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ### Ways to Contribute
+
 - 🐛 Report bugs and issues
 - 💡 Suggest new features
 - 📝 Improve documentation
@@ -171,6 +178,7 @@ We welcome contributions from the community! See our [Contributing Guide](CONTRI
 - ⭐ Star the project
 
 ### Development Workflow
+
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes using conventional commits (`feat: add amazing feature`)
@@ -199,6 +207,7 @@ For security concerns, please review our [Security Policy](SECURITY.md).
 See our [project board](https://github.com/your-org/ox-board/projects) for upcoming features.
 
 ### Version 1.0 Goals
+
 - [ ] Complete audio effects suite
 - [ ] Beat matching algorithm
 - [ ] Cloud track library

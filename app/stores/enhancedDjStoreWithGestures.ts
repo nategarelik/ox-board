@@ -1,18 +1,32 @@
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import { EnhancedAudioMixer, ChannelConfig, CrossfaderConfig, MasterConfig, StemMixerConfig } from '../lib/audio/enhancedMixer';
-import { StemPlayer, StemPlayerState, StemControls } from '../lib/audio/stemPlayer';
-import { DemucsOutput, StemType, StemLoadResult } from '../lib/audio/demucsProcessor';
-import { GestureControl } from '../hooks/useGestures';
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import {
+  EnhancedAudioMixer,
+  ChannelConfig,
+  CrossfaderConfig,
+  MasterConfig,
+  StemMixerConfig,
+} from "../lib/audio/enhancedMixer";
+import {
+  StemPlayer,
+  StemPlayerState,
+  StemControls,
+} from "../lib/audio/stemPlayer";
+import {
+  DemucsOutput,
+  StemType,
+  StemLoadResult,
+} from "../lib/audio/demucsProcessor";
+import { GestureControl } from "../hooks/useGestures";
 import {
   GestureStemMapper,
   GestureDetectionResult,
   MappingProfile,
   FeedbackState,
   ControlMode,
-  GestureStemMapperConfig
-} from '../lib/gestures/gestureStemMapper';
-import { HandResult } from '../lib/gesture/recognition';
+  GestureStemMapperConfig,
+} from "../lib/gestures/gestureStemMapper";
+import { HandResult } from "../lib/gesture/recognition";
 
 interface Track {
   id: string;
@@ -21,6 +35,7 @@ interface Track {
   duration: number;
   bpm: number;
   key: string;
+  energy?: number;
   url?: string;
   hasStems?: boolean;
   stemData?: DemucsOutput;
@@ -39,6 +54,8 @@ interface Deck {
   // Stem player state
   stemPlayerEnabled: boolean;
   stemPlayerState?: StemPlayerState;
+  // Effects state
+  effects?: any;
 }
 
 interface StemControlState {
@@ -80,35 +97,73 @@ interface EnhancedDJState {
   // UI State
   isDJModeActive: boolean;
   selectedDeck: number;
-  viewMode: 'mixer' | 'decks' | 'effects' | 'library' | 'stems';
-  stemViewMode: 'individual' | 'combined';
+  viewMode: "mixer" | "decks" | "effects" | "library" | "stems";
+  stemViewMode: "individual" | "combined";
+  crossfaderPosition: number;
+  masterBPM: number;
+  isRecording: boolean;
 
   // Stem Processing State
-  stemProcessing: Record<number, {
-    isProcessing: boolean;
-    progress: number;
-    error?: string;
-  }>;
+  stemProcessing: Record<
+    number,
+    {
+      isProcessing: boolean;
+      progress: number;
+      error?: string;
+    }
+  >;
 
   // Actions - Mixer
   initializeMixer: () => Promise<void>;
   setChannelGain: (channel: number, gain: number) => void;
-  setChannelEQ: (channel: number, band: 'low' | 'mid' | 'high', value: number) => void;
+  setChannelEQ: (
+    channel: number,
+    band: "low" | "mid" | "high",
+    value: number,
+  ) => void;
   setCrossfaderPosition: (position: number) => void;
   setMasterGain: (gain: number) => void;
 
   // Actions - Stem Player
   enableStemPlayer: (channel: number) => Promise<void>;
   disableStemPlayer: (channel: number) => void;
-  loadStemsToChannel: (channel: number, demucsOutput: DemucsOutput) => Promise<StemLoadResult[]>;
+  loadStemsToChannel: (
+    channel: number,
+    demucsOutput: DemucsOutput,
+  ) => Promise<StemLoadResult[]>;
 
   // Actions - Stem Controls
-  setStemVolume: (channel: number, stemType: StemType | 'original', volume: number) => void;
-  setStemMute: (channel: number, stemType: StemType | 'original', muted: boolean) => void;
-  setStemSolo: (channel: number, stemType: StemType | 'original', soloed: boolean) => void;
-  setStemPan: (channel: number, stemType: StemType | 'original', pan: number) => void;
-  setStemEQ: (channel: number, stemType: StemType | 'original', band: 'low' | 'mid' | 'high', value: number) => void;
-  setStemPlaybackRate: (channel: number, stemType: StemType | 'original', rate: number) => void;
+  setStemVolume: (
+    channel: number,
+    stemType: StemType | "original",
+    volume: number,
+  ) => void;
+  setStemMute: (
+    channel: number,
+    stemType: StemType | "original",
+    muted: boolean,
+  ) => void;
+  setStemSolo: (
+    channel: number,
+    stemType: StemType | "original",
+    soloed: boolean,
+  ) => void;
+  setStemPan: (
+    channel: number,
+    stemType: StemType | "original",
+    pan: number,
+  ) => void;
+  setStemEQ: (
+    channel: number,
+    stemType: StemType | "original",
+    band: "low" | "mid" | "high",
+    value: number,
+  ) => void;
+  setStemPlaybackRate: (
+    channel: number,
+    stemType: StemType | "original",
+    rate: number,
+  ) => void;
   setStemMix: (channel: number, mix: number) => void;
 
   // Actions - Stem Player Playback
@@ -116,6 +171,7 @@ interface EnhancedDJState {
   pauseStemPlayer: (channel: number) => void;
   stopStemPlayer: (channel: number) => void;
   seekStemPlayer: (channel: number, time: number) => void;
+  processStemSeparation: (deckId: number) => Promise<void>;
 
   // Actions - Track Management
   loadTrack: (deckId: number, track: Track) => void;
@@ -123,6 +179,7 @@ interface EnhancedDJState {
   pauseDeck: (deckId: number) => void;
   setDeckVolume: (deckId: number, volume: number) => void;
   setDeckPlaybackRate: (deckId: number, rate: number) => void;
+  setCuePoint: (deckId: number) => void;
 
   // Actions - Gesture Control (Legacy)
   updateGestureControls: (controls: GestureControl[]) => void;
@@ -131,7 +188,11 @@ interface EnhancedDJState {
 
   // Actions - Advanced Gesture Control
   initializeGestureMapper: (config?: Partial<GestureStemMapperConfig>) => void;
-  processHandGestures: (leftHand: HandResult | null, rightHand: HandResult | null, channel?: number) => Promise<void>;
+  processHandGestures: (
+    leftHand: HandResult | null,
+    rightHand: HandResult | null,
+    channel?: number,
+  ) => Promise<void>;
   setGestureMapperEnabled: (enabled: boolean) => void;
   setActiveMappingProfile: (profileId: string) => boolean;
   addMappingProfile: (profile: MappingProfile) => void;
@@ -142,8 +203,8 @@ interface EnhancedDJState {
   // Actions - UI State
   setDJModeActive: (active: boolean) => void;
   setSelectedDeck: (deckId: number) => void;
-  setViewMode: (mode: EnhancedDJState['viewMode']) => void;
-  setStemViewMode: (mode: 'individual' | 'combined') => void;
+  setViewMode: (mode: EnhancedDJState["viewMode"]) => void;
+  setStemViewMode: (mode: "individual" | "combined") => void;
 
   // Actions - Utility
   reset: () => void;
@@ -156,7 +217,7 @@ const defaultStemControls: StemControls = {
   soloed: false,
   pan: 0,
   eq: { low: 0, mid: 0, high: 0 },
-  playbackRate: 1.0
+  playbackRate: 1.0,
 };
 
 const createDefaultStemControlState = (): StemControlState => ({
@@ -165,7 +226,7 @@ const createDefaultStemControlState = (): StemControlState => ({
   melody: { ...defaultStemControls },
   vocals: { ...defaultStemControls },
   original: { ...defaultStemControls },
-  stemMix: 0.5
+  stemMix: 0.5,
 });
 
 const initialDeck: Deck = {
@@ -178,7 +239,7 @@ const initialDeck: Deck = {
   cuePoints: [],
   loopStart: null,
   loopEnd: null,
-  stemPlayerEnabled: false
+  stemPlayerEnabled: false,
 };
 
 const useEnhancedDJStore = create<EnhancedDJState>()(
@@ -187,7 +248,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
       // Initial state
       mixer: null,
       channelConfigs: [],
-      crossfaderConfig: { position: 0.5, curve: 'linear' },
+      crossfaderConfig: { position: 0.5, curve: "linear" },
       masterConfig: {
         gain: 0.8,
         limiterEnabled: true,
@@ -196,23 +257,23 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         compressorRatio: 4,
         compressorThreshold: -24,
         compressorAttack: 0.003,
-        compressorRelease: 0.25
+        compressorRelease: 0.25,
       },
       stemMixerConfig: {
         autoStemDetection: true,
-        stemMixMode: 'separate'
+        stemMixMode: "separate",
       },
       decks: [
         { ...initialDeck, id: 0 },
         { ...initialDeck, id: 1 },
         { ...initialDeck, id: 2 },
-        { ...initialDeck, id: 3 }
+        { ...initialDeck, id: 3 },
       ],
       stemControls: {
         0: createDefaultStemControlState(),
         1: createDefaultStemControlState(),
         2: createDefaultStemControlState(),
-        3: createDefaultStemControlState()
+        3: createDefaultStemControlState(),
       },
       gestureControls: [],
       gestureEnabled: false,
@@ -228,13 +289,16 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
 
       isDJModeActive: false,
       selectedDeck: 0,
-      viewMode: 'mixer',
-      stemViewMode: 'individual',
+      viewMode: "mixer",
+      stemViewMode: "individual",
+      crossfaderPosition: 0,
+      masterBPM: 128,
+      isRecording: false,
       stemProcessing: {
         0: { isProcessing: false, progress: 0 },
         1: { isProcessing: false, progress: 0 },
         2: { isProcessing: false, progress: 0 },
-        3: { isProcessing: false, progress: 0 }
+        3: { isProcessing: false, progress: 0 },
       },
 
       // Mixer Actions
@@ -243,15 +307,15 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         const mixer = new EnhancedAudioMixer(stemMixerConfig);
         await mixer.initialize();
 
-        const channelConfigs = [0, 1, 2, 3].map(i =>
-          mixer.getChannelConfig(i)!
+        const channelConfigs = [0, 1, 2, 3].map(
+          (i) => mixer.getChannelConfig(i)!,
         );
 
         set({
           mixer,
           channelConfigs,
           crossfaderConfig: mixer.getCrossfaderConfig(),
-          masterConfig: mixer.getMasterConfig()
+          masterConfig: mixer.getMasterConfig(),
         });
       },
 
@@ -273,7 +337,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         const configs = [...get().channelConfigs];
         configs[channel] = {
           ...configs[channel],
-          eq: { ...configs[channel].eq, [band]: value }
+          eq: { ...configs[channel].eq, [band]: value },
         };
         set({ channelConfigs: configs });
       },
@@ -284,7 +348,8 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
 
         mixer.setCrossfaderPosition(position);
         set({
-          crossfaderConfig: { ...get().crossfaderConfig, position }
+          crossfaderConfig: { ...get().crossfaderConfig, position },
+          crossfaderPosition: position,
         });
       },
 
@@ -294,7 +359,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
 
         mixer.setMasterGain(gain);
         set({
-          masterConfig: { ...get().masterConfig, gain }
+          masterConfig: { ...get().masterConfig, gain },
         });
       },
 
@@ -316,9 +381,11 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
 
           // Update stem player state
           get().updateStemPlayerState(channel);
-
         } catch (error) {
-          console.error(`Failed to enable stem player for channel ${channel}:`, error);
+          console.error(
+            `Failed to enable stem player for channel ${channel}:`,
+            error,
+          );
           throw error;
         }
       },
@@ -333,7 +400,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         decks[channel] = {
           ...decks[channel],
           stemPlayerEnabled: false,
-          stemPlayerState: undefined
+          stemPlayerState: undefined,
         };
 
         const configs = [...get().channelConfigs];
@@ -344,7 +411,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
 
       loadStemsToChannel: async (channel, demucsOutput) => {
         const { mixer } = get();
-        if (!mixer) throw new Error('Mixer not initialized');
+        if (!mixer) throw new Error("Mixer not initialized");
 
         try {
           // Set processing state
@@ -360,7 +427,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
             decks[channel].track = {
               ...decks[channel].track!,
               hasStems: true,
-              stemData: demucsOutput
+              stemData: demucsOutput,
             };
           }
 
@@ -372,14 +439,13 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
           get().updateStemPlayerState(channel);
 
           return results;
-
         } catch (error) {
           // Set error state
           const processing = { ...get().stemProcessing };
           processing[channel] = {
             isProcessing: false,
             progress: 0,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : "Unknown error",
           };
           set({ stemProcessing: processing });
           throw error;
@@ -388,18 +454,47 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
 
       // Stem Control Actions
       setStemVolume: (channel, stemType, volume) => {
-        const { mixer } = get();
-        if (!mixer) return;
+        try {
+          const { mixer } = get();
+          if (!mixer) return;
 
-        mixer.setStemVolume(channel, stemType, volume);
+          const clampedVolume = Math.max(0, Math.min(1, volume));
 
-        const stemControls = { ...get().stemControls };
-        if (stemType === 'original') {
-          stemControls[channel].original.volume = volume;
-        } else {
-          stemControls[channel][stemType].volume = volume;
+          // Check if volume actually changed to prevent unnecessary updates
+          const stemControls = get().stemControls;
+          const currentVolume =
+            stemType === "original"
+              ? stemControls[channel]?.original?.volume || 0.75
+              : stemControls[channel]?.[stemType]?.volume || 0.75;
+
+          if (Math.abs(currentVolume - clampedVolume) < 0.01) {
+            return; // No significant change
+          }
+
+          mixer.setStemVolume(channel, stemType, clampedVolume);
+
+          const updatedStemControls = { ...stemControls };
+          if (stemType === "original") {
+            updatedStemControls[channel] = {
+              ...updatedStemControls[channel],
+              original: {
+                ...updatedStemControls[channel].original,
+                volume: clampedVolume,
+              },
+            };
+          } else {
+            updatedStemControls[channel] = {
+              ...updatedStemControls[channel],
+              [stemType]: {
+                ...updatedStemControls[channel][stemType],
+                volume: clampedVolume,
+              },
+            };
+          }
+          set({ stemControls: updatedStemControls });
+        } catch (error) {
+          console.error("Error in setStemVolume:", error);
         }
-        set({ stemControls });
       },
 
       setStemMute: (channel, stemType, muted) => {
@@ -409,7 +504,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         mixer.setStemMute(channel, stemType, muted);
 
         const stemControls = { ...get().stemControls };
-        if (stemType === 'original') {
+        if (stemType === "original") {
           stemControls[channel].original.muted = muted;
         } else {
           stemControls[channel][stemType].muted = muted;
@@ -424,7 +519,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         mixer.setStemSolo(channel, stemType, soloed);
 
         const stemControls = { ...get().stemControls };
-        if (stemType === 'original') {
+        if (stemType === "original") {
           stemControls[channel].original.soloed = soloed;
         } else {
           stemControls[channel][stemType].soloed = soloed;
@@ -439,7 +534,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         mixer.setStemPan(channel, stemType, pan);
 
         const stemControls = { ...get().stemControls };
-        if (stemType === 'original') {
+        if (stemType === "original") {
           stemControls[channel].original.pan = pan;
         } else {
           stemControls[channel][stemType].pan = pan;
@@ -454,7 +549,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         mixer.setStemEQ(channel, stemType, band, value);
 
         const stemControls = { ...get().stemControls };
-        if (stemType === 'original') {
+        if (stemType === "original") {
           stemControls[channel].original.eq[band] = value;
         } else {
           stemControls[channel][stemType].eq[band] = value;
@@ -469,7 +564,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         mixer.setStemPlaybackRate(channel, stemType, rate);
 
         const stemControls = { ...get().stemControls };
-        if (stemType === 'original') {
+        if (stemType === "original") {
           stemControls[channel].original.playbackRate = rate;
         } else {
           stemControls[channel][stemType].playbackRate = rate;
@@ -491,7 +586,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
       // Stem Player Playback Actions
       playStemPlayer: async (channel) => {
         const { mixer } = get();
-        if (!mixer) throw new Error('Mixer not initialized');
+        if (!mixer) throw new Error("Mixer not initialized");
 
         await mixer.playStemPlayer(channel);
 
@@ -527,7 +622,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         decks[channel] = {
           ...decks[channel],
           isPlaying: false,
-          currentTime: 0
+          currentTime: 0,
         };
         set({ decks });
 
@@ -546,13 +641,34 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         set({ decks });
       },
 
-      // Original Track Actions (preserved for compatibility)
-      loadTrack: (deckId, track) => {
+      processStemSeparation: async (deckId) => {
+        const deck = get().decks[deckId];
+        if (!deck?.track) return;
+
+        console.log(`Processing stems for deck ${deckId}...`);
+        // In a real implementation, this would call Demucs
+        // For now, we'll simulate processing
         const decks = [...get().decks];
         decks[deckId] = {
           ...decks[deckId],
+          stemPlayerEnabled: true,
+        };
+        set({ decks });
+      },
+
+      // Original Track Actions (preserved for compatibility)
+      loadTrack: async (deckId, track) => {
+        const decks = [...get().decks];
+
+        // If track has a URL, load it (simplified for now)
+        if (track.url) {
+          console.log(`Loading track ${track.title} into deck ${deckId}`);
+        }
+
+        decks[deckId] = {
+          ...decks[deckId],
           track,
-          stemPlayerEnabled: track.hasStems || false
+          stemPlayerEnabled: track.hasStems || false,
         };
         set({ decks });
       },
@@ -579,13 +695,49 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         }
       },
 
-      setDeckVolume: (deckId, volume) => {
+      setCuePoint: (deckId) => {
         const decks = [...get().decks];
-        decks[deckId] = { ...decks[deckId], volume };
+        // Set the current position as cue point (simplified implementation)
+        decks[deckId] = { ...decks[deckId], cuePoints: [0] };
         set({ decks });
+        console.log(`Cue point set for deck ${deckId}`);
+      },
 
-        // Also update mixer channel
-        get().setChannelGain(deckId, volume);
+      setDeckVolume: (deckId, volume) => {
+        try {
+          // Validate inputs
+          if (deckId < 0 || deckId >= get().decks.length) {
+            console.warn(`Invalid deck ID: ${deckId}`);
+            return;
+          }
+
+          const clampedVolume = Math.max(0, Math.min(1, volume));
+
+          // Check if volume actually changed to prevent unnecessary updates
+          const currentDeck = get().decks[deckId];
+          if (
+            currentDeck &&
+            Math.abs(currentDeck.volume - clampedVolume) < 0.01
+          ) {
+            return; // No significant change
+          }
+
+          const decks = [...get().decks];
+          decks[deckId] = { ...decks[deckId], volume: clampedVolume };
+          set({ decks });
+
+          // Also update mixer channel if mixer is available
+          const { mixer } = get();
+          if (mixer) {
+            try {
+              mixer.setChannelGain(deckId, clampedVolume);
+            } catch (error) {
+              console.error("Error updating mixer channel gain:", error);
+            }
+          }
+        } catch (error) {
+          console.error("Error in setDeckVolume:", error);
+        }
       },
 
       setDeckPlaybackRate: (deckId, rate) => {
@@ -596,8 +748,14 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         // If stem player is enabled, update all stems
         const deck = get().decks[deckId];
         if (deck.stemPlayerEnabled) {
-          const stemTypes: (StemType | 'original')[] = ['drums', 'bass', 'melody', 'vocals', 'original'];
-          stemTypes.forEach(stemType => {
+          const stemTypes: (StemType | "original")[] = [
+            "drums",
+            "bass",
+            "melody",
+            "vocals",
+            "original",
+          ];
+          stemTypes.forEach((stemType) => {
             get().setStemPlaybackRate(deckId, stemType, rate);
           });
         }
@@ -611,10 +769,10 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         const { mixer } = get();
         if (!mixer) return;
 
-        controls.forEach(control => {
+        controls.forEach((control) => {
           switch (control.type) {
-            case 'volume':
-              if (control.hand === 'left') {
+            case "volume":
+              if (control.hand === "left") {
                 mixer.setChannelGain(0, control.value);
                 mixer.setChannelGain(1, control.value);
               } else {
@@ -622,12 +780,12 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
                 mixer.setChannelGain(3, control.value);
               }
               break;
-            case 'crossfader':
+            case "crossfader":
               mixer.setCrossfaderPosition(control.value);
               break;
-            case 'eq':
-              const channel = control.hand === 'left' ? 0 : 2;
-              mixer.setChannelEQ(channel, 'mid', (control.value - 0.5) * 40);
+            case "eq":
+              const channel = control.hand === "left" ? 0 : 2;
+              mixer.setChannelEQ(channel, "mid", (control.value - 0.5) * 40);
               break;
           }
         });
@@ -648,74 +806,130 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
           gestureConfidenceThreshold: 0.75,
           smoothingEnabled: true,
           feedbackEnabled: true,
-          ...config
+          ...config,
         });
 
         // Set up event listeners
-        mapper.on('gestureControl', (event: any) => {
+        mapper.on("gestureControl", (event: any) => {
           const { channel = 0, mapping, value, gesture } = event;
 
           // Apply the gesture control to the appropriate stem
-          const { setStemVolume, setStemMute, setStemSolo, setStemPan, setStemEQ, setStemPlaybackRate, setStemMix, setCrossfaderPosition } = get();
+          const {
+            setStemVolume,
+            setStemMute,
+            setStemSolo,
+            setStemPan,
+            setStemEQ,
+            setStemPlaybackRate,
+            setStemMix,
+            setCrossfaderPosition,
+          } = get();
 
           try {
             switch (mapping.controlType) {
-              case 'volume':
-                if (mapping.targetStem === 'crossfader') {
+              case "volume":
+                if (mapping.targetStem === "crossfader") {
                   // Handle master volume or special cases
                   get().setMasterGain(value);
-                } else if (mapping.targetStem === 'master') {
+                } else if (mapping.targetStem === "master") {
                   get().setMasterGain(value);
                 } else {
-                  setStemVolume(channel, mapping.targetStem as StemType | 'original', value);
+                  setStemVolume(
+                    channel,
+                    mapping.targetStem as StemType | "original",
+                    value,
+                  );
                 }
                 break;
 
-              case 'mute':
-                if (mapping.targetStem !== 'crossfader' && mapping.targetStem !== 'master') {
-                  setStemMute(channel, mapping.targetStem as StemType | 'original', value > 0.5);
+              case "mute":
+                if (
+                  mapping.targetStem !== "crossfader" &&
+                  mapping.targetStem !== "master"
+                ) {
+                  setStemMute(
+                    channel,
+                    mapping.targetStem as StemType | "original",
+                    value > 0.5,
+                  );
                 }
                 break;
 
-              case 'solo':
-                if (mapping.targetStem !== 'crossfader' && mapping.targetStem !== 'master') {
-                  setStemSolo(channel, mapping.targetStem as StemType | 'original', value > 0.5);
+              case "solo":
+                if (
+                  mapping.targetStem !== "crossfader" &&
+                  mapping.targetStem !== "master"
+                ) {
+                  setStemSolo(
+                    channel,
+                    mapping.targetStem as StemType | "original",
+                    value > 0.5,
+                  );
                 }
                 break;
 
-              case 'pan':
-                if (mapping.targetStem !== 'crossfader' && mapping.targetStem !== 'master') {
+              case "pan":
+                if (
+                  mapping.targetStem !== "crossfader" &&
+                  mapping.targetStem !== "master"
+                ) {
                   // Convert 0-1 to -1 to 1
-                  const panValue = (value * 2) - 1;
-                  setStemPan(channel, mapping.targetStem as StemType | 'original', panValue);
+                  const panValue = value * 2 - 1;
+                  setStemPan(
+                    channel,
+                    mapping.targetStem as StemType | "original",
+                    panValue,
+                  );
                 }
                 break;
 
-              case 'eq':
-                if (mapping.targetStem !== 'crossfader' && mapping.targetStem !== 'master' && mapping.params?.eqBand) {
+              case "eq":
+                if (
+                  mapping.targetStem !== "crossfader" &&
+                  mapping.targetStem !== "master" &&
+                  mapping.params?.eqBand
+                ) {
                   // Convert 0-1 to -20 to 20 dB
-                  const eqValue = (value * 40) - 20;
-                  setStemEQ(channel, mapping.targetStem as StemType | 'original', mapping.params.eqBand, eqValue);
+                  const eqValue = value * 40 - 20;
+                  setStemEQ(
+                    channel,
+                    mapping.targetStem as StemType | "original",
+                    mapping.params.eqBand,
+                    eqValue,
+                  );
                 }
                 break;
 
-              case 'playback_rate':
-                if (mapping.targetStem !== 'crossfader' && mapping.targetStem !== 'master') {
+              case "playback_rate":
+                if (
+                  mapping.targetStem !== "crossfader" &&
+                  mapping.targetStem !== "master"
+                ) {
                   // Convert 0-1 to 0.5-2.0 playback rate
-                  const rateValue = 0.5 + (value * 1.5);
-                  setStemPlaybackRate(channel, mapping.targetStem as StemType | 'original', rateValue);
+                  const rateValue = 0.5 + value * 1.5;
+                  setStemPlaybackRate(
+                    channel,
+                    mapping.targetStem as StemType | "original",
+                    rateValue,
+                  );
                 }
                 break;
 
-              case 'crossfade':
+              case "crossfade":
                 setCrossfaderPosition(value);
                 break;
 
-              case 'effect':
-                if (mapping.params?.action === 'reset') {
+              case "effect":
+                if (mapping.params?.action === "reset") {
                   // Reset all stem controls to default
-                  const stemTypes: (StemType | 'original')[] = ['drums', 'bass', 'melody', 'vocals', 'original'];
-                  stemTypes.forEach(stemType => {
+                  const stemTypes: (StemType | "original")[] = [
+                    "drums",
+                    "bass",
+                    "melody",
+                    "vocals",
+                    "original",
+                  ];
+                  stemTypes.forEach((stemType) => {
                     setStemVolume(channel, stemType, 0.75);
                     setStemMute(channel, stemType, false);
                     setStemSolo(channel, stemType, false);
@@ -726,26 +940,30 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
                 break;
             }
           } catch (error) {
-            console.error('Error applying gesture control:', error);
+            console.error("Error applying gesture control:", error);
           }
         });
 
-        mapper.on('feedbackUpdate', (feedback: FeedbackState) => {
+        mapper.on("feedbackUpdate", (feedback: FeedbackState) => {
           set({
             gestureFeedback: feedback,
-            gestureLatency: feedback.latency
+            gestureLatency: feedback.latency,
           });
         });
 
         set({
           gestureStemMapper: mapper,
-          activeMappingProfile: 'default',
-          gestureMapperEnabled: true
+          activeMappingProfile: "default",
+          gestureMapperEnabled: true,
         });
       },
 
       processHandGestures: async (leftHand, rightHand, channel = 0) => {
-        const { gestureStemMapper, gestureMapperEnabled, gestureScreenDimensions } = get();
+        const {
+          gestureStemMapper,
+          gestureMapperEnabled,
+          gestureScreenDimensions,
+        } = get();
 
         if (!gestureStemMapper || !gestureMapperEnabled) {
           return;
@@ -759,7 +977,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
             leftHand,
             rightHand,
             gestureScreenDimensions.width,
-            gestureScreenDimensions.height
+            gestureScreenDimensions.height,
           );
 
           // Process gestures and apply to stem controls
@@ -770,9 +988,8 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
           // Update latency tracking
           const processingTime = performance.now() - startTime;
           set({ gestureLatency: processingTime });
-
         } catch (error) {
-          console.error('Error processing hand gestures:', error);
+          console.error("Error processing hand gestures:", error);
         }
       },
 
@@ -851,7 +1068,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
             ...decks[channel],
             stemPlayerState,
             currentTime: stemPlayerState.currentTime,
-            isPlaying: stemPlayerState.isPlaying
+            isPlaying: stemPlayerState.isPlaying,
           };
           set({ decks });
         }
@@ -868,18 +1085,18 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
 
         set({
           channelConfigs: [],
-          crossfaderConfig: { position: 0.5, curve: 'linear' },
+          crossfaderConfig: { position: 0.5, curve: "linear" },
           decks: [
             { ...initialDeck, id: 0 },
             { ...initialDeck, id: 1 },
             { ...initialDeck, id: 2 },
-            { ...initialDeck, id: 3 }
+            { ...initialDeck, id: 3 },
           ],
           stemControls: {
             0: createDefaultStemControlState(),
             1: createDefaultStemControlState(),
             2: createDefaultStemControlState(),
-            3: createDefaultStemControlState()
+            3: createDefaultStemControlState(),
           },
           gestureControls: [],
           gestureEnabled: false,
@@ -892,21 +1109,24 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
           gestureScreenDimensions: { width: 1920, height: 1080 },
           isDJModeActive: false,
           selectedDeck: 0,
-          viewMode: 'mixer',
-          stemViewMode: 'individual',
+          viewMode: "mixer",
+          stemViewMode: "individual",
+          crossfaderPosition: 0,
+          masterBPM: 128,
+          isRecording: false,
           stemProcessing: {
             0: { isProcessing: false, progress: 0 },
             1: { isProcessing: false, progress: 0 },
             2: { isProcessing: false, progress: 0 },
-            3: { isProcessing: false, progress: 0 }
-          }
+            3: { isProcessing: false, progress: 0 },
+          },
         });
-      }
+      },
     }),
     {
-      name: 'enhanced-dj-store'
-    }
-  )
+      name: "enhanced-dj-store",
+    },
+  ),
 );
 
 export default useEnhancedDJStore;

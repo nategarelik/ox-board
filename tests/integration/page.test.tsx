@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import Home from "../page";
+import Home from "../../app/page";
 
 // Mock dynamic imports
 jest.mock("next/dynamic", () => ({
@@ -13,7 +13,7 @@ jest.mock("next/dynamic", () => ({
 }));
 
 // Mock the store
-jest.mock("../stores/enhancedDjStoreWithGestures", () => ({
+jest.mock("@/stores/enhancedDjStoreWithGestures", () => ({
   __esModule: true,
   default: () => ({
     isDJModeActive: false,
@@ -33,7 +33,7 @@ jest.mock("../stores/enhancedDjStoreWithGestures", () => ({
 }));
 
 // Mock gesture hook
-jest.mock("../hooks/useGestures", () => ({
+jest.mock("@/hooks/useGestures", () => ({
   useGestures: () => ({
     gestureData: {},
     controls: [],
