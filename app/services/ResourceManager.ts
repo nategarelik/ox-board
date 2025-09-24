@@ -5,6 +5,7 @@
  */
 
 import * as Tone from "tone";
+import { logger } from "../lib/logger";
 
 /**
  * Resource types that can be managed
@@ -30,9 +31,26 @@ interface EventListenerData {
 }
 
 /**
+ * Known resource types that can be disposed
+ */
+interface DisposableResource {
+  dispose(): void;
+}
+
+type KnownResource =
+  | Worker
+  | NodeJS.Timeout
+  | MediaStream
+  | AudioNode
+  | Blob
+  | WebGLRenderingContext
+  | DisposableResource
+  | string;
+
+/**
  * Resource entry with metadata
  */
-interface ResourceEntry<T = any> {
+interface ResourceEntry<T = KnownResource> {
   id: string;
   type: ResourceType;
   resource: T;
@@ -78,7 +96,7 @@ export interface ResourceStats {
  * manager.registerWorker('analysis-worker', worker);
  *
  * // Register an event listener
- * const handler = (e) => console.log(e);
+ * const handler = (e) => logger.info(e);
  * window.addEventListener('resize', handler);
  * manager.registerEventListener(window, 'resize', handler);
  *
@@ -268,9 +286,9 @@ export class ResourceManager {
         case "audio":
           if (
             entry.resource &&
-            typeof (entry.resource as any).dispose === "function"
+            typeof (entry.resource as DisposableResource).dispose === "function"
           ) {
-            (entry.resource as any).dispose();
+            (entry.resource as DisposableResource).dispose();
           }
           break;
         case "stream":
@@ -287,7 +305,7 @@ export class ResourceManager {
           break;
       }
     } catch (error) {
-      console.error(`Failed to cleanup resource ${entry.id}:`, error);
+      logger.error(`Failed to cleanup resource ${entry.id}:`, error);
     }
   }
 
@@ -312,7 +330,7 @@ export class ResourceManager {
       try {
         callback();
       } catch (error) {
-        console.error("Cleanup callback failed:", error);
+        logger.error("Cleanup callback failed:", error);
       }
     });
     this.cleanupCallbacks.clear();
@@ -404,23 +422,23 @@ export class ResourceManager {
    */
   public logStats(): void {
     const stats = this.getStats();
-    console.group("🔧 Resource Manager Statistics");
-    console.log("Workers:", stats.workers);
-    console.log("Event Listeners:", stats.eventListeners);
-    console.log("Blob URLs:", stats.blobURLs);
-    console.log("Intervals:", stats.intervals);
-    console.log("Timeouts:", stats.timeouts);
-    console.log("Audio Nodes:", stats.audioNodes);
-    console.log("Media Streams:", stats.mediaStreams);
-    console.log("WebGL Contexts:", stats.webglContexts);
-    console.log(
+    logger.group("🔧 Resource Manager Statistics");
+    logger.info("Workers:", stats.workers);
+    logger.info("Event Listeners:", stats.eventListeners);
+    logger.info("Blob URLs:", stats.blobURLs);
+    logger.info("Intervals:", stats.intervals);
+    logger.info("Timeouts:", stats.timeouts);
+    logger.info("Audio Nodes:", stats.audioNodes);
+    logger.info("Media Streams:", stats.mediaStreams);
+    logger.info("WebGL Contexts:", stats.webglContexts);
+    logger.info(
       "Estimated Memory:",
       `${(stats.totalMemoryEstimate / 1_000_000).toFixed(2)}MB`,
     );
     if (stats.potentialLeaks.length > 0) {
-      console.warn("⚠️ Potential Leaks:", stats.potentialLeaks);
+      logger.warn("⚠️ Potential Leaks:", stats.potentialLeaks);
     }
-    console.groupEnd();
+    logger.groupEnd();
   }
 
   /**

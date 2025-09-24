@@ -1,10 +1,21 @@
 import * as Tone from "tone";
+import { logger } from "../lib/logger";
 import safeAudioContext from "../lib/audio/safeAudioContext";
 import type {
   AudioServiceConfig,
   AudioServiceStats,
   AudioServiceInterface,
 } from "./types/audio";
+
+/**
+ * Extended AudioContext interface with browser-specific properties
+ */
+interface ExtendedAudioContext {
+  baseLatency?: number;
+  sampleRate: number;
+  suspend(): Promise<void>;
+  resume(): Promise<void>;
+}
 
 /**
  * @class AudioService
@@ -72,7 +83,7 @@ export class AudioService implements AudioServiceInterface {
 
   public async initialize(): Promise<boolean> {
     if (this.initialized) {
-      console.warn("AudioService already initialized");
+      logger.warn("AudioService already initialized");
       return true;
     }
 
@@ -120,17 +131,17 @@ export class AudioService implements AudioServiceInterface {
       this.stats.sampleRate = this.context.sampleRate;
       this.stats.isRunning = true;
       this.stats.latency =
-        ((this.context.rawContext as any)?.baseLatency || 0) +
+        ((this.context.rawContext as ExtendedAudioContext)?.baseLatency || 0) +
         this.context.lookAhead;
 
       // Start performance monitoring
       this.startPerformanceMonitoring();
 
       this.initialized = true;
-      console.log("AudioService initialized successfully", this.stats);
+      logger.info("AudioService initialized successfully", this.stats);
       return true;
     } catch (error) {
-      console.error("Failed to initialize AudioService:", error);
+      logger.error("Failed to initialize AudioService:", error);
       throw new Error(`AudioService initialization failed: ${error}`);
     }
   }
@@ -190,13 +201,13 @@ export class AudioService implements AudioServiceInterface {
     this.stats.isRunning = false;
     AudioService.instance = null;
 
-    console.log("AudioService disposed");
+    logger.info("AudioService disposed");
   }
 
   public getStats(): AudioServiceStats {
     if (this.context) {
       this.stats.latency =
-        ((this.context.rawContext as any)?.baseLatency || 0) +
+        ((this.context.rawContext as ExtendedAudioContext)?.baseLatency || 0) +
         this.context.lookAhead;
       // CPU usage would need Web Audio API performance metrics
       // This is a placeholder - actual implementation would use performance.measureUserAgentSpecificMemory()
@@ -211,9 +222,9 @@ export class AudioService implements AudioServiceInterface {
       this.context.state === "running" &&
       this.context.rawContext
     ) {
-      await (this.context.rawContext as any).suspend();
+      await (this.context.rawContext as ExtendedAudioContext).suspend();
       this.stats.isRunning = false;
-      console.log("AudioService suspended");
+      logger.info("AudioService suspended");
     }
   }
 
@@ -223,9 +234,9 @@ export class AudioService implements AudioServiceInterface {
       this.context.state === "suspended" &&
       this.context.rawContext
     ) {
-      await (this.context.rawContext as any).resume();
+      await (this.context.rawContext as ExtendedAudioContext).resume();
       this.stats.isRunning = true;
-      console.log("AudioService resumed");
+      logger.info("AudioService resumed");
     }
   }
 
@@ -235,7 +246,7 @@ export class AudioService implements AudioServiceInterface {
     this.config.latencyHint = hint;
     if (this.context) {
       this.stats.latency =
-        ((this.context.rawContext as any)?.baseLatency || 0) +
+        ((this.context.rawContext as ExtendedAudioContext)?.baseLatency || 0) +
         this.context.lookAhead;
     }
   }
@@ -300,15 +311,15 @@ export class AudioService implements AudioServiceInterface {
 
     // Update latency
     this.stats.latency =
-      ((this.context.rawContext as any)?.baseLatency || 0) +
+      ((this.context.rawContext as ExtendedAudioContext)?.baseLatency || 0) +
       this.context.lookAhead;
 
     // Update buffer size if available
     if (this.context.rawContext) {
-      const audioContext = this.context.rawContext as AudioContext;
-      if ((audioContext as any).baseLatency) {
+      const audioContext = this.context.rawContext as ExtendedAudioContext;
+      if (audioContext.baseLatency) {
         this.stats.bufferSize = Math.round(
-          (audioContext as any).baseLatency * audioContext.sampleRate,
+          audioContext.baseLatency * audioContext.sampleRate,
         );
       }
     }
@@ -365,14 +376,14 @@ export class AudioService implements AudioServiceInterface {
 
   // Debug utilities
   public debugInfo(): void {
-    console.group("AudioService Debug Info");
-    console.log("Initialized:", this.initialized);
-    console.log("Context State:", this.context?.state);
-    console.log("Stats:", this.stats);
-    console.log("Config:", this.config);
-    console.log("Transport State:", Tone.Transport.state);
-    console.log("Transport BPM:", Tone.Transport.bpm.value);
-    console.groupEnd();
+    logger.group("AudioService Debug Info");
+    logger.info("Initialized:", this.initialized);
+    logger.info("Context State:", this.context?.state);
+    logger.info("Stats:", this.stats);
+    logger.info("Config:", this.config);
+    logger.info("Transport State:", Tone.Transport.state);
+    logger.info("Transport BPM:", Tone.Transport.bpm.value);
+    logger.groupEnd();
   }
 }
 

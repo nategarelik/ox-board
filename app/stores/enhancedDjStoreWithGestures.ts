@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { logger } from "../lib/logger";
 import {
   EnhancedAudioMixer,
   ChannelConfig,
@@ -41,6 +42,13 @@ interface Track {
   stemData?: DemucsOutput;
 }
 
+interface EffectsState {
+  reverb?: { wet: number; roomSize: number };
+  delay?: { wet: number; time: number; feedback: number };
+  filter?: { frequency: number; type: "lowpass" | "highpass" | "bandpass" };
+  distortion?: { amount: number };
+}
+
 interface Deck {
   id: number;
   track: Track | null;
@@ -55,7 +63,7 @@ interface Deck {
   stemPlayerEnabled: boolean;
   stemPlayerState?: StemPlayerState;
   // Effects state
-  effects?: any;
+  effects?: EffectsState;
 }
 
 interface StemControlState {
@@ -382,7 +390,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
           // Update stem player state
           get().updateStemPlayerState(channel);
         } catch (error) {
-          console.error(
+          logger.error(
             `Failed to enable stem player for channel ${channel}:`,
             error,
           );
@@ -493,7 +501,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
           }
           set({ stemControls: updatedStemControls });
         } catch (error) {
-          console.error("Error in setStemVolume:", error);
+          logger.error("Error in setStemVolume:", error);
         }
       },
 
@@ -645,7 +653,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         const deck = get().decks[deckId];
         if (!deck?.track) return;
 
-        console.log(`Processing stems for deck ${deckId}...`);
+        logger.info(`Processing stems for deck ${deckId}...`);
         // In a real implementation, this would call Demucs
         // For now, we'll simulate processing
         const decks = [...get().decks];
@@ -662,7 +670,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
 
         // If track has a URL, load it (simplified for now)
         if (track.url) {
-          console.log(`Loading track ${track.title} into deck ${deckId}`);
+          logger.info(`Loading track ${track.title} into deck ${deckId}`);
         }
 
         decks[deckId] = {
@@ -700,14 +708,14 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         // Set the current position as cue point (simplified implementation)
         decks[deckId] = { ...decks[deckId], cuePoints: [0] };
         set({ decks });
-        console.log(`Cue point set for deck ${deckId}`);
+        logger.info(`Cue point set for deck ${deckId}`);
       },
 
       setDeckVolume: (deckId, volume) => {
         try {
           // Validate inputs
           if (deckId < 0 || deckId >= get().decks.length) {
-            console.warn(`Invalid deck ID: ${deckId}`);
+            logger.warn(`Invalid deck ID: ${deckId}`);
             return;
           }
 
@@ -732,11 +740,11 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
             try {
               mixer.setChannelGain(deckId, clampedVolume);
             } catch (error) {
-              console.error("Error updating mixer channel gain:", error);
+              logger.error("Error updating mixer channel gain:", error);
             }
           }
         } catch (error) {
-          console.error("Error in setDeckVolume:", error);
+          logger.error("Error in setDeckVolume:", error);
         }
       },
 
@@ -810,7 +818,17 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
         });
 
         // Set up event listeners
-        mapper.on("gestureControl", (event: any) => {
+        interface GestureControlEvent {
+          channel?: number;
+          mapping: {
+            controlType: string;
+            targetStem?: string;
+            params?: { eqBand?: "low" | "mid" | "high"; action?: string };
+          };
+          value: number;
+          gesture: GestureDetectionResult;
+        }
+        mapper.on("gestureControl", (event: GestureControlEvent) => {
           const { channel = 0, mapping, value, gesture } = event;
 
           // Apply the gesture control to the appropriate stem
@@ -940,7 +958,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
                 break;
             }
           } catch (error) {
-            console.error("Error applying gesture control:", error);
+            logger.error("Error applying gesture control:", error);
           }
         });
 
@@ -989,7 +1007,7 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
           const processingTime = performance.now() - startTime;
           set({ gestureLatency: processingTime });
         } catch (error) {
-          console.error("Error processing hand gestures:", error);
+          logger.error("Error processing hand gestures:", error);
         }
       },
 

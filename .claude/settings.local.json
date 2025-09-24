@@ -28,7 +28,8 @@
       "List(**)",
       "WebFetch(domain:github.com)",
       "WebSearch",
-      "Read(//c/Users/Nate2/code/epic-analyze-improvements/**)"
+      "Read(//c/Users/Nate2/code/epic-analyze-improvements/**)",
+      "Bash(powershell:*)"
     ]
   }
 }

@@ -1,0 +1,387 @@
+openapi: 3.0.0
+info:
+  title: OX Board Analysis API
+  description: API contracts for app analysis and bug fixing workflow
+  version: 1.0.0
+
+paths:
+  /api/analysis/start:
+    post:
+      summary: Start application analysis
+      operationId: startAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - analysisType
+              properties:
+                analysisType:
+                  type: array
+                  items:
+                    type: string
+                    enum: [lint, typecheck, test, performance, security]
+                includeDevTools:
+                  type: boolean
+                  default: true
+      responses:
+        "200":
+          description: Analysis started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [started, in-progress]
+                  startedAt:
+                    type: string
+                    format: date-time
+
+  /api/analysis/{sessionId}/bugs:
+    get:
+      summary: Get detected bugs
+      operationId: getBugs
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [critical, high, medium, low]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [detected, in-progress, fixed, verified]
+      responses:
+        "200":
+          description: List of bugs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bugs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/BugReport"
+                  summary:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      bySeverity:
+                        type: object
+                      byStatus:
+                        type: object
+
+  /api/analysis/{sessionId}/fix/{bugId}:
+    post:
+      summary: Apply bug fix
+      operationId: fixBug
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: bugId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fixType
+              properties:
+                fixType:
+                  type: string
+                  enum: [auto, manual, skip]
+                fixContent:
+                  type: string
+                  description: Manual fix content if fixType is manual
+      responses:
+        "200":
+          description: Fix applied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bugId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [fixed, failed, skipped]
+                  message:
+                    type: string
+
+  /api/analysis/{sessionId}/tests:
+    post:
+      summary: Run tests
+      operationId: runTests
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                testType:
+                  type: string
+                  enum: [all, unit, integration, e2e]
+                coverage:
+                  type: boolean
+                  default: true
+      responses:
+        "200":
+          description: Test results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TestResult"
+                  coverage:
+                    type: object
+                    properties:
+                      branches:
+                        type: number
+                      functions:
+                        type: number
+                      lines:
+                        type: number
+                      statements:
+                        type: number
+
+  /api/analysis/{sessionId}/performance:
+    get:
+      summary: Get performance metrics
+      operationId: getPerformance
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Performance metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metrics:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PerformanceMetric"
+                  summary:
+                    type: object
+                    properties:
+                      fps:
+                        type: number
+                      audioLatency:
+                        type: number
+                      gestureLatency:
+                        type: number
+                      memoryUsage:
+                        type: number
+
+  /api/deployment/check:
+    post:
+      summary: Run deployment checks
+      operationId: checkDeployment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target:
+                  type: string
+                  enum: [vercel, netlify, custom]
+                  default: vercel
+      responses:
+        "200":
+          description: Deployment check results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ready:
+                    type: boolean
+                  checks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DeploymentCheck"
+                  blockers:
+                    type: array
+                    items:
+                      type: string
+
+components:
+  schemas:
+    BugReport:
+      type: object
+      required:
+        - id
+        - severity
+        - category
+        - file
+        - line
+        - message
+        - status
+      properties:
+        id:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        category:
+          type: string
+          enum:
+            [
+              type-error,
+              lint-violation,
+              console-log,
+              runtime-error,
+              performance,
+            ]
+        file:
+          type: string
+        line:
+          type: integer
+        column:
+          type: integer
+        message:
+          type: string
+        rule:
+          type: string
+        fixAvailable:
+          type: boolean
+        status:
+          type: string
+          enum: [detected, in-progress, fixed, verified]
+        detectedAt:
+          type: string
+          format: date-time
+        fixedAt:
+          type: string
+          format: date-time
+
+    TestResult:
+      type: object
+      required:
+        - id
+        - testName
+        - testType
+        - status
+        - duration
+      properties:
+        id:
+          type: string
+        testName:
+          type: string
+        testType:
+          type: string
+          enum: [unit, integration, e2e, performance, manual]
+        status:
+          type: string
+          enum: [pending, running, passed, failed, skipped]
+        duration:
+          type: number
+        errorMessage:
+          type: string
+        stackTrace:
+          type: string
+        executedAt:
+          type: string
+          format: date-time
+
+    PerformanceMetric:
+      type: object
+      required:
+        - id
+        - metricType
+        - component
+        - value
+        - unit
+        - threshold
+        - status
+      properties:
+        id:
+          type: string
+        metricType:
+          type: string
+          enum: [fps, latency, memory, cpu, network]
+        component:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        threshold:
+          type: number
+        status:
+          type: string
+          enum: [pass, warning, fail]
+        measuredAt:
+          type: string
+          format: date-time
+
+    DeploymentCheck:
+      type: object
+      required:
+        - id
+        - checkName
+        - category
+        - required
+        - status
+        - message
+      properties:
+        id:
+          type: string
+        checkName:
+          type: string
+        category:
+          type: string
+          enum: [build, test, lint, type-check, performance, security]
+        required:
+          type: boolean
+        status:
+          type: string
+          enum: [pending, checking, passed, failed]
+        message:
+          type: string
+        command:
+          type: string
+        checkedAt:
+          type: string
+          format: date-time

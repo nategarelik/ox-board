@@ -77,3 +77,4 @@ REQUIREMENTS.md
 # Test coverage reports
 *.coverage
 coverage/
+.vercel

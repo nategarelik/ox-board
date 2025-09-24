@@ -11,24 +11,28 @@ Specialized agents that do heavy work and return concise summaries to preserve c
 ## Available Agents
 
 ### 🔍 `code-analyzer`
+
 - **Purpose**: Hunt bugs across multiple files without polluting main context
 - **Pattern**: Search many files → Analyze code → Return bug report
 - **Usage**: When you need to trace logic flows, find bugs, or validate changes
 - **Returns**: Concise bug report with critical findings only
 
 ### 📄 `file-analyzer`
+
 - **Purpose**: Read and summarize verbose files (logs, outputs, configs)
 - **Pattern**: Read files → Extract insights → Return summary
 - **Usage**: When you need to understand log files or analyze verbose output
 - **Returns**: Key findings and actionable insights (80-90% size reduction)
 
 ### 🧪 `test-runner`
+
 - **Purpose**: Execute tests without dumping output to main thread
 - **Pattern**: Run tests → Capture to log → Analyze results → Return summary
 - **Usage**: When you need to run tests and understand failures
 - **Returns**: Test results summary with failure analysis
 
 ### 🔀 `parallel-worker`
+
 - **Purpose**: Coordinate multiple parallel work streams for an issue
 - **Pattern**: Read analysis → Spawn sub-agents → Consolidate results → Return summary
 - **Usage**: When executing parallel work streams in a worktree
@@ -88,16 +92,16 @@ New agents should follow these principles:
 ## Anti-Patterns to Avoid
 
 ❌ **Creating "specialist" agents** (database-expert, api-expert)
-   Agents don't have different knowledge - they're all the same model
+Agents don't have different knowledge - they're all the same model
 
 ❌ **Returning verbose output**
-   Defeats the purpose of context preservation
+Defeats the purpose of context preservation
 
 ❌ **Making agents communicate with each other**
-   Use a coordinator agent instead (like parallel-worker)
+Use a coordinator agent instead (like parallel-worker)
 
 ❌ **Using agents for simple tasks**
-   Only use agents when context reduction is valuable
+Only use agents when context reduction is valuable
 
 ## Integration with PM System
 
