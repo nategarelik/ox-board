@@ -11,29 +11,33 @@ export function useStemPlayback(track: StemTrack | null) {
     "uninitialized",
   );
 
-  if (!engineRef.current) {
-    engineRef.current = new StemPlaybackEngine();
-  }
+  const ensureEngine = useCallback(() => {
+    if (!engineRef.current) {
+      engineRef.current = new StemPlaybackEngine();
+    }
+
+    return engineRef.current;
+  }, []);
 
   useEffect(() => {
+    ensureEngine();
+
     return () => {
       engineRef.current?.dispose();
       engineRef.current = null;
-      setReady(false);
-      setState("uninitialized");
     };
-  }, []);
+  }, [ensureEngine]);
 
   const initialize = useCallback(async () => {
-    if (!engineRef.current) return false;
-    await engineRef.current.initialize();
+    const engine = ensureEngine();
+    await engine.initialize();
     setReady(true);
-    setState(engineRef.current.getState());
+    setState(engine.getState());
     if (track) {
-      engineRef.current.loadTrack(track);
+      engine.loadTrack(track);
     }
     return true;
-  }, [track]);
+  }, [ensureEngine, track]);
 
   useEffect(() => {
     if (!ready || !track) return;
@@ -42,21 +46,24 @@ export function useStemPlayback(track: StemTrack | null) {
   }, [ready, track]);
 
   const play = useCallback(async () => {
-    if (!engineRef.current) return;
-    await engineRef.current.play();
-    setState(engineRef.current.getState());
+    const engine = engineRef.current;
+    if (!engine) return;
+    await engine.play();
+    setState(engine.getState());
   }, []);
 
   const pause = useCallback(async () => {
-    if (!engineRef.current) return;
-    await engineRef.current.pause();
-    setState(engineRef.current.getState());
+    const engine = engineRef.current;
+    if (!engine) return;
+    await engine.pause();
+    setState(engine.getState());
   }, []);
 
   const stop = useCallback(async () => {
-    if (!engineRef.current) return;
-    await engineRef.current.stop();
-    setState(engineRef.current.getState());
+    const engine = engineRef.current;
+    if (!engine) return;
+    await engine.stop();
+    setState(engine.getState());
   }, []);
 
   const updateStem = useCallback(

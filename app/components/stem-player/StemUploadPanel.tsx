@@ -101,6 +101,8 @@ export default function StemUploadPanel({
             if (file) {
               void handleUpload(file);
             }
+            // Allow selecting the same file again after handling the upload
+            event.target.value = "";
           }}
         />
         {uploadProgress !== null && (

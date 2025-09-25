@@ -2,8 +2,23 @@ import { NextRequest } from "next/server";
 import { createMockWaveform } from "../../lib/data/defaultTrack";
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { fileName, mimeType, size } = body;
+  let body:
+    | Partial<{
+        fileName: string;
+        mimeType: string;
+        size: number;
+      }>
+    | undefined;
+
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ message: "Invalid JSON payload" }), {
+      status: 400,
+    });
+  }
+
+  const { fileName, mimeType, size } = body ?? {};
 
   if (!fileName || !mimeType || !size) {
     return new Response(

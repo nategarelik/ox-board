@@ -112,18 +112,18 @@ const useStemPlayerStore = create<StemPlayerState>()(
       set((draft) => {
         const track = draft.tracks[currentTrackId];
         if (!track) return;
-        track.stems = track.stems.map((stem) =>
-          stem.id === stemId
-            ? {
-                ...stem,
-                muted: !stem.muted,
-                solo: stem.muted ? stem.solo : false,
-              }
-            : {
-                ...stem,
-                solo: stem.solo && stem.id !== stemId ? false : stem.solo,
-              },
-        );
+        track.stems = track.stems.map((stem) => {
+          if (stem.id !== stemId) {
+            return stem;
+          }
+
+          const willBeMuted = !stem.muted;
+          return {
+            ...stem,
+            muted: willBeMuted,
+            solo: willBeMuted ? false : stem.solo,
+          };
+        });
       });
     },
 
@@ -135,17 +135,21 @@ const useStemPlayerStore = create<StemPlayerState>()(
         const track = draft.tracks[currentTrackId];
         if (!track) return;
         const target = track.stems.find((stem) => stem.id === stemId);
-        const shouldSolo = target ? !target.solo : true;
-        track.stems = track.stems.map((stem) => {
-          if (stem.id === stemId) {
-            return { ...stem, solo: shouldSolo, muted: false };
-          }
-          return {
+        const activating = target ? !target.solo : true;
+
+        if (activating) {
+          track.stems = track.stems.map((stem) =>
+            stem.id === stemId
+              ? { ...stem, solo: true, muted: false }
+              : { ...stem, solo: false, muted: true },
+          );
+        } else {
+          track.stems = track.stems.map((stem) => ({
             ...stem,
-            solo: shouldSolo ? false : stem.solo,
-            muted: shouldSolo ? true : stem.muted,
-          };
-        });
+            solo: false,
+            muted: false,
+          }));
+        }
       });
     },
 
