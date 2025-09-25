@@ -1,231 +1,73 @@
-# OX Board - Gesture-Controlled DJ Platform 🎵
+# OX Board Stem Studio 🎛️
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Next.js](https://img.shields.io/badge/Next.js-15.0.3-black)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Next.js](https://img.shields.io/badge/Next.js-15.5-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
 
-A revolutionary open-source browser-based DJ platform that replaces expensive physical equipment with gesture controls captured through your webcam. Control your mix with just your hands - no hardware required!
+An AI-native web stem player where producers can upload, generate, and mix songs directly in the browser. OX Board splits music into stems, streams them with ultra-low latency, and layers in AI workflows for auto-mixing, personalized recommendations, and commercial-ready exports.
 
-## 🎬 Demo
+## ✨ Highlights
 
-[Live Demo](#) | [Video Tutorial](#) | [Documentation](#)
+- ⚙️ **Stem-first architecture** – HLS-friendly stem model with real-time Web Audio playback and gain staging.
+- 🤖 **AI everywhere** – Prompt-to-track generation, intelligent auto-mix suggestions, and mood-aware recommendations.
+- ☁️ **Serverless ready** – Next.js 15 App Router with API routes for stem separation, generation, and personalization.
+- 💸 **Subscription model** – Stripe-ready tiering with download quotas and licensing upgrades.
+- 📊 **Agentic analytics** – Live latency, buffer, and queue metrics to keep sessions running smoothly.
 
-![OX Board Demo](https://via.placeholder.com/800x400?text=OX+Board+Demo+GIF)
+## 🧱 Project Structure
 
-## 🚀 Features
+```
+app/
+├── api/                      # Serverless endpoints for AI + stems
+│   ├── generate/route.ts     # Prompt-to-track generation handler
+│   ├── recommendations/      # Personalized feed
+│   └── stemify/              # Upload + stem separation
+├── components/
+│   ├── stem-player/          # Stem player UI, upload, subscription, analytics
+│   └── ClientApp.tsx         # Entry point wiring the dashboard
+├── hooks/
+│   ├── usePlayer.ts          # Store bindings
+│   └── useStemPlayback.ts    # Web Audio playback engine
+├── lib/
+│   ├── audio/stemPlaybackEngine.ts
+│   └── data/defaultTrack.ts  # Seed data + waveform helpers
+├── stores/stemPlayerStore.ts # Zustand store managing stems + AI tasks
+└── types/stem-player.ts      # Shared typing for stems, plans, analytics
+```
 
-### Implemented (75% Complete)
-
-- ✅ **MediaPipe Hand Tracking** - Real-time gesture detection via webcam
-- ✅ **4-Channel Audio Mixer** - Professional mixing capabilities with Tone.js
-- ✅ **Gesture Recognition** - Kalman-filtered smooth control mapping
-- ✅ **State Management** - Zustand store for DJ controls
-- ✅ **Error Boundaries** - Robust error handling at multiple levels
-- ✅ **Dynamic UI** - Responsive interface with Next.js 15
-
-### In Progress (20%)
-
-- 🔄 Track loading and playback
-- 🔄 Audio effects (reverb, delay, filters)
-- 🔄 3D visualizations with Three.js
-- 🔄 Tutorial system
-
-### Planned (5%)
-
-- 📋 Recording capabilities
-- 📋 Collaborative sessions
-- 📋 Track library with cloud storage
-- 📋 MIDI controller support
-
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js 15.0.3 with App Router
-- **Language**: TypeScript (strict mode)
-- **UI**: React 18.2.0, Tailwind CSS
-- **Hand Tracking**: MediaPipe Hands
-- **Audio**: Tone.js
-- **State**: Zustand
-- **3D Graphics**: Three.js (ready to implement)
-- **Real-time**: Socket.io (ready to implement)
-
-## ⚡ Quick Start
-
-Try OX Board in under 2 minutes:
+## 🚀 Getting Started
 
 ```bash
-# Clone and setup
-git clone https://github.com/your-org/ox-board.git
-cd ox-board
 npm install
-cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and allow camera access to start mixing!
+Open [http://localhost:3000](http://localhost:3000) to launch the stem studio. Upload a song or craft an AI prompt to start generating stems.
 
-## 📦 Installation
+## 🧪 Key Workflows
 
-### Prerequisites
+- **Stem Upload**: Drag in MP3/WAV → `/api/stemify` simulates Music.ai-class separation → stems hydrate the mixer.
+- **AI Generation**: Submit prompts via `/api/generate` → mocked Suno/AIVA response seeds new tasks in the queue.
+- **Auto Mix**: Web Audio engine mirrors adjustments when you call the AI auto-mixer, keeping gain staging consistent.
+- **Personalization**: `/api/recommendations` tailors suggestions per subscription tier and session context.
 
-- Node.js 18+ and npm 9+
-- Webcam (built-in or external)
-- Modern browser (Chrome 90+, Firefox 88+, Safari 15+, Edge 90+)
-- 4GB+ RAM recommended
+## 🛡️ Security & Ethics
 
-### Setup
+- API keys remain server-side; front-end only calls internal routes.
+- Playback honors browser gesture requirements before unlocking Web Audio.
+- Recommendation copy nudges toward ethical, royalty-friendly usage of AI music.
 
-```bash
-# Clone the repository
-git clone https://github.com/your-org/ox-board.git
-cd ox-board
+## 🗺️ Roadmap
 
-# Install dependencies
-npm install
-
-# Configure environment
-cp .env.example .env.local
-
-# Run development server
-npm run dev
-
-# Or build for production
-npm run build
-npm start
-```
-
-## 🎮 Gesture Controls
-
-| Gesture                | Control    | Description            |
-| ---------------------- | ---------- | ---------------------- |
-| ✋ Open Palm           | Stop       | Pause playback         |
-| ✊ Closed Fist         | Play       | Start playback         |
-| 👆 Index Finger Height | Volume     | Control channel volume |
-| ↔️ Wrist Position      | Crossfader | Blend between decks    |
-| 🤏 Pinch               | Effects    | Apply audio effects    |
-
-## 🏗️ Project Structure
-
-```
-ox-board/
-├── app/                    # Next.js app directory
-│   ├── components/         # React components
-│   │   ├── Camera/        # MediaPipe integration
-│   │   ├── DJ/            # DJ interface components
-│   │   └── ErrorBoundary.tsx
-│   ├── hooks/             # Custom React hooks
-│   │   └── useGestures.ts # Gesture processing
-│   ├── lib/               # Utilities
-│   │   ├── audio/         # Audio mixer
-│   │   └── gesture/       # Gesture recognition
-│   ├── stores/            # Zustand state
-│   └── page.tsx           # Main DJ interface
-├── .claude/               # Project management
-│   ├── context/           # Documentation
-│   └── epics/             # Development epics
-└── public/                # Static assets
-```
-
-## 🔧 Development
-
-### Prerequisites
-
-- Node.js 18+
-- Webcam
-- Modern browser (Chrome 90+ recommended)
-- 4GB+ RAM
-
-### Environment Variables
-
-Create a `.env.local` file:
-
-```env
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:3000
-NEXT_PUBLIC_MEDIAPIPE_VERSION=0.4.0
-```
-
-### Available Scripts
-
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Run production server
-npm run lint         # Run ESLint
-npm run type-check   # TypeScript type checking
-npm test            # Run tests
-npm run test:coverage # Test coverage report
-```
-
-## 📊 Performance Targets
-
-- **Gesture Latency**: <50ms
-- **Audio Latency**: <20ms
-- **Frame Rate**: 60fps
-- **Load Time**: <3 seconds
-- **Gesture Accuracy**: >95%
+- [ ] Wire real HLS stem streaming (e.g., stemplayer-js or hls.js integration)
+- [ ] Replace mock APIs with production-grade Music.ai & Suno clients
+- [ ] Add Stripe billing webhooks + Supabase storage for stems
+- [ ] Build collaborative sessions with presence + messaging
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! See our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Ways to Contribute
-
-- 🐛 Report bugs and issues
-- 💡 Suggest new features
-- 📝 Improve documentation
-- 🔧 Submit pull requests
-- ⭐ Star the project
-
-### Development Workflow
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes using conventional commits (`feat: add amazing feature`)
-4. Push to your branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🛡️ Security
-
-For security concerns, please review our [Security Policy](SECURITY.md).
-
-## 🙏 Acknowledgments
-
-- [MediaPipe](https://mediapipe.dev/) team for hand tracking technology
-- [Tone.js](https://tonejs.github.io/) for web audio capabilities
-- [Next.js](https://nextjs.org/) team for the framework
-- All our [contributors](https://github.com/your-org/ox-board/graphs/contributors)
-
-## 🚧 Roadmap
-
-See our [project board](https://github.com/your-org/ox-board/projects) for upcoming features.
-
-### Version 1.0 Goals
-
-- [ ] Complete audio effects suite
-- [ ] Beat matching algorithm
-- [ ] Cloud track library
-- [ ] Collaborative sessions
-- [ ] Mobile gesture support
-
-## 💬 Community
-
-- [GitHub Discussions](https://github.com/your-org/ox-board/discussions)
-- [Report Issues](https://github.com/your-org/ox-board/issues)
-- [Request Features](https://github.com/your-org/ox-board/issues/new?template=feature_request.md)
-
-## 📊 Project Status
-
-![GitHub last commit](https://img.shields.io/github/last-commit/your-org/ox-board)
-![GitHub issues](https://img.shields.io/github/issues/your-org/ox-board)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/your-org/ox-board)
+We welcome issues and pull requests! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-**Status**: v0.8.0 (Beta) | **Progress**: 75% Complete | Made with ❤️ by the OX Board community
+Built with care for producers exploring the future of AI-assisted music creation.
