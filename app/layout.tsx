@@ -5,17 +5,17 @@ import "./globals.css";
 import "./styles/accessibility.css";
 
 export const metadata: Metadata = {
-  title: "OX Board - Gesture-Controlled DJ Platform",
+  title: "OX Board Stem Studio",
   description:
-    "Throw Your Hands Up - Professional DJ mixing with hand gestures",
-  keywords: "DJ, gesture control, music mixing, Theta Chi, UW Madison",
-  authors: [{ name: "Theta Chi - UW Madison" }],
+    "AI-native stem player for uploading, generating, and mixing music in the browser.",
+  keywords: ["ai music", "stem player", "audio mixing", "nextjs", "web audio"],
+  authors: [{ name: "OX Board" }],
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#FF0000",
+  themeColor: "#0f172a",
 };
 
 export default function RootLayout({
