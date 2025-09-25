@@ -72,7 +72,8 @@ HTMLCanvasElement.prototype.getBoundingClientRect = jest.fn(() => ({
   toJSON: () => ({}),
 }));
 
-HTMLCanvasElement.prototype.getContext = mockCanvas.getContext;
+HTMLCanvasElement.prototype.getContext =
+  mockCanvas.getContext as unknown as typeof HTMLCanvasElement.prototype.getContext;
 
 describe("StemWaveform", () => {
   const mockTrack = {
