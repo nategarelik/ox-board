@@ -81,7 +81,7 @@ const mockEssentia = {
 };
 
 const mockEssentiaWASM = {
-  init: jest.fn().mockResolvedValue(undefined) as jest.MockedFunction<
+  init: jest.fn(async () => undefined) as unknown as jest.MockedFunction<
     () => Promise<void>
   >,
   delete: jest.fn(),

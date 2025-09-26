@@ -47,9 +47,7 @@ const createMockFile = (
 
   // Mock arrayBuffer method
   Object.defineProperty(file, "arrayBuffer", {
-    value: jest.fn().mockResolvedValue(arrayBuffer) as jest.MockedFunction<
-      () => Promise<ArrayBuffer>
-    >,
+    value: jest.fn(async () => arrayBuffer) as () => Promise<ArrayBuffer>,
   });
 
   return file;

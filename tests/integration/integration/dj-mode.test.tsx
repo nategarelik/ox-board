@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import ProfessionalDJInterface from "@/components/DJ/ProfessionalDJInterface";
+import type { GestureData } from "@/types/dj";
 import { ViewMode } from "@/types/dj";
 
 // Mock dynamic imports
@@ -57,7 +58,7 @@ describe("DJ Mode Integration Tests", () => {
     updateGestureControls: jest.fn(),
   };
 
-  const mockGestureData = {
+  const mockGestureData: GestureData = {
     gestureData: null,
     controls: [],
     updateGestures: jest.fn(),

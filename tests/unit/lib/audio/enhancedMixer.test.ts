@@ -80,7 +80,7 @@ jest.mock("tone", () => {
     Limiter: jest.fn(() => mockLimiter),
     Compressor: jest.fn(() => mockCompressor),
     Meter: jest.fn(() => mockMeter),
-    start: jest.fn().mockResolvedValue(undefined) as jest.MockedFunction<
+    start: jest.fn(async () => undefined) as unknown as jest.MockedFunction<
       () => Promise<void>
     >,
   };
@@ -90,20 +90,24 @@ jest.mock("tone", () => {
 jest.mock("@/lib/audio/stemPlayer", () => {
   return {
     StemPlayer: jest.fn().mockImplementation(() => ({
-      initialize: jest.fn().mockResolvedValue(undefined) as jest.MockedFunction<
-        () => Promise<void>
-      >,
-      loadStems: jest.fn().mockResolvedValue([
+      initialize: jest.fn(
+        async () => undefined,
+      ) as unknown as jest.MockedFunction<() => Promise<void>>,
+      loadStems: jest.fn(async () => [
         { success: true, stemType: "drums", duration: 10 },
         { success: true, stemType: "bass", duration: 10 },
         { success: true, stemType: "melody", duration: 10 },
         { success: true, stemType: "vocals", duration: 10 },
         { success: true, stemType: "original", duration: 10 },
-      ] as { success: boolean; stemType: string; duration: number }[]),
+      ]) as unknown as jest.MockedFunction<
+        (
+          output: any,
+        ) => Promise<{ success: boolean; stemType: string; duration: number }[]>
+      >,
       connect: jest.fn(),
       disconnect: jest.fn(),
       dispose: jest.fn(),
-      play: jest.fn().mockResolvedValue(undefined) as jest.MockedFunction<
+      play: jest.fn(async () => undefined) as unknown as jest.MockedFunction<
         () => Promise<void>
       >,
       pause: jest.fn(),
@@ -708,11 +712,9 @@ describe("EnhancedAudioMixer", () => {
     it("should handle stem player initialization errors", async () => {
       const { StemPlayer } = require("@/lib/audio/stemPlayer");
       StemPlayer.mockImplementationOnce(() => ({
-        initialize: jest
-          .fn()
-          .mockRejectedValue(new Error("Init failed")) as jest.MockedFunction<
-          () => Promise<void>
-        >,
+        initialize: jest.fn(async () => {
+          throw new Error("Init failed");
+        }) as unknown as jest.MockedFunction<() => Promise<void>>,
       }));
 
       await expect(mixer.enableStemPlayer(0)).rejects.toThrow("Init failed");
@@ -721,16 +723,12 @@ describe("EnhancedAudioMixer", () => {
     it("should handle stem loading errors", async () => {
       const { StemPlayer } = require("@/lib/audio/stemPlayer");
       const mockStemPlayer = {
-        initialize: jest
-          .fn()
-          .mockResolvedValue(undefined) as jest.MockedFunction<
-          () => Promise<void>
-        >,
-        loadStems: jest
-          .fn()
-          .mockRejectedValue(
-            new Error("Load failed"),
-          ) as jest.MockedFunction<any>,
+        initialize: jest.fn(
+          async () => undefined,
+        ) as unknown as jest.MockedFunction<() => Promise<void>>,
+        loadStems: jest.fn(async () => {
+          throw new Error("Load failed");
+        }) as unknown as jest.MockedFunction<any>,
         connect: jest.fn(),
         on: jest.fn(),
       };

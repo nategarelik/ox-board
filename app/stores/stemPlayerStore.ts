@@ -112,6 +112,7 @@ const useStemPlayerStore = create<StemPlayerState>()(
       set((draft) => {
         const track = draft.tracks[currentTrackId];
         if (!track) return;
+
         track.stems = track.stems.map((stem) => {
           if (stem.id !== stemId) {
             return stem;
@@ -135,6 +136,7 @@ const useStemPlayerStore = create<StemPlayerState>()(
         const track = draft.tracks[currentTrackId];
         if (!track) return;
         const target = track.stems.find((stem) => stem.id === stemId);
+
         const activating = target ? !target.solo : true;
 
         if (activating) {
