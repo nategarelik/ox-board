@@ -43,8 +43,8 @@ WORKDIR /app
 # Copy Python packages from builder
 COPY --from=builder /root/.local /home/appuser/.local
 
-# Copy application code
-COPY . .
+# Copy application code to /app/backend
+COPY . ./backend
 
 # Set ownership
 RUN chown -R appuser:appuser /app
