@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import WelcomeScreen from "./DJ/WelcomeScreen";
-import SimpleStemPlayer from "./SimpleStemPlayer";
+// import SimpleStemPlayer from "./SimpleStemPlayer"; // Deleted in Phase 2 cleanup
 import StemPlayerDashboard from "./stem-player/StemPlayerDashboard";
 
 export default function ClientApp() {
