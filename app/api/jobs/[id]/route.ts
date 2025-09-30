@@ -5,10 +5,11 @@ const BACKEND_URL =
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/v1/jobs/${params.id}`, {
+    const { id } = await params;
+    const response = await fetch(`${BACKEND_URL}/api/v1/jobs/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -38,10 +39,11 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/v1/jobs/${params.id}`, {
+    const { id } = await params;
+    const response = await fetch(`${BACKEND_URL}/api/v1/jobs/${id}`, {
       method: "DELETE",
     });
 
