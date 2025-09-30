@@ -69,15 +69,27 @@ jest.mock("tone", () => {
   };
 
   return {
-    Player: jest.fn(() => mockPlayer),
-    Gain: jest.fn(() => mockGain),
-    Panner: jest.fn(() => mockPanner),
-    EQ3: jest.fn(() => mockEQ3),
-    CrossFade: jest.fn(() => mockCrossFade),
-    start: jest.fn().mockResolvedValue(undefined),
-    now: jest.fn(() => 0),
+    Player: jest.fn(() => mockPlayer) as jest.Mock,
+    Gain: jest.fn(() => mockGain) as jest.Mock,
+    Panner: jest.fn(() => mockPanner) as jest.Mock,
+    EQ3: jest.fn(() => mockEQ3) as jest.Mock,
+    CrossFade: jest.fn(() => mockCrossFade) as jest.Mock,
+    start: jest.fn(async () => undefined) as jest.MockedFunction<
+      () => Promise<void>
+    >,
+    now: jest.fn(() => 0) as jest.MockedFunction<() => number>,
   };
 });
+
+const mockedTone = Tone as unknown as {
+  Player: jest.Mock;
+  Gain: jest.Mock;
+  Panner: jest.Mock;
+  EQ3: jest.Mock;
+  CrossFade: jest.Mock;
+  start: jest.MockedFunction<() => Promise<void>>;
+  now: jest.MockedFunction<() => number>;
+};
 
 // Mock AudioContext
 const mockAudioContext = {
@@ -92,10 +104,14 @@ const mockAudioContext = {
 };
 
 // Mock AudioBuffer
+type MockAudioBuffer = AudioBuffer & {
+  clone: jest.MockedFunction<() => MockAudioBuffer>;
+};
+
 const createMockAudioBuffer = (
   duration: number = 10,
   channels: number = 2,
-): AudioBuffer => {
+): MockAudioBuffer => {
   const buffer = {
     length: Math.floor(duration * 44100),
     duration,
@@ -107,10 +123,9 @@ const createMockAudioBuffer = (
     copyFromChannel: jest.fn(),
     copyToChannel: jest.fn(),
     clone: jest.fn(),
-  } as unknown as AudioBuffer;
+  } as unknown as MockAudioBuffer;
 
-  // Make clone return the same buffer for testing
-  (buffer.clone as jest.Mock).mockReturnValue(buffer);
+  buffer.clone.mockReturnValue(buffer);
 
   return buffer;
 };
@@ -171,8 +186,11 @@ describe("StemPlayer", () => {
     jest.clearAllMocks();
 
     // Mock global AudioContext
-    global.AudioContext = jest.fn(() => mockAudioContext) as any;
-    global.webkitAudioContext = jest.fn(() => mockAudioContext) as any;
+    (globalThis as typeof globalThis & { AudioContext: any }).AudioContext =
+      jest.fn(() => mockAudioContext);
+    (
+      globalThis as typeof globalThis & { webkitAudioContext: any }
+    ).webkitAudioContext = jest.fn(() => mockAudioContext);
 
     const config: Partial<StemPlayerConfig> = {
       timeStretchEnabled: true,
@@ -376,7 +394,9 @@ describe("StemPlayer", () => {
       });
 
       it("should affect audio gain when muting", () => {
-        const mockGain = (Tone.Gain as jest.Mock).mock.results[0].value;
+        const mockGain = (mockedTone.Gain.mock.results[0]?.value as {
+          gain: { rampTo: jest.Mock };
+        }) ?? { gain: { rampTo: jest.fn() } };
 
         stemPlayer.setStemMute("drums", true);
         expect(mockGain.gain.rampTo).toHaveBeenCalledWith(0, 0.01);
@@ -485,7 +505,9 @@ describe("StemPlayer", () => {
     });
 
     it("should apply crossfade curves correctly", () => {
-      const mockCrossFade = (Tone.CrossFade as jest.Mock).mock.results[0].value;
+      const mockCrossFade = (mockedTone.CrossFade.mock.results[0]?.value as {
+        fade: { rampTo: jest.Mock };
+      }) ?? { fade: { rampTo: jest.fn() } };
 
       // Test linear curve (default behavior)
       stemPlayer.setStemMix(0.5);
@@ -524,9 +546,10 @@ describe("StemPlayer", () => {
 
     it("should detect drift and attempt resync", (done) => {
       // Mock players with different times to simulate drift
-      const players = (Tone.Player as jest.Mock).mock.results;
+      const players = mockedTone.Player.mock.results;
       players.forEach((result, index) => {
-        result.value.immediate = jest.fn(() => index * 0.2); // Simulate drift
+        const player = result.value as { immediate: jest.Mock };
+        player.immediate = jest.fn(() => index * 0.2); // Simulate drift
       });
 
       stemPlayer.on("resynced", () => {
@@ -623,7 +646,10 @@ describe("StemPlayer", () => {
 
     it("should connect to destination", () => {
       const mockDestination = { connect: jest.fn(), disconnect: jest.fn() };
-      const mockMasterOut = (Tone.Gain as jest.Mock).mock.results[0].value;
+      const mockMasterOut = mockedTone.Gain.mock.results[0]?.value as {
+        connect: jest.Mock;
+        disconnect: jest.Mock;
+      };
 
       stemPlayer.connect(mockDestination as any);
       expect(mockMasterOut.connect).toHaveBeenCalledWith(mockDestination);
@@ -631,14 +657,18 @@ describe("StemPlayer", () => {
 
     it("should disconnect from destination", () => {
       const mockDestination = { connect: jest.fn(), disconnect: jest.fn() };
-      const mockMasterOut = (Tone.Gain as jest.Mock).mock.results[0].value;
+      const mockMasterOut = mockedTone.Gain.mock.results[0]?.value as {
+        disconnect: jest.Mock;
+      };
 
       stemPlayer.disconnect(mockDestination as any);
       expect(mockMasterOut.disconnect).toHaveBeenCalledWith(mockDestination);
     });
 
     it("should disconnect all when no destination specified", () => {
-      const mockMasterOut = (Tone.Gain as jest.Mock).mock.results[0].value;
+      const mockMasterOut = mockedTone.Gain.mock.results[0]?.value as {
+        disconnect: jest.Mock;
+      };
 
       stemPlayer.disconnect();
       expect(mockMasterOut.disconnect).toHaveBeenCalledWith();
@@ -686,19 +716,21 @@ describe("StemPlayer", () => {
       await stemPlayer.loadStems(mockDemucsOutput);
 
       // Mock all disposal methods
-      const mockPlayers = (Tone.Player as jest.Mock).mock.results;
-      const mockGains = (Tone.Gain as jest.Mock).mock.results;
+      const mockPlayers = mockedTone.Player.mock.results;
+      const mockGains = mockedTone.Gain.mock.results;
 
       stemPlayer.dispose();
 
       // Verify players are disposed
       mockPlayers.forEach((result) => {
-        expect(result.value.dispose).toHaveBeenCalled();
+        const player = result.value as { dispose: jest.Mock };
+        expect(player.dispose).toHaveBeenCalled();
       });
 
       // Verify gains are disposed
       mockGains.forEach((result) => {
-        expect(result.value.dispose).toHaveBeenCalled();
+        const gain = result.value as { dispose: jest.Mock };
+        expect(gain.dispose).toHaveBeenCalled();
       });
 
       expect(stemPlayer.areStemsLoaded()).toBe(false);

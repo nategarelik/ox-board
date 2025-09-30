@@ -28,8 +28,13 @@
       "@/styles/*": ["app/styles/*"],
       "@/*": ["app/*"]
     },
-    "target": "ES2022"
+    "target": "ES2022",
+    "downlevelIteration": true
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "specs/**/contracts/**/*.test.ts",
+    "tests/unit/lib/offline/**/*.test.ts"
+  ]
 }

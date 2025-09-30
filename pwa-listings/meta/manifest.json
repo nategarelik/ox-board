@@ -1,0 +1,183 @@
+{
+  "name": "OX Gesture Stem Player",
+  "short_name": "OX Player",
+  "version": "1.0.0",
+  "description": "Professional gesture-controlled stem mixing platform optimized for Meta Quest VR. Control audio stems with hand gestures using advanced MediaPipe technology in immersive VR environments.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape-primary",
+  "theme_color": "#9333ea",
+  "background_color": "#0a0a0a",
+  "lang": "en",
+  "scope": "/",
+  "categories": ["music", "entertainment", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/vr-icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/vr-icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/vr-desktop-1-1280x800.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "VR Mixing Interface"
+    },
+    {
+      "src": "/screenshots/vr-desktop-2-1280x800.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Gesture Control in VR"
+    },
+    {
+      "src": "/screenshots/vr-mobile-1-640x400.png",
+      "sizes": "640x400",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile VR Interface"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "VR Mix Session",
+      "short_name": "VR Mix",
+      "description": "Start VR mixing session",
+      "url": "/?mode=vr-mix",
+      "icons": [
+        {
+          "src": "/icons/shortcut-vr-mix.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Stem Player VR",
+      "short_name": "VR Stems",
+      "description": "Open VR stem player",
+      "url": "/?mode=vr-stems",
+      "icons": [
+        {
+          "src": "/icons/shortcut-vr-stems.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Gesture Training",
+      "short_name": "Training",
+      "description": "VR gesture training mode",
+      "url": "/?mode=vr-training",
+      "icons": [
+        {
+          "src": "/icons/shortcut-vr-training.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "vr_features": {
+    "hand_tracking": true,
+    "spatial_audio": true,
+    "immersive_ui": true,
+    "gesture_recognition": true,
+    "head_tracking": true,
+    "controller_support": true
+  },
+  "oculus_features": {
+    "hand_tracking": {
+      "enabled": true,
+      "version": "2.0"
+    },
+    "spatial_audio": {
+      "enabled": true,
+      "ambisonic": true
+    },
+    "passthrough": {
+      "enabled": false,
+      "reason": "Not required for music production"
+    },
+    "controller_vibration": {
+      "enabled": true,
+      "haptic_feedback": true
+    }
+  },
+  "meta_features": {
+    "mixed_reality": {
+      "enabled": false
+    },
+    "social_features": {
+      "enabled": false,
+      "reason": "Post-launch feature"
+    },
+    "voice_commands": {
+      "enabled": false,
+      "reason": "Future enhancement"
+    }
+  },
+  "performance_hints": {
+    "target_frame_rate": 72,
+    "gpu_optimization": true,
+    "memory_management": "aggressive",
+    "battery_optimization": true
+  },
+  "input_handlers": {
+    "hand_tracking": {
+      "left_hand": true,
+      "right_hand": true,
+      "both_hands": true,
+      "finger_tracking": true
+    },
+    "controllers": {
+      "touch_controllers": true,
+      "gamepad": true,
+      "keyboard": true
+    },
+    "voice": {
+      "enabled": false
+    }
+  },
+  "audio_features": {
+    "spatial_audio": true,
+    "3d_audio": true,
+    "audio_zones": true,
+    "reverb_zones": true,
+    "audio_occlusion": false
+  },
+  "ui_features": {
+    "immersive_mode": true,
+    "curved_ui": true,
+    "depth_testing": true,
+    "gaze_selection": true,
+    "gesture_selection": true
+  },
+  "compatibility": {
+    "meta_quest": {
+      "quest_1": false,
+      "quest_2": true,
+      "quest_3": true,
+      "quest_pro": true
+    },
+    "min_os_version": "v50",
+    "min_firmware": "50.0.0"
+  }
+}

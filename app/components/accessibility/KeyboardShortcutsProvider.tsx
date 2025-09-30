@@ -24,6 +24,7 @@ export default function KeyboardShortcutsProvider({
     crossfaderConfig,
     masterConfig,
     setMasterGain,
+    initializeAudioOnUserGesture,
   } = useEnhancedDJStore();
 
   const announcer = getScreenReaderAnnouncer();
@@ -32,7 +33,15 @@ export default function KeyboardShortcutsProvider({
   const shortcuts = [
     {
       key: " ",
-      action: () => {
+      action: async () => {
+        // Initialize audio on user gesture first
+        try {
+          await initializeAudioOnUserGesture();
+        } catch (error) {
+          console.error("Failed to initialize audio:", error);
+          return;
+        }
+
         // Toggle play/pause for active deck
         const activeDeck = decks[0]?.isPlaying
           ? 0
@@ -138,7 +147,13 @@ export default function KeyboardShortcutsProvider({
     },
     {
       key: "1",
-      action: () => {
+      action: async () => {
+        try {
+          await initializeAudioOnUserGesture();
+        } catch (error) {
+          console.error("Failed to initialize audio:", error);
+          return;
+        }
         playDeck(0);
         announcer.announceDeckState("A", "playing");
       },
@@ -146,7 +161,13 @@ export default function KeyboardShortcutsProvider({
     },
     {
       key: "2",
-      action: () => {
+      action: async () => {
+        try {
+          await initializeAudioOnUserGesture();
+        } catch (error) {
+          console.error("Failed to initialize audio:", error);
+          return;
+        }
         playDeck(1);
         announcer.announceDeckState("B", "playing");
       },

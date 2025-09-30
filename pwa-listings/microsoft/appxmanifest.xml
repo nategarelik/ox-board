@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+
+  <Identity
+    Name="OXGestureStemPlayer"
+    Publisher="CN=OX Player"
+    Version="1.0.0.0" />
+
+  <mp:PhoneIdentity PhoneProductId="12345678-1234-1234-1234-123456789012" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+
+  <Properties>
+    <DisplayName>OX Gesture Stem Player</DisplayName>
+    <PublisherDisplayName>OX Player</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Professional gesture-controlled stem mixing platform for DJs and music producers. Control audio stems with hand gestures using advanced MediaPipe technology.</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="x-generate"/>
+  </Resources>
+
+  <Applications>
+    <Application Id="App"
+      Executable="$targetnametoken$.exe"
+      EntryPoint="$targetnametoken$.App">
+      <uap:VisualElements
+        DisplayName="OX Gesture Stem Player"
+        Description="Professional gesture-controlled stem mixing platform"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!-- PWA Builder Extension -->
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="oxplayerfiles">
+            <uap:SupportedFileTypes>
+              <uap:FileType>.wav</uap:FileType>
+              <uap:FileType>.mp3</uap:FileType>
+              <uap:FileType>.flac</uap:FileType>
+              <uap:FileType>.aac</uap:FileType>
+              <uap:FileType>.ogg</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+
+        <!-- Protocol Handler for web+oxplayer -->
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="web+oxplayer">
+            <uap:DisplayName>OX Player Audio Import</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+
+        <!-- Share Target -->
+        <uap:Extension Category="windows.shareTarget">
+          <uap:ShareTarget>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.wav</uap:FileType>
+              <uap:FileType>.mp3</uap:FileType>
+              <uap:FileType>.flac</uap:FileType>
+              <uap:FileType>.aac</uap:FileType>
+              <uap:FileType>.ogg</uap:FileType>
+            </uap:SupportedFileTypes>
+            <uap:DataFormat>StorageItems</uap:DataFormat>
+            <uap:DataFormat>Text</uap:DataFormat>
+            <uap:DataFormat>URI</uap:DataFormat>
+          </uap:ShareTarget>
+        </uap:Extension>
+
+        <!-- Background Tasks for PWA -->
+        <uap:Extension Category="windows.backgroundTasks" EntryPoint="PWA.BackgroundTasks">
+          <uap:Task Type="audioProcessing" />
+          <uap:Task Type="gestureRecognition" />
+        </uap:Extension>
+
+        <!-- App Service for PWA Communication -->
+        <uap:Extension Category="windows.appService" EntryPoint="PWA.AppService">
+          <uap:AppService Name="com.oxplayer.pwaservice" />
+        </uap:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <Capability Name="internetClient" />
+    <Capability Name="internetClientServer" />
+    <Capability Name="privateNetworkClientServer" />
+    <uap:Capability Name="removableStorage" />
+    <uap:Capability Name="microphone" />
+    <uap:Capability Name="webcam" />
+    <Capability Name="documentsLibrary" />
+    <Capability Name="musicLibrary" />
+    <Capability Name="videosLibrary" />
+  </Capabilities>
+</Package>

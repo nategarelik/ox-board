@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OX Board - Offline</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --neon-purple: #9333ea;
+            --neon-cyan: #00ffff;
+            --font-ui: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background: var(--bg-primary);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .offline-container {
+            max-width: 500px;
+            padding: 40px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+        }
+
+        .offline-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--neon-purple), var(--neon-cyan));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            opacity: 0.8;
+            margin-bottom: 24px;
+        }
+
+        .retry-button {
+            background: linear-gradient(45deg, var(--neon-purple), var(--neon-cyan));
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            font-size: 14px;
+        }
+
+        .retry-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(147, 51, 234, 0.4);
+        }
+
+        .features {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .feature-list {
+            list-style: none;
+            text-align: left;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            opacity: 0.7;
+            font-size: 14px;
+        }
+
+        .feature-list li::before {
+            content: "✨";
+            margin-right: 8px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .offline-icon {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">🎛️</div>
+        <h1>You're Offline</h1>
+        <p>
+            It looks like you've lost your internet connection. Don't worry - OX Board 
+            is designed to work offline for cached content and features.
+        </p>
+        <button class="retry-button" onclick="window.location.reload()">
+            Try Again
+        </button>
+        
+        <div class="features">
+            <h3 style="color: var(--neon-purple); margin-bottom: 16px;">Available Offline:</h3>
+            <ul class="feature-list">
+                <li>Previously loaded tracks and stems</li>
+                <li>Gesture control interface</li>
+                <li>Audio effects and mixing</li>
+                <li>Cached waveform data</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Check if we're back online and reload
+        window.addEventListener('online', () => {
+            window.location.reload();
+        });
+
+        // Show connection status
+        if (navigator.onLine) {
+            document.querySelector('.retry-button').textContent = 'Back Online - Reload';
+            document.querySelector('.retry-button').style.background = 'linear-gradient(45deg, #00ff88, #00ffff)';
+        }
+    </script>
+</body>
+</html>

@@ -115,6 +115,7 @@ interface EnhancedDJState {
 
   // Actions - Mixer
   initializeMixer: () => Promise<void>;
+  initializeAudioOnUserGesture: () => Promise<void>;
   setChannelGain: (channel: number, gain: number) => void;
   setChannelEQ: (
     channel: number,
@@ -303,20 +304,42 @@ const useEnhancedDJStore = create<EnhancedDJState>()(
 
       // Mixer Actions
       initializeMixer: async () => {
-        const { stemMixerConfig } = get();
-        const mixer = new EnhancedAudioMixer(stemMixerConfig);
-        await mixer.initialize();
+        try {
+          const { stemMixerConfig } = get();
+          const mixer = new EnhancedAudioMixer(stemMixerConfig);
 
-        const channelConfigs = [0, 1, 2, 3].map(
-          (i) => mixer.getChannelConfig(i)!,
-        );
+          // Don't initialize immediately - wait for user gesture
+          // The mixer will be initialized when first audio operation is performed
 
-        set({
-          mixer,
-          channelConfigs,
-          crossfaderConfig: mixer.getCrossfaderConfig(),
-          masterConfig: mixer.getMasterConfig(),
-        });
+          const channelConfigs = [0, 1, 2, 3].map(
+            (i) => mixer.getChannelConfig(i)!,
+          );
+
+          set({
+            mixer,
+            channelConfigs,
+            crossfaderConfig: mixer.getCrossfaderConfig(),
+            masterConfig: mixer.getMasterConfig(),
+          });
+        } catch (error) {
+          console.error("Failed to create mixer:", error);
+          throw error;
+        }
+      },
+
+      initializeAudioOnUserGesture: async () => {
+        const { mixer } = get();
+        if (!mixer) {
+          // Initialize mixer first if not already done
+          await get().initializeMixer();
+          // Get the newly created mixer
+          const newMixer = get().mixer;
+          if (newMixer) {
+            await newMixer.initializeOnUserGesture();
+          }
+        } else {
+          await mixer.initializeOnUserGesture();
+        }
       },
 
       setChannelGain: (channel, gain) => {

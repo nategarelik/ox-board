@@ -12,6 +12,9 @@ export interface MemoryMetrics {
   arrayBuffers: number;
   gcCount: number;
   gcDuration: number;
+  memoryPressure: "low" | "moderate" | "high" | "critical";
+  jsMemoryUsage: number;
+  resourceCount: number;
 }
 
 export interface BufferPoolConfig {
@@ -39,7 +42,11 @@ class AudioBufferPool {
     if (!this.audioContext) return;
 
     for (let i = 0; i < this.config.initialCount; i++) {
-      const buffer = this.audioContext.createBuffer(2, this.config.bufferSize, 44100);
+      const buffer = this.audioContext.createBuffer(
+        2,
+        this.config.bufferSize,
+        44100,
+      );
       this.availableBuffers.push(buffer);
     }
   }
@@ -53,7 +60,11 @@ class AudioBufferPool {
 
     // Create new buffer if pool not at max capacity
     if (this.getTotalBufferCount() < this.config.maxSize && this.audioContext) {
-      const buffer = this.audioContext.createBuffer(2, this.config.bufferSize, 44100);
+      const buffer = this.audioContext.createBuffer(
+        2,
+        this.config.bufferSize,
+        44100,
+      );
       this.inUseBuffers.add(buffer);
       return buffer;
     }
@@ -111,7 +122,7 @@ class AudioBufferPool {
       available: this.availableBuffers.length,
       inUse: this.inUseBuffers.size,
       total,
-      memoryUsage
+      memoryUsage,
     };
   }
 
@@ -183,7 +194,7 @@ class Float32ArrayPool {
       const inUseSet = this.inUse.get(size) || new Set();
       metrics[size] = {
         pooled: pool.length,
-        inUse: inUseSet.size
+        inUse: inUseSet.size,
       };
     }
 
@@ -196,22 +207,208 @@ class Float32ArrayPool {
   }
 }
 
+class MemoryPressureMonitor {
+  private memoryObserver?: PerformanceObserver;
+  private isMonitoring: boolean = false;
+  private memoryCallbacks: Array<
+    (pressure: "low" | "moderate" | "high" | "critical") => void
+  > = [];
+
+  startMonitoring(): void {
+    if (this.isMonitoring || typeof PerformanceObserver === "undefined") return;
+
+    this.isMonitoring = true;
+
+    try {
+      this.memoryObserver = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.entryType === "memory") {
+            const memoryEntry = entry as any;
+            const usageRatio =
+              memoryEntry.usedJSHeapSize / memoryEntry.totalJSHeapSize;
+
+            let pressure: "low" | "moderate" | "high" | "critical";
+            if (usageRatio < 0.7) pressure = "low";
+            else if (usageRatio < 0.85) pressure = "moderate";
+            else if (usageRatio < 0.95) pressure = "high";
+            else pressure = "critical";
+
+            this.notifyCallbacks(pressure);
+          }
+        }
+      });
+
+      this.memoryObserver.observe({ entryTypes: ["memory"] });
+    } catch (error) {
+      console.warn("Memory pressure monitoring not available:", error);
+      // Fallback to periodic checking
+      this.startPeriodicMonitoring();
+    }
+  }
+
+  private startPeriodicMonitoring(): void {
+    setInterval(() => {
+      if ("memory" in performance) {
+        const memory = (performance as any).memory;
+        const usageRatio = memory.usedJSHeapSize / memory.totalJSHeapSize;
+
+        let pressure: "low" | "moderate" | "high" | "critical";
+        if (usageRatio < 0.7) pressure = "low";
+        else if (usageRatio < 0.85) pressure = "moderate";
+        else if (usageRatio < 0.95) pressure = "high";
+        else pressure = "critical";
+
+        this.notifyCallbacks(pressure);
+      }
+    }, 5000);
+  }
+
+  private notifyCallbacks(
+    pressure: "low" | "moderate" | "high" | "critical",
+  ): void {
+    this.memoryCallbacks.forEach((callback) => callback(pressure));
+  }
+
+  onMemoryPressure(
+    callback: (pressure: "low" | "moderate" | "high" | "critical") => void,
+  ): void {
+    this.memoryCallbacks.push(callback);
+  }
+
+  removeCallback(
+    callback: (pressure: "low" | "moderate" | "high" | "critical") => void,
+  ): void {
+    this.memoryCallbacks = this.memoryCallbacks.filter((cb) => cb !== callback);
+  }
+
+  stopMonitoring(): void {
+    this.isMonitoring = false;
+
+    if (this.memoryObserver) {
+      this.memoryObserver.disconnect();
+      this.memoryObserver = undefined;
+    }
+
+    this.memoryCallbacks = [];
+  }
+
+  getCurrentPressure(): "low" | "moderate" | "high" | "critical" {
+    if ("memory" in performance) {
+      const memory = (performance as any).memory;
+      const usageRatio = memory.usedJSHeapSize / memory.totalJSHeapSize;
+
+      if (usageRatio < 0.7) return "low";
+      else if (usageRatio < 0.85) return "moderate";
+      else if (usageRatio < 0.95) return "high";
+      else return "critical";
+    }
+
+    return "low";
+  }
+}
+
+class ResourcePool<T extends object> {
+  private available: T[] = [];
+  private inUse: Set<T> = new Set();
+  private factory: () => T;
+  private reset: (resource: T) => void;
+  private maxSize: number;
+  private gcHints: WeakRef<T>[] = [];
+
+  constructor(
+    factory: () => T,
+    reset: (resource: T) => void,
+    maxSize: number = 50,
+  ) {
+    this.factory = factory;
+    this.reset = reset;
+    this.maxSize = maxSize;
+  }
+
+  acquire(): T | null {
+    // Try to get from available pool first
+    if (this.available.length > 0) {
+      const resource = this.available.pop()!;
+      this.inUse.add(resource);
+
+      // Add GC hint
+      this.gcHints.push(new WeakRef(resource));
+      return resource;
+    }
+
+    // Create new resource if under limit
+    if (this.getTotalCount() < this.maxSize) {
+      const resource = this.factory();
+      this.inUse.add(resource);
+      this.gcHints.push(new WeakRef(resource));
+      return resource;
+    }
+
+    return null;
+  }
+
+  release(resource: T): void {
+    if (this.inUse.has(resource)) {
+      this.inUse.delete(resource);
+      this.reset(resource);
+      this.available.push(resource);
+
+      // Clean up GC hints for old resources
+      this.cleanupGCHints();
+    }
+  }
+
+  private cleanupGCHints(): void {
+    this.gcHints = this.gcHints.filter((hint) => hint.deref() !== undefined);
+  }
+
+  getTotalCount(): number {
+    return this.available.length + this.inUse.size;
+  }
+
+  getMetrics(): { available: number; inUse: number; total: number } {
+    return {
+      available: this.available.length,
+      inUse: this.inUse.size,
+      total: this.getTotalCount(),
+    };
+  }
+
+  cleanup(): void {
+    // Remove excess resources
+    const excess = this.available.length - Math.floor(this.maxSize * 0.8);
+    if (excess > 0) {
+      this.available.splice(0, excess);
+    }
+  }
+
+  destroy(): void {
+    this.available = [];
+    this.inUse.clear();
+    this.gcHints = [];
+  }
+}
+
 class GarbageCollectionOptimizer {
   private gcObserver?: PerformanceObserver;
+  private memoryMonitor!: MemoryPressureMonitor;
   private gcMetrics: MemoryMetrics = {
     heapUsed: 0,
     heapTotal: 0,
     external: 0,
     arrayBuffers: 0,
     gcCount: 0,
-    gcDuration: 0
+    gcDuration: 0,
+    memoryPressure: "low",
+    jsMemoryUsage: 0,
+    resourceCount: 0,
   };
 
   startMonitoring(): void {
-    if (typeof PerformanceObserver !== 'undefined') {
+    if (typeof PerformanceObserver !== "undefined") {
       this.gcObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          if (entry.entryType === 'measure' && entry.name.includes('gc')) {
+          if (entry.entryType === "measure" && entry.name.includes("gc")) {
             this.gcMetrics.gcCount++;
             this.gcMetrics.gcDuration += entry.duration;
           }
@@ -219,9 +416,9 @@ class GarbageCollectionOptimizer {
       });
 
       try {
-        this.gcObserver.observe({ entryTypes: ['measure'] });
+        this.gcObserver.observe({ entryTypes: ["measure"] });
       } catch (error) {
-        console.warn('GC monitoring not available:', error);
+        console.warn("GC monitoring not available:", error);
       }
     }
 
@@ -231,7 +428,7 @@ class GarbageCollectionOptimizer {
   }
 
   private updateMemoryMetrics(): void {
-    if ('memory' in performance) {
+    if ("memory" in performance) {
       const memory = (performance as any).memory;
       this.gcMetrics.heapUsed = memory.usedJSHeapSize;
       this.gcMetrics.heapTotal = memory.totalJSHeapSize;
@@ -241,7 +438,7 @@ class GarbageCollectionOptimizer {
 
   forceGarbageCollection(): void {
     // Trigger garbage collection if available
-    if ('gc' in global && typeof (global as any).gc === 'function') {
+    if ("gc" in global && typeof (global as any).gc === "function") {
       (global as any).gc();
     } else {
       // Fallback: create pressure to trigger GC
@@ -300,7 +497,7 @@ class ResourceTracker {
     }, 10000); // Check every 10 seconds
   }
 
-  private cleanupDeadReferences(): void {
+  cleanupDeadReferences(): void {
     for (const [id, weakRef] of this.resources) {
       if (weakRef.deref() === undefined) {
         // Resource was garbage collected
@@ -338,28 +535,75 @@ export class MemoryOptimizer {
   private float32ArrayPool: Float32ArrayPool;
   private gcOptimizer: GarbageCollectionOptimizer;
   private resourceTracker: ResourceTracker;
+  private memoryMonitor: MemoryPressureMonitor;
   private memoryTarget: number = 150 * 1024 * 1024; // 150MB in bytes
 
   constructor() {
     this.float32ArrayPool = new Float32ArrayPool();
     this.gcOptimizer = new GarbageCollectionOptimizer();
     this.resourceTracker = new ResourceTracker();
+    this.memoryMonitor = new MemoryPressureMonitor();
 
     this.initializeOptimizations();
   }
 
   private initializeOptimizations(): void {
     this.gcOptimizer.startMonitoring();
+    this.memoryMonitor.startMonitoring();
+
+    // Set up automatic cleanup on memory pressure
+    this.memoryMonitor.onMemoryPressure((pressure) => {
+      this.handleMemoryPressure(pressure);
+    });
+  }
+
+  private handleMemoryPressure(
+    pressure: "low" | "moderate" | "high" | "critical",
+  ): void {
+    const metrics = this.getMemoryMetrics();
+    metrics.memoryPressure = pressure;
+
+    switch (pressure) {
+      case "high":
+        console.warn("High memory pressure detected - optimizing resources");
+        this.optimizeMemoryUsage();
+        break;
+      case "critical":
+        console.warn("Critical memory pressure detected - aggressive cleanup");
+        this.aggressiveCleanup();
+        break;
+    }
+  }
+
+  private aggressiveCleanup(): void {
+    // Force immediate garbage collection
+    this.forceGarbageCollection();
+
+    // Clear all pools aggressively
+    this.float32ArrayPool.cleanup();
+    this.audioBufferPool?.cleanup();
+
+    // Reduce pool sizes temporarily
+    const originalTarget = this.memoryTarget;
+    this.memoryTarget = Math.max(100 * 1024 * 1024, this.memoryTarget * 0.7); // Reduce to 70% or 100MB
+
+    // Schedule restoration after cleanup
+    setTimeout(() => {
+      this.memoryTarget = originalTarget;
+    }, 30000);
   }
 
   // Audio buffer pool methods
-  initializeAudioBufferPool(audioContext: AudioContext, config?: Partial<BufferPoolConfig>): void {
+  initializeAudioBufferPool(
+    audioContext: AudioContext,
+    config?: Partial<BufferPoolConfig>,
+  ): void {
     const poolConfig: BufferPoolConfig = {
       maxSize: 20,
       initialCount: 5,
       bufferSize: 4096,
       cleanupInterval: 30000, // 30 seconds
-      ...config
+      ...config,
     };
 
     this.audioBufferPool = new AudioBufferPool(audioContext, poolConfig);
@@ -383,7 +627,11 @@ export class MemoryOptimizer {
   }
 
   // Resource tracking methods
-  trackResource<T extends object>(id: string, resource: T, cleanup?: () => void): void {
+  trackResource<T extends object>(
+    id: string,
+    resource: T,
+    cleanup?: () => void,
+  ): void {
     this.resourceTracker.track(id, resource, cleanup);
   }
 
@@ -408,25 +656,62 @@ export class MemoryOptimizer {
     }
   }
 
+  // Memory pressure monitoring
+  getCurrentMemoryPressure(): "low" | "moderate" | "high" | "critical" {
+    return this.memoryMonitor.getCurrentPressure();
+  }
+
+  onMemoryPressure(
+    callback: (pressure: "low" | "moderate" | "high" | "critical") => void,
+  ): void {
+    this.memoryMonitor.onMemoryPressure(callback);
+  }
+
+  // Enhanced resource pooling
+  createResourcePool<T extends object>(
+    factory: () => T,
+    reset: (resource: T) => void,
+    maxSize: number = 50,
+  ): ResourcePool<T> {
+    return new ResourcePool(factory, reset, maxSize);
+  }
+
   // Memory monitoring
   getMemoryMetrics(): MemoryMetrics {
-    return this.gcOptimizer.getMetrics();
+    const baseMetrics = this.gcOptimizer.getMetrics();
+    const pressure = this.getCurrentMemoryPressure();
+    const jsMemory = this.getJSMemoryUsage();
+
+    return {
+      ...baseMetrics,
+      memoryPressure: pressure,
+      jsMemoryUsage: jsMemory,
+      resourceCount: this.resourceTracker.getTrackedResourceCount(),
+    };
+  }
+
+  private getJSMemoryUsage(): number {
+    if ("memory" in performance) {
+      const memory = (performance as any).memory;
+      return Math.round(memory.usedJSHeapSize / 1024 / 1024); // Convert to MB
+    }
+    return 0;
   }
 
   getBufferPoolMetrics(): {
-    audioBuffers?: ReturnType<AudioBufferPool['getMetrics']>;
-    float32Arrays: ReturnType<Float32ArrayPool['getMetrics']>;
+    audioBuffers?: ReturnType<AudioBufferPool["getMetrics"]>;
+    float32Arrays: ReturnType<Float32ArrayPool["getMetrics"]>;
     trackedResources: number;
   } {
     return {
       audioBuffers: this.audioBufferPool?.getMetrics(),
       float32Arrays: this.float32ArrayPool.getMetrics(),
-      trackedResources: this.resourceTracker.getTrackedResourceCount()
+      trackedResources: this.resourceTracker.getTrackedResourceCount(),
     };
   }
 
   checkMemoryHealth(): {
-    status: 'healthy' | 'warning' | 'critical';
+    status: "healthy" | "warning" | "critical";
     usage: number;
     target: number;
     recommendations: string[];
@@ -435,27 +720,27 @@ export class MemoryOptimizer {
     const usage = metrics.heapUsed;
     const usageRatio = usage / this.memoryTarget;
 
-    let status: 'healthy' | 'warning' | 'critical';
+    let status: "healthy" | "warning" | "critical";
     const recommendations: string[] = [];
 
     if (usageRatio < 0.7) {
-      status = 'healthy';
+      status = "healthy";
     } else if (usageRatio < 0.9) {
-      status = 'warning';
-      recommendations.push('Consider releasing unused resources');
-      recommendations.push('Run memory optimization');
+      status = "warning";
+      recommendations.push("Consider releasing unused resources");
+      recommendations.push("Run memory optimization");
     } else {
-      status = 'critical';
-      recommendations.push('Force garbage collection immediately');
-      recommendations.push('Release all non-critical resources');
-      recommendations.push('Reduce buffer pool sizes');
+      status = "critical";
+      recommendations.push("Force garbage collection immediately");
+      recommendations.push("Release all non-critical resources");
+      recommendations.push("Reduce buffer pool sizes");
     }
 
     return {
       status,
       usage: Math.round(usage / 1024 / 1024), // MB
       target: Math.round(this.memoryTarget / 1024 / 1024), // MB
-      recommendations
+      recommendations,
     };
   }
 
@@ -466,11 +751,111 @@ export class MemoryOptimizer {
 
   // Cleanup
   destroy(): void {
+    this.memoryMonitor.stopMonitoring();
     this.gcOptimizer.stopMonitoring();
     this.audioBufferPool?.destroy();
     this.float32ArrayPool.destroy();
     this.resourceTracker.destroy();
   }
+}
+
+/**
+ * Enhanced LRU Cache for Stem Data and Resources
+ */
+export function createLRUCache<T>(maxSize: number = 100): {
+  get: (key: string) => T | null;
+  set: (key: string, value: T) => void;
+  evict: (percentage?: number) => number;
+  getStats: () => any;
+  clear: () => void;
+  resize: (newSize: number) => void;
+} {
+  const cache = new Map<string, T>();
+  const accessOrder: string[] = [];
+  let hitCount = 0;
+  let missCount = 0;
+
+  return {
+    get: (key: string): T | null => {
+      if (cache.has(key)) {
+        // Move to end (most recently used)
+        const index = accessOrder.indexOf(key);
+        if (index > -1) {
+          accessOrder.splice(index, 1);
+        }
+        accessOrder.push(key);
+        hitCount++;
+        return cache.get(key)!;
+      }
+      missCount++;
+      return null;
+    },
+
+    set: (key: string, value: T): void => {
+      if (cache.has(key)) {
+        // Update existing
+        cache.set(key, value);
+        const index = accessOrder.indexOf(key);
+        if (index > -1) {
+          accessOrder.splice(index, 1);
+        }
+        accessOrder.push(key);
+      } else {
+        // Add new with LRU eviction
+        if (cache.size >= maxSize) {
+          const oldestKey = accessOrder.shift();
+          if (oldestKey) {
+            cache.delete(oldestKey);
+          }
+        }
+        cache.set(key, value);
+        accessOrder.push(key);
+      }
+    },
+
+    evict: (percentage: number = 0.1): number => {
+      const toEvict = Math.floor(cache.size * percentage);
+      let evicted = 0;
+
+      for (let i = 0; i < toEvict && accessOrder.length > 0; i++) {
+        const oldestKey = accessOrder.shift();
+        if (oldestKey && cache.has(oldestKey)) {
+          cache.delete(oldestKey);
+          evicted++;
+        }
+      }
+
+      return evicted;
+    },
+
+    getStats: () => {
+      const total = hitCount + missCount;
+      return {
+        size: cache.size,
+        hitRate: total > 0 ? hitCount / total : 0,
+        hitCount,
+        missCount,
+        maxSize,
+      };
+    },
+
+    clear: () => {
+      cache.clear();
+      accessOrder.length = 0;
+      hitCount = 0;
+      missCount = 0;
+    },
+
+    resize: (newSize: number) => {
+      maxSize = newSize;
+      while (cache.size > maxSize) {
+        const oldestKey = accessOrder.shift();
+        if (oldestKey) {
+          cache.delete(oldestKey);
+        }
+      }
+    },
+  };
 }
 
 // Singleton instance

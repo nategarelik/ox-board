@@ -1,0 +1,57 @@
+services:
+  - type: web
+    name: oxboard-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DEMUCS_MODELS_PATH
+        value: /data/models
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: oxboard-redis
+          property: connectionString
+      - key: API_CORS_ORIGINS
+        value: '["https://oxboard.vercel.app","http://localhost:3000"]'
+    healthCheckPath: /health
+    disk:
+      name: demucs-models
+      mountPath: /data/models
+      sizeGB: 10
+
+  - type: worker
+    name: oxboard-worker
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    dockerCommand: python -m backend.worker
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DEMUCS_MODELS_PATH
+        value: /data/models
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: oxboard-redis
+          property: connectionString
+    disk:
+      name: demucs-models-worker
+      mountPath: /data/models
+      sizeGB: 10
+
+  - type: redis
+    name: oxboard-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru

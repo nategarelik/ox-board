@@ -27,6 +27,7 @@ export interface PerformanceSnapshot {
   latency: {
     gesture: number;
     audio: number;
+    audioWorklet: number;
     ui: number;
     total: number;
   };
@@ -46,8 +47,8 @@ export interface AlertConfig {
 }
 
 export interface PerformanceAlert {
-  type: 'fps' | 'memory' | 'latency' | 'cpu';
-  severity: 'warning' | 'critical';
+  type: "fps" | "memory" | "latency" | "cpu";
+  severity: "warning" | "critical";
   message: string;
   value: number;
   threshold: number;
@@ -84,12 +85,14 @@ class FPSMonitor {
 
     // Calculate FPS every second
     if (currentTime - this.lastTime >= 1000) {
-      this.fps = Math.round((this.frameCount * 1000) / (currentTime - this.lastTime));
+      this.fps = Math.round(
+        (this.frameCount * 1000) / (currentTime - this.lastTime),
+      );
       this.frameCount = 0;
       this.lastTime = currentTime;
 
       // Notify callbacks
-      this.callbacks.forEach(callback => callback(this.fps, this.frameTime));
+      this.callbacks.forEach((callback) => callback(this.fps, this.frameTime));
     }
 
     requestAnimationFrame(this.measureFrame);
@@ -100,7 +103,7 @@ class FPSMonitor {
   }
 
   removeCallback(callback: (fps: number, frameTime: number) => void): void {
-    this.callbacks = this.callbacks.filter(cb => cb !== callback);
+    this.callbacks = this.callbacks.filter((cb) => cb !== callback);
   }
 
   getFPS(): number {
@@ -179,22 +182,25 @@ class LatencyTracker {
     this.measurements.delete(`${id}_start`);
   }
 
-  getAllMetrics(): Record<string, {
-    average: number;
-    p95: number;
-    p99: number;
-    count: number;
-  }> {
+  getAllMetrics(): Record<
+    string,
+    {
+      average: number;
+      p95: number;
+      p99: number;
+      count: number;
+    }
+  > {
     const metrics: Record<string, any> = {};
 
     for (const [key, measurements] of this.measurements) {
-      if (key.endsWith('_start')) continue;
+      if (key.endsWith("_start")) continue;
 
       metrics[key] = {
         average: this.getAverageLatency(key),
         p95: this.getLatencyPercentile(key, 95),
         p99: this.getLatencyPercentile(key, 99),
-        count: measurements.length
+        count: measurements.length,
       };
     }
 
@@ -210,7 +216,7 @@ class NetworkMonitor {
   private maxLatencySamples: number = 50;
 
   interceptFetch(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const originalFetch = window.fetch;
 
@@ -251,7 +257,7 @@ class NetworkMonitor {
   }
 
   updateBandwidth(): void {
-    if ('connection' in navigator) {
+    if ("connection" in navigator) {
       const connection = (navigator as any).connection;
       this.bandwidth = connection?.downlink || 0;
     }
@@ -269,7 +275,7 @@ class NetworkMonitor {
       activeRequests: this.activeRequests,
       totalRequests: this.totalRequests,
       averageLatency: this.getAverageLatency(),
-      bandwidth: this.bandwidth
+      bandwidth: this.bandwidth,
     };
   }
 
@@ -322,13 +328,15 @@ class CPUMonitor {
   private simulateCPUUsage(): number {
     // Simulate CPU usage based on performance metrics
     const now = performance.now();
-    const memoryInfo = 'memory' in performance ? (performance as any).memory : null;
+    const memoryInfo =
+      "memory" in performance ? (performance as any).memory : null;
 
     let baseUsage = 10; // Base 10% usage
 
     // Increase usage based on memory pressure
     if (memoryInfo) {
-      const memoryRatio = memoryInfo.usedJSHeapSize / memoryInfo.totalJSHeapSize;
+      const memoryRatio =
+        memoryInfo.usedJSHeapSize / memoryInfo.totalJSHeapSize;
       baseUsage += memoryRatio * 30;
     }
 
@@ -342,9 +350,12 @@ class CPUMonitor {
     // Simple exponential moving average for load simulation
     const alpha = 0.1;
 
-    this.loadAverage[0] = (1 - alpha) * this.loadAverage[0] + alpha * currentUsage;
-    this.loadAverage[1] = (1 - alpha * 0.5) * this.loadAverage[1] + alpha * 0.5 * currentUsage;
-    this.loadAverage[2] = (1 - alpha * 0.2) * this.loadAverage[2] + alpha * 0.2 * currentUsage;
+    this.loadAverage[0] =
+      (1 - alpha) * this.loadAverage[0] + alpha * currentUsage;
+    this.loadAverage[1] =
+      (1 - alpha * 0.5) * this.loadAverage[1] + alpha * 0.5 * currentUsage;
+    this.loadAverage[2] =
+      (1 - alpha * 0.2) * this.loadAverage[2] + alpha * 0.2 * currentUsage;
   }
 
   getMetrics(): {
@@ -353,7 +364,7 @@ class CPUMonitor {
   } {
     return {
       usage: Math.round(this.usage * 10) / 10,
-      loadAverage: this.loadAverage.map(avg => Math.round(avg * 10) / 10)
+      loadAverage: this.loadAverage.map((avg) => Math.round(avg * 10) / 10),
     };
   }
 }
@@ -376,7 +387,7 @@ export class PerformanceMonitor {
       fpsThreshold: 30,
       memoryThreshold: 100, // MB
       latencyThreshold: 100, // ms
-      ...alertConfig
+      ...alertConfig,
     };
 
     this.fpsMonitor = new FPSMonitor();
@@ -394,8 +405,13 @@ export class PerformanceMonitor {
     // Set up FPS monitoring callback
     this.fpsMonitor.onFPSUpdate((fps, frameTime) => {
       if (this.alertConfig.enabled && fps < this.alertConfig.fpsThreshold) {
-        this.createAlert('fps', fps < 15 ? 'critical' : 'warning',
-          `Low FPS detected: ${fps}`, fps, this.alertConfig.fpsThreshold);
+        this.createAlert(
+          "fps",
+          fps < 15 ? "critical" : "warning",
+          `Low FPS detected: ${fps}`,
+          fps,
+          this.alertConfig.fpsThreshold,
+        );
       }
     });
   }
@@ -412,7 +428,7 @@ export class PerformanceMonitor {
       this.takeSnapshot();
     }, 5000);
 
-    console.log('Performance monitoring started');
+    console.log("Performance monitoring started");
   }
 
   stop(): void {
@@ -426,7 +442,7 @@ export class PerformanceMonitor {
       clearInterval(this.snapshotInterval);
     }
 
-    console.log('Performance monitoring stopped');
+    console.log("Performance monitoring stopped");
   }
 
   // Latency measurement methods
@@ -437,10 +453,17 @@ export class PerformanceMonitor {
   endLatencyMeasurement(operation: string): number {
     const latency = this.latencyTracker.endMeasurement(operation);
 
-    if (this.alertConfig.enabled && latency > this.alertConfig.latencyThreshold) {
-      this.createAlert('latency', latency > 200 ? 'critical' : 'warning',
+    if (
+      this.alertConfig.enabled &&
+      latency > this.alertConfig.latencyThreshold
+    ) {
+      this.createAlert(
+        "latency",
+        latency > 200 ? "critical" : "warning",
         `High latency detected for ${operation}: ${latency.toFixed(2)}ms`,
-        latency, this.alertConfig.latencyThreshold);
+        latency,
+        this.alertConfig.latencyThreshold,
+      );
     }
 
     return latency;
@@ -449,30 +472,42 @@ export class PerformanceMonitor {
   // Snapshot methods
   private takeSnapshot(): void {
     const timestamp = Date.now();
-    const memoryInfo = 'memory' in performance ? (performance as any).memory : null;
+    const memoryInfo =
+      "memory" in performance ? (performance as any).memory : null;
 
     const snapshot: PerformanceSnapshot = {
       timestamp,
       fps: this.fpsMonitor.getFPS(),
       frameTime: this.fpsMonitor.getFrameTime(),
       memory: {
-        used: memoryInfo ? Math.round(memoryInfo.usedJSHeapSize / 1024 / 1024) : 0,
-        total: memoryInfo ? Math.round(memoryInfo.totalJSHeapSize / 1024 / 1024) : 0,
-        external: memoryInfo ? Math.round(memoryInfo.usedJSHeapSize / 1024 / 1024) : 0
+        used: memoryInfo
+          ? Math.round(memoryInfo.usedJSHeapSize / 1024 / 1024)
+          : 0,
+        total: memoryInfo
+          ? Math.round(memoryInfo.totalJSHeapSize / 1024 / 1024)
+          : 0,
+        external: memoryInfo
+          ? Math.round(memoryInfo.usedJSHeapSize / 1024 / 1024)
+          : 0,
       },
       cpu: this.cpuMonitor.getMetrics(),
       network: this.networkMonitor.getMetrics(),
       latency: {
-        gesture: this.latencyTracker.getAverageLatency('gesture'),
-        audio: this.latencyTracker.getAverageLatency('audio'),
-        ui: this.latencyTracker.getAverageLatency('ui'),
-        total: this.latencyTracker.getAverageLatency('total')
+        gesture: this.latencyTracker.getAverageLatency("gesture"),
+        audio: this.latencyTracker.getAverageLatency("audio"),
+        audioWorklet: this.latencyTracker.getAverageLatency("audioWorklet"),
+        ui: this.latencyTracker.getAverageLatency("ui"),
+        total: this.latencyTracker.getAverageLatency("total"),
       },
       thresholds: {
         fps: this.fpsMonitor.getFPS() >= this.alertConfig.fpsThreshold,
-        memory: (memoryInfo ? memoryInfo.usedJSHeapSize / 1024 / 1024 : 0) <= this.alertConfig.memoryThreshold,
-        latency: this.latencyTracker.getAverageLatency('total') <= this.alertConfig.latencyThreshold
-      }
+        memory:
+          (memoryInfo ? memoryInfo.usedJSHeapSize / 1024 / 1024 : 0) <=
+          this.alertConfig.memoryThreshold,
+        latency:
+          this.latencyTracker.getAverageLatency("total") <=
+          this.alertConfig.latencyThreshold,
+      },
     };
 
     this.snapshots.push(snapshot);
@@ -483,16 +518,26 @@ export class PerformanceMonitor {
     }
 
     // Check for memory alerts
-    if (this.alertConfig.enabled && snapshot.memory.used > this.alertConfig.memoryThreshold) {
-      this.createAlert('memory',
-        snapshot.memory.used > this.alertConfig.memoryThreshold * 1.5 ? 'critical' : 'warning',
+    if (
+      this.alertConfig.enabled &&
+      snapshot.memory.used > this.alertConfig.memoryThreshold
+    ) {
+      this.createAlert(
+        "memory",
+        snapshot.memory.used > this.alertConfig.memoryThreshold * 1.5
+          ? "critical"
+          : "warning",
         `High memory usage: ${snapshot.memory.used}MB`,
-        snapshot.memory.used, this.alertConfig.memoryThreshold);
+        snapshot.memory.used,
+        this.alertConfig.memoryThreshold,
+      );
     }
   }
 
   getCurrentSnapshot(): PerformanceSnapshot | null {
-    return this.snapshots.length > 0 ? this.snapshots[this.snapshots.length - 1] : null;
+    return this.snapshots.length > 0
+      ? this.snapshots[this.snapshots.length - 1]
+      : null;
   }
 
   getSnapshots(limit?: number): PerformanceSnapshot[] {
@@ -503,15 +548,20 @@ export class PerformanceMonitor {
   }
 
   // Alert management
-  private createAlert(type: PerformanceAlert['type'], severity: PerformanceAlert['severity'],
-                     message: string, value: number, threshold: number): void {
+  private createAlert(
+    type: PerformanceAlert["type"],
+    severity: PerformanceAlert["severity"],
+    message: string,
+    value: number,
+    threshold: number,
+  ): void {
     const alert: PerformanceAlert = {
       type,
       severity,
       message,
       value,
       threshold,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     this.alerts.push(alert);
@@ -529,9 +579,9 @@ export class PerformanceMonitor {
     console.warn(`Performance Alert [${severity.toUpperCase()}]:`, message);
   }
 
-  getAlerts(severity?: PerformanceAlert['severity']): PerformanceAlert[] {
+  getAlerts(severity?: PerformanceAlert["severity"]): PerformanceAlert[] {
     if (severity) {
-      return this.alerts.filter(alert => alert.severity === severity);
+      return this.alerts.filter((alert) => alert.severity === severity);
     }
     return [...this.alerts];
   }
@@ -542,47 +592,80 @@ export class PerformanceMonitor {
 
   // Performance analysis
   getPerformanceAnalysis(): {
-    overall: 'good' | 'fair' | 'poor';
-    fps: { status: 'good' | 'fair' | 'poor'; value: number; target: number };
-    memory: { status: 'good' | 'fair' | 'poor'; value: number; target: number };
-    latency: { status: 'good' | 'fair' | 'poor'; value: number; target: number };
+    overall: "good" | "fair" | "poor";
+    fps: { status: "good" | "fair" | "poor"; value: number; target: number };
+    memory: { status: "good" | "fair" | "poor"; value: number; target: number };
+    latency: {
+      status: "good" | "fair" | "poor";
+      value: number;
+      target: number;
+    };
     recommendations: string[];
   } {
     const current = this.getCurrentSnapshot();
     if (!current) {
       return {
-        overall: 'poor',
-        fps: { status: 'poor', value: 0, target: this.alertConfig.fpsThreshold },
-        memory: { status: 'poor', value: 0, target: this.alertConfig.memoryThreshold },
-        latency: { status: 'poor', value: 0, target: this.alertConfig.latencyThreshold },
-        recommendations: ['Start monitoring to get performance data']
+        overall: "poor",
+        fps: {
+          status: "poor",
+          value: 0,
+          target: this.alertConfig.fpsThreshold,
+        },
+        memory: {
+          status: "poor",
+          value: 0,
+          target: this.alertConfig.memoryThreshold,
+        },
+        latency: {
+          status: "poor",
+          value: 0,
+          target: this.alertConfig.latencyThreshold,
+        },
+        recommendations: ["Start monitoring to get performance data"],
       };
     }
 
-    const fpsStatus = current.fps >= 50 ? 'good' : current.fps >= 30 ? 'fair' : 'poor';
-    const memoryStatus = current.memory.used <= 100 ? 'good' : current.memory.used <= 150 ? 'fair' : 'poor';
-    const latencyStatus = current.latency.total <= 50 ? 'good' : current.latency.total <= 100 ? 'fair' : 'poor';
+    const fpsStatus =
+      current.fps >= 50 ? "good" : current.fps >= 30 ? "fair" : "poor";
+    const memoryStatus =
+      current.memory.used <= 100
+        ? "good"
+        : current.memory.used <= 150
+          ? "fair"
+          : "poor";
+    const latencyStatus =
+      current.latency.total <= 50
+        ? "good"
+        : current.latency.total <= 100
+          ? "fair"
+          : "poor";
 
     const statuses = [fpsStatus, memoryStatus, latencyStatus];
-    const goodCount = statuses.filter(s => s === 'good').length;
-    const fairCount = statuses.filter(s => s === 'fair').length;
+    const goodCount = statuses.filter((s) => s === "good").length;
+    const fairCount = statuses.filter((s) => s === "fair").length;
 
-    let overall: 'good' | 'fair' | 'poor';
-    if (goodCount >= 2) overall = 'good';
-    else if (goodCount + fairCount >= 2) overall = 'fair';
-    else overall = 'poor';
+    let overall: "good" | "fair" | "poor";
+    if (goodCount >= 2) overall = "good";
+    else if (goodCount + fairCount >= 2) overall = "fair";
+    else overall = "poor";
 
     const recommendations: string[] = [];
-    if (fpsStatus !== 'good') recommendations.push('Optimize rendering performance');
-    if (memoryStatus !== 'good') recommendations.push('Reduce memory usage');
-    if (latencyStatus !== 'good') recommendations.push('Optimize operation latency');
+    if (fpsStatus !== "good")
+      recommendations.push("Optimize rendering performance");
+    if (memoryStatus !== "good") recommendations.push("Reduce memory usage");
+    if (latencyStatus !== "good")
+      recommendations.push("Optimize operation latency");
 
     return {
       overall,
       fps: { status: fpsStatus, value: current.fps, target: 60 },
       memory: { status: memoryStatus, value: current.memory.used, target: 150 },
-      latency: { status: latencyStatus, value: current.latency.total, target: 50 },
-      recommendations
+      latency: {
+        status: latencyStatus,
+        value: current.latency.total,
+        target: 50,
+      },
+      recommendations,
     };
   }
 
@@ -593,6 +676,93 @@ export class PerformanceMonitor {
 
   getConfig(): AlertConfig {
     return { ...this.alertConfig };
+  }
+
+  // Audio-specific monitoring methods
+  startAudioLatencyMeasurement(): void {
+    this.startLatencyMeasurement("audioWorklet");
+  }
+
+  endAudioLatencyMeasurement(): number {
+    return this.endLatencyMeasurement("audioWorklet");
+  }
+
+  recordAudioWorkletMetrics(processingTime: number, cpuUsage: number): void {
+    // Record AudioWorklet-specific metrics
+    if (processingTime > 5) {
+      // If processing time > 5ms, it's concerning
+      this.createAlert(
+        "latency",
+        processingTime > 10 ? "critical" : "warning",
+        `High AudioWorklet processing time: ${processingTime.toFixed(2)}ms`,
+        processingTime,
+        5,
+      );
+    }
+
+    if (cpuUsage > 10) {
+      // If CPU usage > 10%, it's high
+      this.createAlert(
+        "cpu",
+        cpuUsage > 25 ? "critical" : "warning",
+        `High AudioWorklet CPU usage: ${cpuUsage.toFixed(2)}%`,
+        cpuUsage,
+        10,
+      );
+    }
+  }
+
+  getAudioPerformanceReport(): {
+    averageLatency: number;
+    p95Latency: number;
+    p99Latency: number;
+    targetLatency: number;
+    isSub10ms: boolean;
+    recommendations: string[];
+  } {
+    const metrics = this.latencyTracker.getAllMetrics();
+    const audioWorkletMetrics = metrics.audioWorklet;
+
+    if (!audioWorkletMetrics) {
+      return {
+        averageLatency: 0,
+        p95Latency: 0,
+        p99Latency: 0,
+        targetLatency: 10,
+        isSub10ms: false,
+        recommendations: ["No AudioWorklet data available"],
+      };
+    }
+
+    const isSub10ms = audioWorkletMetrics.average <= 10;
+    const recommendations: string[] = [];
+
+    if (!isSub10ms) {
+      recommendations.push(
+        "Consider reducing audio buffer size or optimizing AudioWorklet code",
+      );
+    }
+
+    if (audioWorkletMetrics.p99 > 20) {
+      recommendations.push(
+        "High latency outliers detected - investigate audio thread blocking",
+      );
+    }
+
+    if (audioWorkletMetrics.average > 15) {
+      recommendations.push(
+        "Consider using 64-sample buffer instead of 128 for lower latency",
+      );
+    }
+
+    return {
+      averageLatency: audioWorkletMetrics.average,
+      p95Latency: audioWorkletMetrics.p95,
+      p99Latency: audioWorkletMetrics.p99,
+      targetLatency: 10,
+      isSub10ms,
+      recommendations,
+    };
   }
 
   // Cleanup
