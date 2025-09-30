@@ -9,7 +9,6 @@ import { fetchPersonalizedRecommendations } from "../../services/recommendationS
 import useEnhancedDJStore from "../../stores/enhancedDjStoreWithGestures";
 import { performanceMonitor } from "../../lib/optimization/performanceMonitor";
 import StemMixerPanel from "./StemMixerPanel";
-// import StemUploadPanel from "./StemUploadPanel"; // Replaced with AudioUploadInterface
 import AIGenerationPanel from "./AIGenerationPanel";
 import RecommendationPanel from "./RecommendationPanel";
 import SubscriptionPlans from "./SubscriptionPlans";

@@ -1,8 +1,8 @@
 if (!self.define) {
   let e,
     s = {};
-  const c = (c, a) => (
-    (c = new URL(c + ".js", a).href),
+  const c = (c, i) => (
+    (c = new URL(c + ".js", i).href),
     s[c] ||
       new Promise((s) => {
         if ("document" in self) {
@@ -15,16 +15,16 @@ if (!self.define) {
         return e;
       })
   );
-  self.define = (a, i) => {
-    const t =
+  self.define = (i, n) => {
+    const a =
       e ||
       ("document" in self ? document.currentScript.src : "") ||
       location.href;
-    if (s[t]) return;
-    let n = {};
-    const r = (e) => c(e, t),
-      d = { module: { uri: t }, exports: n, require: r };
-    s[t] = Promise.all(a.map((e) => d[e] || r(e))).then((e) => (i(...e), n));
+    if (s[a]) return;
+    let t = {};
+    const r = (e) => c(e, a),
+      f = { module: { uri: a }, exports: t, require: r };
+    s[a] = Promise.all(i.map((e) => f[e] || r(e))).then((e) => (n(...e), t));
   };
 }
 define(["./workbox-67e23458"], function (e) {
@@ -36,15 +36,23 @@ define(["./workbox-67e23458"], function (e) {
       [
         {
           url: "/_next/app-build-manifest.json",
-          revision: "a833d38d4d879fdf16412899bb5796c8",
+          revision: "85081b1afdeaeb5d7ff12800f97bd231",
         },
         {
-          url: "/_next/static/6rLAUoLC6e_tUBEW3AFtk/_buildManifest.js",
-          revision: "bd290f264fbca368a9451e4a384825d8",
+          url: "/_next/static/PQQI17rn4OZePx6tMC3VL/_buildManifest.js",
+          revision: "07e1ab420b3d62241633c2d138b433ef",
         },
         {
-          url: "/_next/static/6rLAUoLC6e_tUBEW3AFtk/_ssgManifest.js",
+          url: "/_next/static/PQQI17rn4OZePx6tMC3VL/_ssgManifest.js",
           revision: "b6652df95db52feb4daf4eca35380933",
+        },
+        {
+          url: "/_next/static/chunks/0f8af13e.de2d0ee876ec3186.js",
+          revision: "de2d0ee876ec3186",
+        },
+        {
+          url: "/_next/static/chunks/114-7c611a9546c0409a.js",
+          revision: "7c611a9546c0409a",
         },
         {
           url: "/_next/static/chunks/139.7a5a8e93a21948c1.js",
@@ -63,40 +71,56 @@ define(["./workbox-67e23458"], function (e) {
           revision: "f342b7cffc01feb0",
         },
         {
-          url: "/_next/static/chunks/797-cb3690c4b8d39735.js",
-          revision: "cb3690c4b8d39735",
+          url: "/_next/static/chunks/658-a8e9f619de94c2c1.js",
+          revision: "a8e9f619de94c2c1",
         },
         {
-          url: "/_next/static/chunks/963-f34089a80d95cbdf.js",
-          revision: "f34089a80d95cbdf",
+          url: "/_next/static/chunks/662.2060997805325de1.js",
+          revision: "2060997805325de1",
+        },
+        {
+          url: "/_next/static/chunks/685.0074eedfa1425a41.js",
+          revision: "0074eedfa1425a41",
+        },
+        {
+          url: "/_next/static/chunks/70-bbd35e2db9064e1f.js",
+          revision: "bbd35e2db9064e1f",
         },
         {
           url: "/_next/static/chunks/app/_not-found/page-a005cc110feb5d5e.js",
           revision: "a005cc110feb5d5e",
         },
         {
-          url: "/_next/static/chunks/app/api/generate/route-be195d364d79cd7a.js",
-          revision: "be195d364d79cd7a",
+          url: "/_next/static/chunks/app/api/generate/route-f20df77449d8950f.js",
+          revision: "f20df77449d8950f",
         },
         {
-          url: "/_next/static/chunks/app/api/recommendations/route-be195d364d79cd7a.js",
-          revision: "be195d364d79cd7a",
+          url: "/_next/static/chunks/app/api/jobs/%5Bid%5D/route-f20df77449d8950f.js",
+          revision: "f20df77449d8950f",
         },
         {
-          url: "/_next/static/chunks/app/api/silent-audio/route-be195d364d79cd7a.js",
-          revision: "be195d364d79cd7a",
+          url: "/_next/static/chunks/app/api/recommendations/route-f20df77449d8950f.js",
+          revision: "f20df77449d8950f",
         },
         {
-          url: "/_next/static/chunks/app/api/stemify/route-be195d364d79cd7a.js",
-          revision: "be195d364d79cd7a",
+          url: "/_next/static/chunks/app/api/silent-audio/route-f20df77449d8950f.js",
+          revision: "f20df77449d8950f",
         },
         {
-          url: "/_next/static/chunks/app/layout-70ddf699fe2a8382.js",
-          revision: "70ddf699fe2a8382",
+          url: "/_next/static/chunks/app/api/stemify/route-f20df77449d8950f.js",
+          revision: "f20df77449d8950f",
         },
         {
-          url: "/_next/static/chunks/app/page-1e3b0dfd1bd9e0e3.js",
-          revision: "1e3b0dfd1bd9e0e3",
+          url: "/_next/static/chunks/app/layout-e10e349638d7522f.js",
+          revision: "e10e349638d7522f",
+        },
+        {
+          url: "/_next/static/chunks/app/page-7556286aec1c0323.js",
+          revision: "7556286aec1c0323",
+        },
+        {
+          url: "/_next/static/chunks/b536a0f1.ca93ca66ddf3651d.js",
+          revision: "ca93ca66ddf3651d",
         },
         {
           url: "/_next/static/chunks/framework-fffd2192ef0a6589.js",
@@ -123,12 +147,12 @@ define(["./workbox-67e23458"], function (e) {
           revision: "846118c33b2c0e922d7b3a7676f81f6f",
         },
         {
-          url: "/_next/static/chunks/webpack-28f31fee4b93a027.js",
-          revision: "28f31fee4b93a027",
+          url: "/_next/static/chunks/webpack-f2886797358bfebd.js",
+          revision: "f2886797358bfebd",
         },
         {
-          url: "/_next/static/css/64ca5f2e937cd2b2.css",
-          revision: "64ca5f2e937cd2b2",
+          url: "/_next/static/css/5a07a2dea4393a51.css",
+          revision: "5a07a2dea4393a51",
         },
         {
           url: "/_next/static/css/a021610425eaf15f.css",
@@ -146,15 +170,15 @@ define(["./workbox-67e23458"], function (e) {
           url: "/icons/icon.svg",
           revision: "9b53a115a24bc8070bffce77a8c62d08",
         },
-        { url: "/manifest.json", revision: "84f5599584b471af32da91113cd9f0ba" },
+        { url: "/manifest.json", revision: "99d0308ddb732454a0c9516134c2f7c1" },
         { url: "/offline.html", revision: "89a32baa32af97b47da7b8e20547592e" },
         {
           url: "/worklets/advanced-stem-processor.js",
-          revision: "e8552f9972c4b15c34aa806b247ccb50",
+          revision: "43c177290a1de12a49c9278e37f762a3",
         },
         {
           url: "/worklets/stem-processor.js",
-          revision: "421fd421fb01a70111401691faa1d487",
+          revision: "3a8dd207b44cc4fc6d34d23c4a3c5866",
         },
       ],
       { ignoreURLParametersMatching: [] },
@@ -170,7 +194,7 @@ define(["./workbox-67e23458"], function (e) {
               request: e,
               response: s,
               event: c,
-              state: a,
+              state: i,
             }) =>
               s && "opaqueredirect" === s.type
                 ? new Response(s.body, {
