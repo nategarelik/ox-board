@@ -63,5 +63,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:8000/api/v1/health')"
 
-# Railway will use startCommand from railway.json
-# No CMD here - let Railway handle it
+# Default command (Railway startCommand will override this)
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
