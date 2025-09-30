@@ -77,3 +77,15 @@ REQUIREMENTS.md
 # Test coverage reports
 *.coverage
 coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+backend/.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/

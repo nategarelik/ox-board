@@ -3,51 +3,75 @@
  * Maps 15+ gestures to specific stem controls with configurable profiles
  */
 
-import { Point2D } from '../gesture/smoothing';
-import { HandResult, GestureResult, HandLandmark, CoordinateNormalizer, GestureConfidenceCalculator } from '../gesture/recognition';
-import { StemType } from '../audio/demucsProcessor';
+import { Point2D } from "../gesture/smoothing";
+import {
+  HandResult,
+  GestureResult,
+  HandLandmark,
+  CoordinateNormalizer,
+  GestureConfidenceCalculator,
+} from "../gesture/recognition";
+import { StemType } from "../audio/demucsProcessor";
 
 export interface GestureMapping {
   id: string;
   name: string;
   description: string;
-  targetStem: StemType | 'original' | 'crossfader' | 'master';
-  controlType: 'volume' | 'mute' | 'solo' | 'pan' | 'eq' | 'effect' | 'playback_rate' | 'crossfade';
-  handRequirement: 'left' | 'right' | 'both' | 'any';
+  targetStem: StemType | "original" | "crossfader" | "master";
+  controlType:
+    | "volume"
+    | "mute"
+    | "solo"
+    | "pan"
+    | "eq"
+    | "effect"
+    | "playback_rate"
+    | "crossfade"
+    | "filter"
+    | "reverb"
+    | "delay"
+    | "chorus";
+  handRequirement: "left" | "right" | "both" | "any";
   gestureType: GestureType;
   params?: Record<string, any>;
+  sensitivity?: number;
+  deadzone?: number;
+  invert?: boolean;
+  smoothing?: boolean;
+  hapticFeedback?: boolean;
+  priority?: number; // Higher priority mappings override lower ones
 }
 
 export enum GestureType {
   // Basic hand shapes
-  PEACE_SIGN = 'peace_sign',
-  ROCK_SIGN = 'rock_sign',
-  OK_SIGN = 'ok_sign',
-  CALL_SIGN = 'call_sign',
-  THUMBS_UP = 'thumbs_up',
-  THUMBS_DOWN = 'thumbs_down',
-  OPEN_PALM = 'open_palm',
-  FIST = 'fist',
-  POINTING = 'pointing',
+  PEACE_SIGN = "peace_sign",
+  ROCK_SIGN = "rock_sign",
+  OK_SIGN = "ok_sign",
+  CALL_SIGN = "call_sign",
+  THUMBS_UP = "thumbs_up",
+  THUMBS_DOWN = "thumbs_down",
+  OPEN_PALM = "open_palm",
+  FIST = "fist",
+  POINTING = "pointing",
 
   // Movement gestures
-  SWIPE_LEFT = 'swipe_left',
-  SWIPE_RIGHT = 'swipe_right',
-  SWIPE_UP = 'swipe_up',
-  SWIPE_DOWN = 'swipe_down',
-  CIRCLE_CLOCKWISE = 'circle_clockwise',
-  CIRCLE_COUNTER = 'circle_counter',
+  SWIPE_LEFT = "swipe_left",
+  SWIPE_RIGHT = "swipe_right",
+  SWIPE_UP = "swipe_up",
+  SWIPE_DOWN = "swipe_down",
+  CIRCLE_CLOCKWISE = "circle_clockwise",
+  CIRCLE_COUNTER = "circle_counter",
 
   // Two-hand gestures
-  CLAP = 'clap',
-  SPREAD_HANDS = 'spread_hands',
-  CROSSFADER_HANDS = 'crossfader_hands',
-  DUAL_CONTROL = 'dual_control',
+  CLAP = "clap",
+  SPREAD_HANDS = "spread_hands",
+  CROSSFADER_HANDS = "crossfader_hands",
+  DUAL_CONTROL = "dual_control",
 
   // Pinch and grab
-  PINCH = 'pinch',
-  GRAB = 'grab',
-  TWIST = 'twist'
+  PINCH = "pinch",
+  GRAB = "grab",
+  TWIST = "twist",
 }
 
 export interface GestureDetectionResult {
@@ -57,6 +81,68 @@ export interface GestureDetectionResult {
   position?: Point2D;
   metadata?: Record<string, any>;
   timestamp: number;
+  handSide?: "Left" | "Right";
+  velocity?: Point2D;
+  acceleration?: Point2D;
+}
+
+export interface GestureCombination {
+  id: string;
+  name: string;
+  description: string;
+  requiredGestures: Array<{
+    gestureType: GestureType;
+    handRequirement?: "left" | "right" | "both" | "any";
+    timeWindow?: number; // Maximum time between gestures in ms
+    sequencePosition?: number; // For sequential combinations
+  }>;
+  targetStem: StemType | "original" | "crossfader" | "master";
+  controlType:
+    | "volume"
+    | "mute"
+    | "solo"
+    | "pan"
+    | "eq"
+    | "effect"
+    | "playback_rate"
+    | "crossfade"
+    | "filter"
+    | "reverb"
+    | "delay"
+    | "chorus";
+  action: "set" | "toggle" | "increment" | "decrement" | "reset";
+  params?: Record<string, any>;
+  priority: number;
+  hapticFeedback: boolean;
+}
+
+export interface GestureSequence {
+  id: string;
+  name: string;
+  description: string;
+  sequence: Array<{
+    gestureType: GestureType;
+    handRequirement?: "left" | "right" | "both" | "any";
+    minDuration?: number;
+    maxDuration?: number;
+    timeout?: number;
+  }>;
+  targetStem: StemType | "original" | "crossfader" | "master";
+  controlType:
+    | "volume"
+    | "mute"
+    | "solo"
+    | "pan"
+    | "eq"
+    | "effect"
+    | "playback_rate"
+    | "crossfade"
+    | "filter"
+    | "reverb"
+    | "delay"
+    | "chorus";
+  finalValue: number;
+  priority: number;
 }
 
 export interface MappingProfile {
@@ -68,8 +154,8 @@ export interface MappingProfile {
 }
 
 export enum ControlMode {
-  ABSOLUTE = 'absolute',
-  RELATIVE = 'relative'
+  ABSOLUTE = "absolute",
+  RELATIVE = "relative",
 }
 
 export interface GestureControlState {
@@ -84,7 +170,7 @@ export interface GestureControlState {
 export interface FeedbackState {
   activeGestures: GestureDetectionResult[];
   activeMappings: GestureMapping[];
-  stemIndicators: Record<StemType | 'original', boolean>;
+  stemIndicators: Record<StemType | "original", boolean>;
   controlValues: Record<string, number>;
   confidence: number;
   latency: number;
@@ -107,7 +193,7 @@ const DEFAULT_CONFIG: GestureStemMapperConfig = {
   feedbackEnabled: true,
   defaultControlMode: ControlMode.ABSOLUTE,
   gestureSensitivity: 1.0,
-  deadzoneSensitivity: 0.05
+  deadzoneSensitivity: 0.05,
 };
 
 export class GestureStemMapper {
@@ -117,8 +203,19 @@ export class GestureStemMapper {
   private controlStates: Map<string, GestureControlState> = new Map();
   private feedbackState: FeedbackState;
   private gestureHistory: GestureDetectionResult[] = [];
+  private gestureCombinations: Map<string, GestureCombination> = new Map();
+  private gestureSequences: Map<string, GestureSequence> = new Map();
+  private activeSequences: Map<
+    string,
+    {
+      startTime: number;
+      currentStep: number;
+      gestures: GestureDetectionResult[];
+    }
+  > = new Map();
   private lastProcessingTime: number = 0;
   private eventListeners: Map<string, Function[]> = new Map();
+  private hapticFeedbackEnabled: boolean = true;
 
   constructor(config: Partial<GestureStemMapperConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -135,11 +232,11 @@ export class GestureStemMapper {
         bass: false,
         melody: false,
         vocals: false,
-        original: false
+        original: false,
       },
       controlValues: {},
       confidence: 0,
-      latency: 0
+      latency: 0,
     };
   }
 
@@ -148,202 +245,228 @@ export class GestureStemMapper {
     const defaultMappings: GestureMapping[] = [
       // Individual stem controls
       {
-        id: 'peace-drums',
-        name: 'Peace → Drums',
-        description: 'Peace sign controls drums volume',
-        targetStem: 'drums',
-        controlType: 'volume',
-        handRequirement: 'any',
-        gestureType: GestureType.PEACE_SIGN
+        id: "peace-drums",
+        name: "Peace → Drums",
+        description: "Peace sign controls drums volume",
+        targetStem: "drums",
+        controlType: "volume",
+        handRequirement: "any",
+        gestureType: GestureType.PEACE_SIGN,
       },
       {
-        id: 'rock-bass',
-        name: 'Rock → Bass',
-        description: 'Rock sign controls bass volume',
-        targetStem: 'bass',
-        controlType: 'volume',
-        handRequirement: 'any',
-        gestureType: GestureType.ROCK_SIGN
+        id: "rock-bass",
+        name: "Rock → Bass",
+        description: "Rock sign controls bass volume",
+        targetStem: "bass",
+        controlType: "volume",
+        handRequirement: "any",
+        gestureType: GestureType.ROCK_SIGN,
       },
       {
-        id: 'ok-melody',
-        name: 'OK → Melody',
-        description: 'OK sign controls melody volume',
-        targetStem: 'melody',
-        controlType: 'volume',
-        handRequirement: 'any',
-        gestureType: GestureType.OK_SIGN
+        id: "ok-melody",
+        name: "OK → Melody",
+        description: "OK sign controls melody volume",
+        targetStem: "melody",
+        controlType: "volume",
+        handRequirement: "any",
+        gestureType: GestureType.OK_SIGN,
       },
       {
-        id: 'call-vocals',
-        name: 'Call → Vocals',
-        description: 'Call sign controls vocals volume',
-        targetStem: 'vocals',
-        controlType: 'volume',
-        handRequirement: 'any',
-        gestureType: GestureType.CALL_SIGN
+        id: "call-vocals",
+        name: "Call → Vocals",
+        description: "Call sign controls vocals volume",
+        targetStem: "vocals",
+        controlType: "volume",
+        handRequirement: "any",
+        gestureType: GestureType.CALL_SIGN,
       },
 
       // Mute/Solo controls
       {
-        id: 'fist-mute',
-        name: 'Fist → Mute',
-        description: 'Fist gesture mutes active stem',
-        targetStem: 'drums', // Will be dynamic based on context
-        controlType: 'mute',
-        handRequirement: 'any',
-        gestureType: GestureType.FIST
+        id: "fist-mute",
+        name: "Fist → Mute",
+        description: "Fist gesture mutes active stem",
+        targetStem: "drums", // Will be dynamic based on context
+        controlType: "mute",
+        handRequirement: "any",
+        gestureType: GestureType.FIST,
       },
       {
-        id: 'thumbsup-solo',
-        name: 'Thumbs Up → Solo',
-        description: 'Thumbs up solos active stem',
-        targetStem: 'drums', // Will be dynamic based on context
-        controlType: 'solo',
-        handRequirement: 'any',
-        gestureType: GestureType.THUMBS_UP
+        id: "thumbsup-solo",
+        name: "Thumbs Up → Solo",
+        description: "Thumbs up solos active stem",
+        targetStem: "drums", // Will be dynamic based on context
+        controlType: "solo",
+        handRequirement: "any",
+        gestureType: GestureType.THUMBS_UP,
       },
 
       // Movement controls
       {
-        id: 'swipe-crossfade',
-        name: 'Swipe → Crossfade',
-        description: 'Horizontal swipe controls crossfader',
-        targetStem: 'crossfader',
-        controlType: 'crossfade',
-        handRequirement: 'both',
-        gestureType: GestureType.CROSSFADER_HANDS
+        id: "swipe-crossfade",
+        name: "Swipe → Crossfade",
+        description: "Horizontal swipe controls crossfader",
+        targetStem: "crossfader",
+        controlType: "crossfade",
+        handRequirement: "both",
+        gestureType: GestureType.CROSSFADER_HANDS,
       },
       {
-        id: 'circle-effect',
-        name: 'Circle → Effect',
-        description: 'Circular motion controls effect intensity',
-        targetStem: 'master',
-        controlType: 'effect',
-        handRequirement: 'any',
-        gestureType: GestureType.CIRCLE_CLOCKWISE
+        id: "circle-effect",
+        name: "Circle → Effect",
+        description: "Circular motion controls effect intensity",
+        targetStem: "master",
+        controlType: "effect",
+        handRequirement: "any",
+        gestureType: GestureType.CIRCLE_CLOCKWISE,
       },
 
       // Advanced combinations
       {
-        id: 'pinch-eq-low',
-        name: 'Pinch → EQ Low',
-        description: 'Pinch controls low EQ for active stem',
-        targetStem: 'drums', // Will be dynamic
-        controlType: 'eq',
-        handRequirement: 'any',
+        id: "pinch-eq-low",
+        name: "Pinch → EQ Low",
+        description: "Pinch controls low EQ for active stem",
+        targetStem: "drums", // Will be dynamic
+        controlType: "eq",
+        handRequirement: "any",
         gestureType: GestureType.PINCH,
-        params: { eqBand: 'low' }
+        params: { eqBand: "low" },
       },
       {
-        id: 'grab-eq-mid',
-        name: 'Grab → EQ Mid',
-        description: 'Grab controls mid EQ for active stem',
-        targetStem: 'bass', // Will be dynamic
-        controlType: 'eq',
-        handRequirement: 'any',
+        id: "grab-eq-mid",
+        name: "Grab → EQ Mid",
+        description: "Grab controls mid EQ for active stem",
+        targetStem: "bass", // Will be dynamic
+        controlType: "eq",
+        handRequirement: "any",
         gestureType: GestureType.GRAB,
-        params: { eqBand: 'mid' }
+        params: { eqBand: "mid" },
       },
       {
-        id: 'twist-eq-high',
-        name: 'Twist → EQ High',
-        description: 'Twist controls high EQ for active stem',
-        targetStem: 'melody', // Will be dynamic
-        controlType: 'eq',
-        handRequirement: 'any',
+        id: "twist-eq-high",
+        name: "Twist → EQ High",
+        description: "Twist controls high EQ for active stem",
+        targetStem: "melody", // Will be dynamic
+        controlType: "eq",
+        handRequirement: "any",
         gestureType: GestureType.TWIST,
-        params: { eqBand: 'high' }
+        params: { eqBand: "high" },
       },
 
       // Pan controls
       {
-        id: 'point-left-pan',
-        name: 'Point Left → Pan',
-        description: 'Pointing left pans stem to left',
-        targetStem: 'vocals',
-        controlType: 'pan',
-        handRequirement: 'any',
+        id: "point-left-pan",
+        name: "Point Left → Pan",
+        description: "Pointing left pans stem to left",
+        targetStem: "vocals",
+        controlType: "pan",
+        handRequirement: "any",
         gestureType: GestureType.POINTING,
-        params: { direction: 'left' }
+        params: { direction: "left" },
       },
 
       // Playback rate controls
       {
-        id: 'spread-hands-rate',
-        name: 'Spread Hands → Rate',
-        description: 'Hand spread controls playback rate',
-        targetStem: 'original',
-        controlType: 'playback_rate',
-        handRequirement: 'both',
-        gestureType: GestureType.SPREAD_HANDS
+        id: "spread-hands-rate",
+        name: "Spread Hands → Rate",
+        description: "Hand spread controls playback rate",
+        targetStem: "original",
+        controlType: "playback_rate",
+        handRequirement: "both",
+        gestureType: GestureType.SPREAD_HANDS,
       },
 
       // Two-hand gestures for mixing
       {
-        id: 'dual-volume',
-        name: 'Dual Volume Control',
-        description: 'Both hands control different stem volumes',
-        targetStem: 'master',
-        controlType: 'volume',
-        handRequirement: 'both',
-        gestureType: GestureType.DUAL_CONTROL
+        id: "dual-volume",
+        name: "Dual Volume Control",
+        description: "Both hands control different stem volumes",
+        targetStem: "master",
+        controlType: "volume",
+        handRequirement: "both",
+        gestureType: GestureType.DUAL_CONTROL,
       },
 
       // Quick actions
       {
-        id: 'clap-reset',
-        name: 'Clap → Reset',
-        description: 'Clap resets all stem controls',
-        targetStem: 'master',
-        controlType: 'effect',
-        handRequirement: 'both',
+        id: "clap-reset",
+        name: "Clap → Reset",
+        description: "Clap resets all stem controls",
+        targetStem: "master",
+        controlType: "effect",
+        handRequirement: "both",
         gestureType: GestureType.CLAP,
-        params: { action: 'reset' }
-      }
+        params: { action: "reset" },
+      },
     ];
 
     const defaultProfile: MappingProfile = {
-      id: 'default',
-      name: 'Default Profile',
-      description: 'Standard gesture mappings for stem control',
+      id: "default",
+      name: "Default Profile",
+      description: "Standard gesture mappings for stem control",
       mappings: defaultMappings,
-      isActive: true
+      isActive: true,
     };
 
-    this.profiles.set('default', defaultProfile);
-    this.activeProfile = 'default';
+    this.profiles.set("default", defaultProfile);
+    this.activeProfile = "default";
     this.initializeControlStates(defaultMappings);
   }
 
   private initializeControlStates(mappings: GestureMapping[]): void {
-    mappings.forEach(mapping => {
+    mappings.forEach((mapping) => {
       this.controlStates.set(mapping.id, {
         isActive: false,
         currentValue: 0,
         mode: this.config.defaultControlMode,
         sensitivity: this.config.gestureSensitivity,
-        deadzone: this.config.deadzoneSensitivity
+        deadzone: this.config.deadzoneSensitivity,
       });
     });
   }
 
   // Gesture detection methods
-  detectGestures(leftHand: HandResult | null, rightHand: HandResult | null, screenWidth: number, screenHeight: number): GestureDetectionResult[] {
+  detectGestures(
+    leftHand: HandResult | null,
+    rightHand: HandResult | null,
+    screenWidth: number,
+    screenHeight: number,
+  ): GestureDetectionResult[] {
     const startTime = performance.now();
     const results: GestureDetectionResult[] = [];
 
     // Detect single-hand gestures
     if (leftHand) {
-      results.push(...this.detectSingleHandGestures(leftHand, 'left', screenWidth, screenHeight));
+      results.push(
+        ...this.detectSingleHandGestures(
+          leftHand,
+          "left",
+          screenWidth,
+          screenHeight,
+        ),
+      );
     }
     if (rightHand) {
-      results.push(...this.detectSingleHandGestures(rightHand, 'right', screenWidth, screenHeight));
+      results.push(
+        ...this.detectSingleHandGestures(
+          rightHand,
+          "right",
+          screenWidth,
+          screenHeight,
+        ),
+      );
     }
 
     // Detect two-hand gestures
     if (leftHand && rightHand) {
-      results.push(...this.detectTwoHandGestures(leftHand, rightHand, screenWidth, screenHeight));
+      results.push(
+        ...this.detectTwoHandGestures(
+          leftHand,
+          rightHand,
+          screenWidth,
+          screenHeight,
+        ),
+      );
     }
 
     // Update gesture history
@@ -354,7 +477,9 @@ export class GestureStemMapper {
     this.feedbackState.latency = latency;
 
     // Filter by confidence
-    const validResults = results.filter(r => r.confidence >= this.config.gestureConfidenceThreshold);
+    const validResults = results.filter(
+      (r) => r.confidence >= this.config.gestureConfidenceThreshold,
+    );
 
     // Update feedback state
     this.updateFeedbackState(validResults);
@@ -362,7 +487,12 @@ export class GestureStemMapper {
     return validResults;
   }
 
-  private detectSingleHandGestures(hand: HandResult, handType: 'left' | 'right', screenWidth: number, screenHeight: number): GestureDetectionResult[] {
+  private detectSingleHandGestures(
+    hand: HandResult,
+    handType: "left" | "right",
+    screenWidth: number,
+    screenHeight: number,
+  ): GestureDetectionResult[] {
     const results: GestureDetectionResult[] = [];
     const landmarks = hand.landmarks;
 
@@ -376,7 +506,7 @@ export class GestureStemMapper {
         confidence: peaceResult.confidence,
         value: peaceResult.value,
         position: landmarks[HandLandmark.WRIST],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
@@ -388,7 +518,7 @@ export class GestureStemMapper {
         confidence: rockResult.confidence,
         value: rockResult.value,
         position: landmarks[HandLandmark.WRIST],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
@@ -400,7 +530,7 @@ export class GestureStemMapper {
         confidence: okResult.confidence,
         value: okResult.value,
         position: landmarks[HandLandmark.WRIST],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
@@ -412,7 +542,7 @@ export class GestureStemMapper {
         confidence: callResult.confidence,
         value: callResult.value,
         position: landmarks[HandLandmark.WRIST],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
@@ -424,7 +554,7 @@ export class GestureStemMapper {
         confidence: thumbsUpResult.confidence,
         value: thumbsUpResult.value,
         position: landmarks[HandLandmark.WRIST],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
@@ -436,7 +566,7 @@ export class GestureStemMapper {
         confidence: fistResult.confidence,
         value: 1.0,
         position: landmarks[HandLandmark.WRIST],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
@@ -448,7 +578,7 @@ export class GestureStemMapper {
         confidence: pinchResult.confidence,
         value: pinchResult.value,
         position: landmarks[HandLandmark.WRIST],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
@@ -460,7 +590,7 @@ export class GestureStemMapper {
         confidence: palmResult.confidence,
         value: 1.0,
         position: landmarks[HandLandmark.WRIST],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
@@ -471,17 +601,32 @@ export class GestureStemMapper {
     return results;
   }
 
-  private detectTwoHandGestures(leftHand: HandResult, rightHand: HandResult, screenWidth: number, screenHeight: number): GestureDetectionResult[] {
+  private detectTwoHandGestures(
+    leftHand: HandResult,
+    rightHand: HandResult,
+    screenWidth: number,
+    screenHeight: number,
+  ): GestureDetectionResult[] {
     const results: GestureDetectionResult[] = [];
 
     // Crossfader gesture
-    const crossfaderResult = this.detectCrossfaderGesture(leftHand, rightHand, screenWidth, screenHeight);
+    const crossfaderResult = this.detectCrossfaderGesture(
+      leftHand,
+      rightHand,
+      screenWidth,
+      screenHeight,
+    );
     if (crossfaderResult) {
       results.push(crossfaderResult);
     }
 
     // Spread hands gesture
-    const spreadResult = this.detectSpreadHands(leftHand, rightHand, screenWidth, screenHeight);
+    const spreadResult = this.detectSpreadHands(
+      leftHand,
+      rightHand,
+      screenWidth,
+      screenHeight,
+    );
     if (spreadResult) {
       results.push(spreadResult);
     }
@@ -502,7 +647,10 @@ export class GestureStemMapper {
   }
 
   // Individual gesture detection implementations
-  private detectPeaceSign(landmarks: Point2D[], baseConfidence: number): { confidence: number; value: number } | null {
+  private detectPeaceSign(
+    landmarks: Point2D[],
+    baseConfidence: number,
+  ): { confidence: number; value: number } | null {
     const indexTip = landmarks[HandLandmark.INDEX_FINGER_TIP];
     const middleTip = landmarks[HandLandmark.MIDDLE_FINGER_TIP];
     const ringTip = landmarks[HandLandmark.RING_FINGER_TIP];
@@ -511,29 +659,40 @@ export class GestureStemMapper {
     const wrist = landmarks[HandLandmark.WRIST];
 
     // Check if index and middle are extended
-    const indexExtended = indexTip.y < landmarks[HandLandmark.INDEX_FINGER_PIP].y;
-    const middleExtended = middleTip.y < landmarks[HandLandmark.MIDDLE_FINGER_PIP].y;
+    const indexExtended =
+      indexTip.y < landmarks[HandLandmark.INDEX_FINGER_PIP].y;
+    const middleExtended =
+      middleTip.y < landmarks[HandLandmark.MIDDLE_FINGER_PIP].y;
 
     // Check if ring, pinky, and thumb are retracted
     const ringRetracted = ringTip.y > landmarks[HandLandmark.RING_FINGER_PIP].y;
     const pinkyRetracted = pinkyTip.y > landmarks[HandLandmark.PINKY_PIP].y;
     const thumbRetracted = thumbTip.y > landmarks[HandLandmark.THUMB_IP].y;
 
-    if (indexExtended && middleExtended && ringRetracted && pinkyRetracted && thumbRetracted) {
+    if (
+      indexExtended &&
+      middleExtended &&
+      ringRetracted &&
+      pinkyRetracted &&
+      thumbRetracted
+    ) {
       // Calculate control value based on hand height
       const handHeight = Math.abs(wrist.y - Math.min(indexTip.y, middleTip.y));
       const value = Math.max(0, Math.min(1, handHeight * 2));
 
       return {
         confidence: baseConfidence * 0.9,
-        value
+        value,
       };
     }
 
     return null;
   }
 
-  private detectRockSign(landmarks: Point2D[], baseConfidence: number): { confidence: number; value: number } | null {
+  private detectRockSign(
+    landmarks: Point2D[],
+    baseConfidence: number,
+  ): { confidence: number; value: number } | null {
     const indexTip = landmarks[HandLandmark.INDEX_FINGER_TIP];
     const middleTip = landmarks[HandLandmark.MIDDLE_FINGER_TIP];
     const ringTip = landmarks[HandLandmark.RING_FINGER_TIP];
@@ -542,29 +701,40 @@ export class GestureStemMapper {
     const wrist = landmarks[HandLandmark.WRIST];
 
     // Check if index and pinky are extended
-    const indexExtended = indexTip.y < landmarks[HandLandmark.INDEX_FINGER_PIP].y;
+    const indexExtended =
+      indexTip.y < landmarks[HandLandmark.INDEX_FINGER_PIP].y;
     const pinkyExtended = pinkyTip.y < landmarks[HandLandmark.PINKY_PIP].y;
 
     // Check if middle, ring, and thumb are retracted
-    const middleRetracted = middleTip.y > landmarks[HandLandmark.MIDDLE_FINGER_PIP].y;
+    const middleRetracted =
+      middleTip.y > landmarks[HandLandmark.MIDDLE_FINGER_PIP].y;
     const ringRetracted = ringTip.y > landmarks[HandLandmark.RING_FINGER_PIP].y;
     const thumbRetracted = thumbTip.y > landmarks[HandLandmark.THUMB_IP].y;
 
-    if (indexExtended && pinkyExtended && middleRetracted && ringRetracted && thumbRetracted) {
+    if (
+      indexExtended &&
+      pinkyExtended &&
+      middleRetracted &&
+      ringRetracted &&
+      thumbRetracted
+    ) {
       // Calculate control value based on hand height
       const handHeight = Math.abs(wrist.y - Math.min(indexTip.y, pinkyTip.y));
       const value = Math.max(0, Math.min(1, handHeight * 2));
 
       return {
         confidence: baseConfidence * 0.85,
-        value
+        value,
       };
     }
 
     return null;
   }
 
-  private detectOKSign(landmarks: Point2D[], baseConfidence: number): { confidence: number; value: number } | null {
+  private detectOKSign(
+    landmarks: Point2D[],
+    baseConfidence: number,
+  ): { confidence: number; value: number } | null {
     const thumbTip = landmarks[HandLandmark.THUMB_TIP];
     const indexTip = landmarks[HandLandmark.INDEX_FINGER_TIP];
     const middleTip = landmarks[HandLandmark.MIDDLE_FINGER_TIP];
@@ -573,29 +743,37 @@ export class GestureStemMapper {
     const wrist = landmarks[HandLandmark.WRIST];
 
     // Check thumb-index circle
-    const thumbIndexDistance = CoordinateNormalizer.distance(thumbTip, indexTip);
+    const thumbIndexDistance = CoordinateNormalizer.distance(
+      thumbTip,
+      indexTip,
+    );
     const isCircle = thumbIndexDistance < 0.05;
 
     // Check if middle, ring, pinky are extended
-    const middleExtended = middleTip.y < landmarks[HandLandmark.MIDDLE_FINGER_PIP].y;
+    const middleExtended =
+      middleTip.y < landmarks[HandLandmark.MIDDLE_FINGER_PIP].y;
     const ringExtended = ringTip.y < landmarks[HandLandmark.RING_FINGER_PIP].y;
     const pinkyExtended = pinkyTip.y < landmarks[HandLandmark.PINKY_PIP].y;
 
     if (isCircle && middleExtended && ringExtended && pinkyExtended) {
       // Calculate control value based on circle size
-      const circleSize = Math.abs(thumbTip.x - indexTip.x) + Math.abs(thumbTip.y - indexTip.y);
+      const circleSize =
+        Math.abs(thumbTip.x - indexTip.x) + Math.abs(thumbTip.y - indexTip.y);
       const value = Math.max(0, Math.min(1, circleSize * 10));
 
       return {
         confidence: baseConfidence * 0.8,
-        value
+        value,
       };
     }
 
     return null;
   }
 
-  private detectCallSign(landmarks: Point2D[], baseConfidence: number): { confidence: number; value: number } | null {
+  private detectCallSign(
+    landmarks: Point2D[],
+    baseConfidence: number,
+  ): { confidence: number; value: number } | null {
     const thumbTip = landmarks[HandLandmark.THUMB_TIP];
     const indexTip = landmarks[HandLandmark.INDEX_FINGER_TIP];
     const middleTip = landmarks[HandLandmark.MIDDLE_FINGER_TIP];
@@ -608,25 +786,36 @@ export class GestureStemMapper {
     const pinkyExtended = pinkyTip.y < landmarks[HandLandmark.PINKY_PIP].y;
 
     // Check if index, middle, ring are retracted
-    const indexRetracted = indexTip.y > landmarks[HandLandmark.INDEX_FINGER_PIP].y;
-    const middleRetracted = middleTip.y > landmarks[HandLandmark.MIDDLE_FINGER_PIP].y;
+    const indexRetracted =
+      indexTip.y > landmarks[HandLandmark.INDEX_FINGER_PIP].y;
+    const middleRetracted =
+      middleTip.y > landmarks[HandLandmark.MIDDLE_FINGER_PIP].y;
     const ringRetracted = ringTip.y > landmarks[HandLandmark.RING_FINGER_PIP].y;
 
-    if (thumbExtended && pinkyExtended && indexRetracted && middleRetracted && ringRetracted) {
+    if (
+      thumbExtended &&
+      pinkyExtended &&
+      indexRetracted &&
+      middleRetracted &&
+      ringRetracted
+    ) {
       // Calculate control value based on thumb-pinky distance
       const spanDistance = CoordinateNormalizer.distance(thumbTip, pinkyTip);
       const value = Math.max(0, Math.min(1, spanDistance * 3));
 
       return {
         confidence: baseConfidence * 0.8,
-        value
+        value,
       };
     }
 
     return null;
   }
 
-  private detectThumbsUp(landmarks: Point2D[], baseConfidence: number): { confidence: number; value: number } | null {
+  private detectThumbsUp(
+    landmarks: Point2D[],
+    baseConfidence: number,
+  ): { confidence: number; value: number } | null {
     const thumbTip = landmarks[HandLandmark.THUMB_TIP];
     const indexTip = landmarks[HandLandmark.INDEX_FINGER_TIP];
     const middleTip = landmarks[HandLandmark.MIDDLE_FINGER_TIP];
@@ -646,39 +835,47 @@ export class GestureStemMapper {
     if (thumbExtended && fingersRetracted) {
       return {
         confidence: baseConfidence * 0.85,
-        value: 1.0
+        value: 1.0,
       };
     }
 
     return null;
   }
 
-  private detectFist(landmarks: Point2D[], baseConfidence: number): { confidence: number; value: number } | null {
+  private detectFist(
+    landmarks: Point2D[],
+    baseConfidence: number,
+  ): { confidence: number; value: number } | null {
     const wrist = landmarks[HandLandmark.WRIST];
     const fingerTips = [
       landmarks[HandLandmark.THUMB_TIP],
       landmarks[HandLandmark.INDEX_FINGER_TIP],
       landmarks[HandLandmark.MIDDLE_FINGER_TIP],
       landmarks[HandLandmark.RING_FINGER_TIP],
-      landmarks[HandLandmark.PINKY_TIP]
+      landmarks[HandLandmark.PINKY_TIP],
     ];
 
     // Check if all fingers are close to wrist (fist is closed)
-    const averageDistance = fingerTips.reduce((sum, tip) =>
-      sum + CoordinateNormalizer.distance(wrist, tip), 0
-    ) / fingerTips.length;
+    const averageDistance =
+      fingerTips.reduce(
+        (sum, tip) => sum + CoordinateNormalizer.distance(wrist, tip),
+        0,
+      ) / fingerTips.length;
 
     if (averageDistance < 0.1) {
       return {
         confidence: baseConfidence * 0.9,
-        value: 1.0
+        value: 1.0,
       };
     }
 
     return null;
   }
 
-  private detectPinch(landmarks: Point2D[], baseConfidence: number): { confidence: number; value: number } | null {
+  private detectPinch(
+    landmarks: Point2D[],
+    baseConfidence: number,
+  ): { confidence: number; value: number } | null {
     const thumbTip = landmarks[HandLandmark.THUMB_TIP];
     const indexTip = landmarks[HandLandmark.INDEX_FINGER_TIP];
 
@@ -690,20 +887,23 @@ export class GestureStemMapper {
 
       return {
         confidence: baseConfidence * 0.8,
-        value
+        value,
       };
     }
 
     return null;
   }
 
-  private detectOpenPalm(landmarks: Point2D[], baseConfidence: number): { confidence: number; value: number } | null {
+  private detectOpenPalm(
+    landmarks: Point2D[],
+    baseConfidence: number,
+  ): { confidence: number; value: number } | null {
     const fingerTips = [
       landmarks[HandLandmark.THUMB_TIP],
       landmarks[HandLandmark.INDEX_FINGER_TIP],
       landmarks[HandLandmark.MIDDLE_FINGER_TIP],
       landmarks[HandLandmark.RING_FINGER_TIP],
-      landmarks[HandLandmark.PINKY_TIP]
+      landmarks[HandLandmark.PINKY_TIP],
     ];
 
     const fingerPips = [
@@ -711,7 +911,7 @@ export class GestureStemMapper {
       landmarks[HandLandmark.INDEX_FINGER_PIP],
       landmarks[HandLandmark.MIDDLE_FINGER_PIP],
       landmarks[HandLandmark.RING_FINGER_PIP],
-      landmarks[HandLandmark.PINKY_PIP]
+      landmarks[HandLandmark.PINKY_PIP],
     ];
 
     // Check if all fingers are extended
@@ -725,34 +925,50 @@ export class GestureStemMapper {
     if (extendedCount >= 4) {
       return {
         confidence: baseConfidence * 0.75,
-        value: extendedCount / 5
+        value: extendedCount / 5,
       };
     }
 
     return null;
   }
 
-  private detectMovementGestures(landmarks: Point2D[], handType: 'left' | 'right'): GestureDetectionResult[] {
+  private detectMovementGestures(
+    landmarks: Point2D[],
+    handType: "left" | "right",
+  ): GestureDetectionResult[] {
     // Implementation for movement detection would require gesture history
     // For now, return empty array - this would be expanded with velocity tracking
     return [];
   }
 
-  private detectCrossfaderGesture(leftHand: HandResult, rightHand: HandResult, screenWidth: number, screenHeight: number): GestureDetectionResult | null {
+  private detectCrossfaderGesture(
+    leftHand: HandResult,
+    rightHand: HandResult,
+    screenWidth: number,
+    screenHeight: number,
+  ): GestureDetectionResult | null {
     const leftWrist = leftHand.landmarks[HandLandmark.WRIST];
     const rightWrist = rightHand.landmarks[HandLandmark.WRIST];
 
     const handDistance = CoordinateNormalizer.normalizedDistance(
-      leftWrist, rightWrist, screenWidth, screenHeight
+      leftWrist,
+      rightWrist,
+      screenWidth,
+      screenHeight,
     );
 
     // Check if hands are at appropriate distance for crossfading
     if (handDistance > 0.1 && handDistance < 0.7) {
-      const centerPoint = CoordinateNormalizer.centerPoint(leftWrist, rightWrist);
+      const centerPoint = CoordinateNormalizer.centerPoint(
+        leftWrist,
+        rightWrist,
+      );
       const crossfaderValue = Math.max(0, Math.min(1, centerPoint.x));
 
       const confidence = GestureConfidenceCalculator.twoHandGestureConfidence(
-        leftHand, rightHand, { distanceOptimal: 1.1 }
+        leftHand,
+        rightHand,
+        { distanceOptimal: 1.1 },
       );
 
       return {
@@ -761,19 +977,27 @@ export class GestureStemMapper {
         value: crossfaderValue,
         position: centerPoint,
         metadata: { handDistance },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
 
     return null;
   }
 
-  private detectSpreadHands(leftHand: HandResult, rightHand: HandResult, screenWidth: number, screenHeight: number): GestureDetectionResult | null {
+  private detectSpreadHands(
+    leftHand: HandResult,
+    rightHand: HandResult,
+    screenWidth: number,
+    screenHeight: number,
+  ): GestureDetectionResult | null {
     const leftWrist = leftHand.landmarks[HandLandmark.WRIST];
     const rightWrist = rightHand.landmarks[HandLandmark.WRIST];
 
     const handDistance = CoordinateNormalizer.normalizedDistance(
-      leftWrist, rightWrist, screenWidth, screenHeight
+      leftWrist,
+      rightWrist,
+      screenWidth,
+      screenHeight,
     );
 
     // Large hand spread indicates rate control
@@ -785,14 +1009,17 @@ export class GestureStemMapper {
         confidence: Math.min(leftHand.confidence, rightHand.confidence) * 0.8,
         value: spreadValue,
         position: CoordinateNormalizer.centerPoint(leftWrist, rightWrist),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
 
     return null;
   }
 
-  private detectClap(leftHand: HandResult, rightHand: HandResult): GestureDetectionResult | null {
+  private detectClap(
+    leftHand: HandResult,
+    rightHand: HandResult,
+  ): GestureDetectionResult | null {
     const leftPalm = leftHand.landmarks[HandLandmark.MIDDLE_FINGER_MCP];
     const rightPalm = rightHand.landmarks[HandLandmark.MIDDLE_FINGER_MCP];
 
@@ -805,17 +1032,26 @@ export class GestureStemMapper {
         confidence: Math.min(leftHand.confidence, rightHand.confidence) * 0.9,
         value: 1.0,
         position: CoordinateNormalizer.centerPoint(leftPalm, rightPalm),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
 
     return null;
   }
 
-  private detectDualControl(leftHand: HandResult, rightHand: HandResult): GestureDetectionResult | null {
+  private detectDualControl(
+    leftHand: HandResult,
+    rightHand: HandResult,
+  ): GestureDetectionResult | null {
     // Both hands in control position (open palms)
-    const leftPalm = this.detectOpenPalm(leftHand.landmarks, leftHand.confidence);
-    const rightPalm = this.detectOpenPalm(rightHand.landmarks, rightHand.confidence);
+    const leftPalm = this.detectOpenPalm(
+      leftHand.landmarks,
+      leftHand.confidence,
+    );
+    const rightPalm = this.detectOpenPalm(
+      rightHand.landmarks,
+      rightHand.confidence,
+    );
 
     if (leftPalm && rightPalm) {
       const leftWrist = leftHand.landmarks[HandLandmark.WRIST];
@@ -828,21 +1064,24 @@ export class GestureStemMapper {
         position: CoordinateNormalizer.centerPoint(leftWrist, rightWrist),
         metadata: {
           leftValue: leftWrist.y,
-          rightValue: rightWrist.y
+          rightValue: rightWrist.y,
         },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
 
     return null;
   }
 
-  // Mapping and control methods
-  processGestures(gestures: GestureDetectionResult[], channel: number = 0): Array<{
+  // Enhanced gesture processing with combinations and sequences
+  processGestures(
+    gestures: GestureDetectionResult[],
+    channel: number = 0,
+  ): Array<{
     mapping: GestureMapping;
     value: number;
     controlType: string;
-    stemType: StemType | 'original' | 'crossfader' | 'master';
+    stemType: StemType | "original" | "crossfader" | "master";
   }> {
     if (!this.activeProfile) return [];
 
@@ -853,28 +1092,474 @@ export class GestureStemMapper {
       mapping: GestureMapping;
       value: number;
       controlType: string;
-      stemType: StemType | 'original' | 'crossfader' | 'master';
+      stemType: StemType | "original" | "crossfader" | "master";
     }> = [];
 
-    gestures.forEach(gesture => {
-      const matchingMappings = profile.mappings.filter(mapping =>
-        mapping.gestureType === gesture.gestureType
+    // Process gesture combinations first (higher priority)
+    const combinationResults = this.processGestureCombinations(
+      gestures,
+      channel,
+    );
+    results.push(...combinationResults);
+
+    // Process gesture sequences
+    const sequenceResults = this.processGestureSequences(gestures, channel);
+    results.push(...sequenceResults);
+
+    // Process individual gesture mappings
+    gestures.forEach((gesture) => {
+      const matchingMappings = profile.mappings.filter(
+        (mapping) =>
+          mapping.gestureType === gesture.gestureType &&
+          this.checkHandRequirement(mapping, gesture),
       );
 
-      matchingMappings.forEach(mapping => {
+      // Sort by priority (higher priority first)
+      matchingMappings.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+      matchingMappings.forEach((mapping) => {
+        const controlState = this.controlStates.get(mapping.id);
+        if (!controlState) return;
+
+        let finalValue = gesture.value || 0;
+
+        // Apply inversion if specified
+        if (mapping.invert) {
+          finalValue = 1 - finalValue;
+        }
+
+        // Apply sensitivity scaling
+        const sensitivity = mapping.sensitivity || controlState.sensitivity;
+        finalValue = Math.max(
+          0,
+          Math.min(
+            1,
+            controlState.currentValue +
+              (finalValue - controlState.currentValue) * sensitivity,
+          ),
+        );
+
+        // Apply control mode processing
+        if (
+          controlState.mode === ControlMode.RELATIVE &&
+          controlState.lastGesture
+        ) {
+          const delta = finalValue - (controlState.lastGesture.value || 0);
+          finalValue = Math.max(
+            0,
+            Math.min(
+              1,
+              controlState.currentValue + delta * controlState.sensitivity,
+            ),
+          );
+        }
+
+        // Apply deadzone
+        const deadzone = mapping.deadzone || controlState.deadzone;
+        if (Math.abs(finalValue - controlState.currentValue) < deadzone) {
+          return;
+        }
+
+        // Apply smoothing if enabled
+        if (mapping.smoothing !== false) {
+          const smoothingFactor = 0.3;
+          finalValue =
+            controlState.currentValue * (1 - smoothingFactor) +
+            finalValue * smoothingFactor;
+        }
+
+        // Update control state
+        controlState.currentValue = finalValue;
+        controlState.lastGesture = gesture;
+        controlState.isActive = true;
+
+        results.push({
+          mapping,
+          value: finalValue,
+          controlType: mapping.controlType,
+          stemType: mapping.targetStem,
+        });
+
+        // Trigger haptic feedback if enabled
+        if (mapping.hapticFeedback && this.hapticFeedbackEnabled) {
+          this.triggerHapticFeedback(gesture, finalValue);
+        }
+
+        // Emit control event
+        this.emit("gestureControl", {
+          channel,
+          mapping,
+          value: finalValue,
+          gesture,
+        });
+      });
+    });
+
+    return results;
+  }
+
+  private processGestureCombinations(
+    gestures: GestureDetectionResult[],
+    channel: number,
+  ): Array<{
+    mapping: GestureMapping;
+    value: number;
+    controlType: string;
+    stemType: StemType | "original" | "crossfader" | "master";
+  }> {
+    const results: Array<{
+      mapping: GestureMapping;
+      value: number;
+      controlType: string;
+      stemType: StemType | "original" | "crossfader" | "master";
+    }> = [];
+
+    // Check each combination
+    this.gestureCombinations.forEach((combination) => {
+      const matchingGestures = this.findMatchingGesturesForCombination(
+        gestures,
+        combination,
+      );
+
+      if (matchingGestures.length === combination.requiredGestures.length) {
+        const combinedValue = this.calculateCombinationValue(
+          combination,
+          matchingGestures,
+        );
+
+        // Create a virtual mapping for the combination
+        const virtualMapping: GestureMapping = {
+          id: `combination-${combination.id}`,
+          name: combination.name,
+          description: combination.description,
+          targetStem: combination.targetStem,
+          controlType: combination.controlType,
+          handRequirement: "both",
+          gestureType: GestureType.CLAP, // Placeholder
+          priority: combination.priority,
+          hapticFeedback: combination.hapticFeedback,
+        };
+
+        results.push({
+          mapping: virtualMapping,
+          value: combinedValue,
+          controlType: combination.controlType,
+          stemType: combination.targetStem,
+        });
+
+        // Trigger haptic feedback
+        if (combination.hapticFeedback && this.hapticFeedbackEnabled) {
+          this.triggerHapticFeedback(matchingGestures[0], combinedValue);
+        }
+
+        this.emit("gestureCombination", {
+          channel,
+          combination,
+          value: combinedValue,
+          gestures: matchingGestures,
+        });
+      }
+    });
+
+    return results;
+  }
+
+  private processGestureSequences(
+    gestures: GestureDetectionResult[],
+    channel: number,
+  ): Array<{
+    mapping: GestureMapping;
+    value: number;
+    controlType: string;
+    stemType: StemType | "original" | "crossfader" | "master";
+  }> {
+    const results: Array<{
+      mapping: GestureMapping;
+      value: number;
+      controlType: string;
+      stemType: StemType | "original" | "crossfader" | "master";
+    }> = [];
+
+    // Update active sequences
+    gestures.forEach((gesture) => {
+      this.gestureSequences.forEach((sequence, sequenceId) => {
+        const activeSequence = this.activeSequences.get(sequenceId);
+
+        if (!activeSequence) {
+          // Check if gesture matches the first step in sequence
+          if (sequence.sequence[0].gestureType === gesture.gestureType) {
+            this.activeSequences.set(sequenceId, {
+              startTime: gesture.timestamp,
+              currentStep: 0,
+              gestures: [gesture],
+            });
+          }
+        } else {
+          const currentStep = sequence.sequence[activeSequence.currentStep];
+          const timeSinceStart = gesture.timestamp - activeSequence.startTime;
+
+          // Check if gesture matches expected next step
+          if (
+            activeSequence.currentStep + 1 < sequence.sequence.length &&
+            sequence.sequence[activeSequence.currentStep + 1].gestureType ===
+              gesture.gestureType
+          ) {
+            const nextStep = sequence.sequence[activeSequence.currentStep + 1];
+
+            // Check timing constraints
+            if (nextStep.timeout && timeSinceStart > nextStep.timeout) {
+              this.activeSequences.delete(sequenceId); // Sequence timed out
+              return;
+            }
+
+            // Progress to next step
+            activeSequence.currentStep++;
+            activeSequence.gestures.push(gesture);
+
+            // Check if sequence is complete
+            if (activeSequence.currentStep >= sequence.sequence.length - 1) {
+              // Sequence completed successfully
+              const virtualMapping: GestureMapping = {
+                id: `sequence-${sequence.id}`,
+                name: sequence.name,
+                description: sequence.description,
+                targetStem: sequence.targetStem,
+                controlType: sequence.controlType,
+                handRequirement: "any",
+                gestureType: gesture.gestureType,
+                priority: sequence.priority,
+              };
+
+              results.push({
+                mapping: virtualMapping,
+                value: sequence.finalValue,
+                controlType: sequence.controlType,
+                stemType: sequence.targetStem,
+              });
+
+              // Trigger haptic feedback
+              if (this.hapticFeedbackEnabled) {
+                this.triggerHapticFeedback(gesture, sequence.finalValue);
+              }
+
+              this.emit("gestureSequence", {
+                channel,
+                sequence,
+                value: sequence.finalValue,
+                gestures: activeSequence.gestures,
+              });
+
+              this.activeSequences.delete(sequenceId);
+            }
+          } else {
+            // Gesture doesn't match expected next step, reset sequence
+            this.activeSequences.delete(sequenceId);
+          }
+        }
+      });
+    });
+
+    return results;
+  }
+
+  private findMatchingGesturesForCombination(
+    gestures: GestureDetectionResult[],
+    combination: GestureCombination,
+  ): GestureDetectionResult[] {
+    const matchingGestures: GestureDetectionResult[] = [];
+
+    combination.requiredGestures.forEach((requiredGesture) => {
+      const matchingGesture = gestures.find(
+        (gesture) =>
+          gesture.gestureType === requiredGesture.gestureType &&
+          this.checkHandRequirementForCombination(gesture, requiredGesture),
+      );
+
+      if (matchingGesture) {
+        matchingGestures.push(matchingGesture);
+      }
+    });
+
+    return matchingGestures;
+  }
+
+  private checkHandRequirementForCombination(
+    gesture: GestureDetectionResult,
+    requiredGesture: GestureCombination["requiredGestures"][0],
+  ): boolean {
+    if (!requiredGesture.handRequirement) return true;
+
+    const gestureHand = gesture.handSide?.toLowerCase();
+    const requiredHand = requiredGesture.handRequirement.toLowerCase();
+
+    return (
+      gestureHand === requiredHand || requiredGesture.handRequirement === "any"
+    );
+  }
+
+  private calculateCombinationValue(
+    combination: GestureCombination,
+    gestures: GestureDetectionResult[],
+  ): number {
+    switch (combination.action) {
+      case "set":
+        return gestures[0]?.value || 0;
+      case "toggle":
+        return 1.0; // Toggle action
+      case "increment":
+        return Math.min(1, (gestures[0]?.value || 0) + 0.1);
+      case "decrement":
+        return Math.max(0, (gestures[0]?.value || 0) - 0.1);
+      case "reset":
+        return 0.0;
+      default:
+        return 0.0;
+    }
+  }
+
+  private checkHandRequirement(
+    mapping: GestureMapping,
+    gesture: GestureDetectionResult,
+  ): boolean {
+    if (mapping.handRequirement === "any") return true;
+
+    const gestureHand = gesture.handSide?.toLowerCase();
+    const requiredHand = mapping.handRequirement.toLowerCase();
+
+    return gestureHand === requiredHand;
+  }
+
+  private triggerHapticFeedback(
+    gesture: GestureDetectionResult,
+    intensity: number,
+  ): void {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      const vibrationPattern = Math.round(intensity * 50); // 0-50ms vibration
+      navigator.vibrate(vibrationPattern);
+    }
+  }
+
+  // Gesture combination management
+  addGestureCombination(combination: GestureCombination): void {
+    this.gestureCombinations.set(combination.id, combination);
+  }
+
+  removeGestureCombination(combinationId: string): void {
+    this.gestureCombinations.delete(combinationId);
+  }
+
+  getGestureCombinations(): GestureCombination[] {
+    return Array.from(this.gestureCombinations.values());
+  }
+
+  // Gesture sequence management
+  addGestureSequence(sequence: GestureSequence): void {
+    this.gestureSequences.set(sequence.id, sequence);
+  }
+
+  removeGestureSequence(sequenceId: string): void {
+    this.gestureSequences.delete(sequenceId);
+    this.activeSequences.delete(sequenceId);
+  }
+
+  getGestureSequences(): GestureSequence[] {
+    return Array.from(this.gestureSequences.values());
+  }
+
+  // Enhanced profile management
+  createCustomProfile(profile: Omit<MappingProfile, "isActive">): void {
+    const customProfile: MappingProfile = {
+      ...profile,
+      isActive: false,
+    };
+
+    this.profiles.set(profile.id, customProfile);
+    this.initializeControlStates(profile.mappings);
+  }
+
+  cloneProfile(
+    sourceProfileId: string,
+    newProfileId: string,
+    newProfileName: string,
+  ): boolean {
+    const sourceProfile = this.profiles.get(sourceProfileId);
+    if (!sourceProfile) return false;
+
+    const clonedProfile: MappingProfile = {
+      ...sourceProfile,
+      id: newProfileId,
+      name: newProfileName,
+      isActive: false,
+    };
+
+    this.profiles.set(newProfileId, clonedProfile);
+    this.initializeControlStates(sourceProfile.mappings);
+
+    return true;
+  }
+
+  // Haptic feedback control
+  setHapticFeedbackEnabled(enabled: boolean): void {
+    this.hapticFeedbackEnabled = enabled;
+  }
+
+  isHapticFeedbackEnabled(): boolean {
+    return this.hapticFeedbackEnabled;
+  }
+
+  // Mapping and control methods
+  processGesturesOld(
+    gestures: GestureDetectionResult[],
+    channel: number = 0,
+  ): Array<{
+    mapping: GestureMapping;
+    value: number;
+    controlType: string;
+    stemType: StemType | "original" | "crossfader" | "master";
+  }> {
+    if (!this.activeProfile) return [];
+
+    const profile = this.profiles.get(this.activeProfile);
+    if (!profile) return [];
+
+    const results: Array<{
+      mapping: GestureMapping;
+      value: number;
+      controlType: string;
+      stemType: StemType | "original" | "crossfader" | "master";
+    }> = [];
+
+    gestures.forEach((gesture) => {
+      const matchingMappings = profile.mappings.filter(
+        (mapping) => mapping.gestureType === gesture.gestureType,
+      );
+
+      matchingMappings.forEach((mapping) => {
         const controlState = this.controlStates.get(mapping.id);
         if (!controlState) return;
 
         let finalValue = gesture.value || 0;
 
         // Apply control mode processing
-        if (controlState.mode === ControlMode.RELATIVE && controlState.lastGesture) {
+        if (
+          controlState.mode === ControlMode.RELATIVE &&
+          controlState.lastGesture
+        ) {
           const delta = finalValue - (controlState.lastGesture.value || 0);
-          finalValue = Math.max(0, Math.min(1, controlState.currentValue + delta * controlState.sensitivity));
+          finalValue = Math.max(
+            0,
+            Math.min(
+              1,
+              controlState.currentValue + delta * controlState.sensitivity,
+            ),
+          );
         }
 
         // Apply deadzone
-        if (Math.abs(finalValue - controlState.currentValue) < controlState.deadzone) {
+        if (
+          Math.abs(finalValue - controlState.currentValue) <
+          controlState.deadzone
+        ) {
           return;
         }
 
@@ -887,15 +1572,15 @@ export class GestureStemMapper {
           mapping,
           value: finalValue,
           controlType: mapping.controlType,
-          stemType: mapping.targetStem
+          stemType: mapping.targetStem,
         });
 
         // Emit control event
-        this.emit('gestureControl', {
+        this.emit("gestureControl", {
           channel,
           mapping,
           value: finalValue,
-          gesture
+          gesture,
         });
       });
     });
@@ -914,14 +1599,16 @@ export class GestureStemMapper {
       this.activeProfile = profileId;
       const profile = this.profiles.get(profileId)!;
       this.initializeControlStates(profile.mappings);
-      this.emit('profileChanged', { profileId, profile });
+      this.emit("profileChanged", { profileId, profile });
       return true;
     }
     return false;
   }
 
   getActiveProfile(): MappingProfile | null {
-    return this.activeProfile ? this.profiles.get(this.activeProfile) || null : null;
+    return this.activeProfile
+      ? this.profiles.get(this.activeProfile) || null
+      : null;
   }
 
   getAllProfiles(): MappingProfile[] {
@@ -933,7 +1620,7 @@ export class GestureStemMapper {
     const controlState = this.controlStates.get(mappingId);
     if (controlState) {
       controlState.mode = mode;
-      this.emit('controlModeChanged', { mappingId, mode });
+      this.emit("controlModeChanged", { mappingId, mode });
     }
   }
 
@@ -958,25 +1645,27 @@ export class GestureStemMapper {
 
   private updateFeedbackState(gestures: GestureDetectionResult[]): void {
     this.feedbackState.activeGestures = gestures;
-    this.feedbackState.confidence = gestures.length > 0 ?
-      gestures.reduce((sum, g) => sum + g.confidence, 0) / gestures.length : 0;
+    this.feedbackState.confidence =
+      gestures.length > 0
+        ? gestures.reduce((sum, g) => sum + g.confidence, 0) / gestures.length
+        : 0;
 
     // Update active mappings based on gestures
     if (this.activeProfile) {
       const profile = this.profiles.get(this.activeProfile)!;
-      this.feedbackState.activeMappings = profile.mappings.filter(mapping =>
-        gestures.some(g => g.gestureType === mapping.gestureType)
+      this.feedbackState.activeMappings = profile.mappings.filter((mapping) =>
+        gestures.some((g) => g.gestureType === mapping.gestureType),
       );
 
       // Update stem indicators
-      Object.keys(this.feedbackState.stemIndicators).forEach(stem => {
-        this.feedbackState.stemIndicators[stem as StemType | 'original'] =
-          this.feedbackState.activeMappings.some(m => m.targetStem === stem);
+      Object.keys(this.feedbackState.stemIndicators).forEach((stem) => {
+        this.feedbackState.stemIndicators[stem as StemType | "original"] =
+          this.feedbackState.activeMappings.some((m) => m.targetStem === stem);
       });
     }
 
     // Emit feedback update
-    this.emit('feedbackUpdate', this.feedbackState);
+    this.emit("feedbackUpdate", this.feedbackState);
   }
 
   private updateGestureHistory(gestures: GestureDetectionResult[]): void {
@@ -984,7 +1673,9 @@ export class GestureStemMapper {
 
     // Keep only recent gestures (last 2 seconds)
     const cutoffTime = Date.now() - 2000;
-    this.gestureHistory = this.gestureHistory.filter(g => g.timestamp > cutoffTime);
+    this.gestureHistory = this.gestureHistory.filter(
+      (g) => g.timestamp > cutoffTime,
+    );
   }
 
   getLatency(): number {
@@ -1012,11 +1703,14 @@ export class GestureStemMapper {
   private emit(event: string, data?: any): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
-      listeners.forEach(callback => {
+      listeners.forEach((callback) => {
         try {
           callback(data);
         } catch (error) {
-          console.error(`Error in gesture mapper event listener for ${event}:`, error);
+          console.error(
+            `Error in gesture mapper event listener for ${event}:`,
+            error,
+          );
         }
       });
     }
@@ -1034,12 +1728,12 @@ export class GestureStemMapper {
 
 // Export default mappings for easy configuration
 export const DEFAULT_GESTURE_MAPPINGS = {
-  PEACE_TO_DRUMS: 'peace-drums',
-  ROCK_TO_BASS: 'rock-bass',
-  OK_TO_MELODY: 'ok-melody',
-  CALL_TO_VOCALS: 'call-vocals',
-  FIST_MUTE: 'fist-mute',
-  THUMBS_UP_SOLO: 'thumbsup-solo',
-  CROSSFADER_HANDS: 'swipe-crossfade',
-  DUAL_VOLUME: 'dual-volume'
+  PEACE_TO_DRUMS: "peace-drums",
+  ROCK_TO_BASS: "rock-bass",
+  OK_TO_MELODY: "ok-melody",
+  CALL_TO_VOCALS: "call-vocals",
+  FIST_MUTE: "fist-mute",
+  THUMBS_UP_SOLO: "thumbsup-solo",
+  CROSSFADER_HANDS: "swipe-crossfade",
+  DUAL_VOLUME: "dual-volume",
 };

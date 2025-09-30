@@ -5,6 +5,7 @@ import { usePlayer } from "../../hooks/usePlayer";
 import { useStemPlayback } from "../../hooks/useStemPlayback";
 import { requestAutoMixSuggestion } from "../../services/aiStemService";
 import { fetchPersonalizedRecommendations } from "../../services/recommendationService";
+import useEnhancedDJStore from "../../stores/enhancedDjStoreWithGestures";
 import StemMixerPanel from "./StemMixerPanel";
 import StemUploadPanel from "./StemUploadPanel";
 import AIGenerationPanel from "./AIGenerationPanel";
@@ -38,6 +39,7 @@ export default function StemPlayerDashboard() {
 
   const { initialize, play, pause, stop, updateStem, ready, state } =
     useStemPlayback(currentTrack);
+  const { initializeAudioOnUserGesture } = useEnhancedDJStore();
 
   useEffect(() => {
     bootstrap();
@@ -71,6 +73,13 @@ export default function StemPlayerDashboard() {
   }, [currentTrack, ready, updateStem]);
 
   const handlePlay = async () => {
+    try {
+      // Initialize audio on user gesture first
+      await initializeAudioOnUserGesture();
+    } catch (error) {
+      console.error("Failed to initialize DJ audio:", error);
+    }
+
     if (!ready) {
       await initialize();
     }
@@ -123,6 +132,11 @@ export default function StemPlayerDashboard() {
                   ? "Audio Suspended"
                   : "Ready for Interaction"}
             </span>
+            {currentTrack && (
+              <span className="text-xs text-white/50">
+                Demo Mode - Upload audio for full experience
+              </span>
+            )}
             <div className="flex gap-3 text-sm">
               <button
                 onClick={handlePlay}

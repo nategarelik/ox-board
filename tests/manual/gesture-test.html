@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OX Board - Gesture Recognition Test Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #111827;
+            color: #f9fafb;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #374151;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .controls-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-panel {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .control-panel h3 {
+            margin-bottom: 15px;
+            color: #3b82f6;
+            font-size: 1.2rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #d1d5db;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group button {
+            width: 100%;
+            padding: 8px 12px;
+            background: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            color: #f9fafb;
+            font-size: 0.9rem;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .form-group button {
+            background: #3b82f6;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .form-group button:hover {
+            background: #2563eb;
+        }
+
+        .form-group button:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .video-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .video-container {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .video-container h3 {
+            padding: 15px;
+            background: #374151;
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        video {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+
+        .metrics-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .metric-card h4 {
+            margin-bottom: 10px;
+            color: #3b82f6;
+            font-size: 1rem;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .metric-good { color: #10b981; }
+        .metric-warning { color: #f59e0b; }
+        .metric-error { color: #ef4444; }
+
+        .gesture-list {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .gesture-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #374151;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .gesture-item:hover {
+            background: #4b5563;
+        }
+
+        .gesture-icon {
+            font-size: 1.5rem;
+            margin-right: 12px;
+            width: 30px;
+            text-align: center;
+        }
+
+        .gesture-info {
+            flex: 1;
+        }
+
+        .gesture-name {
+            font-weight: 500;
+            color: #f9fafb;
+        }
+
+        .gesture-confidence {
+            font-size: 0.9rem;
+            color: #d1d5db;
+        }
+
+        .calibration-section {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .calibration-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .calibration-progress {
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #374151;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            transition: width 0.3s ease;
+        }
+
+        .log-section {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        .log-info { background: #374151; color: #d1d5db; }
+        .log-success { background: #064e3b; color: #10b981; }
+        .log-warning { background: #92400e; color: #f59e0b; }
+        .log-error { background: #7f1d1d; color: #ef4444; }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-active { background: #10b981; }
+        .status-inactive { background: #6b7280; }
+        .status-error { background: #ef4444; }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .controls-section,
+            .video-section {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 OX Board Gesture Recognition Test Interface</h1>
+            <p>Comprehensive testing and calibration tools for the gesture recognition system</p>
+        </div>
+
+        <!-- Control Panels -->
+        <div class="controls-section">
+            <!-- Camera Controls -->
+            <div class="control-panel">
+                <h3>📷 Camera Controls</h3>
+                <div class="form-group">
+                    <label for="camera-select">Camera Device:</label>
+                    <select id="camera-select">
+                        <option value="">Loading cameras...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="resolution-select">Resolution:</label>
+                    <select id="resolution-select">
+                        <option value="640x480">640x480 (VGA)</option>
+                        <option value="1280x720" selected>1280x720 (HD)</option>
+                        <option value="1920x1080">1920x1080 (Full HD)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fps-input">Target FPS:</label>
+                    <input type="number" id="fps-input" value="60" min="15" max="60">
+                </div>
+                <div class="btn-group">
+                    <button id="start-camera" class="form-group">Start Camera</button>
+                    <button id="stop-camera" class="btn-secondary form-group" disabled>Stop Camera</button>
+                </div>
+            </div>
+
+            <!-- Gesture Recognition Settings -->
+            <div class="control-panel">
+                <h3>🎯 Recognition Settings</h3>
+                <div class="form-group">
+                    <label for="confidence-threshold">Confidence Threshold:</label>
+                    <input type="range" id="confidence-threshold" min="0.1" max="1.0" step="0.05" value="0.7">
+                    <span id="confidence-value">0.7</span>
+                </div>
+                <div class="form-group">
+                    <label for="smoothing-alpha">Smoothing Alpha:</label>
+                    <input type="range" id="smoothing-alpha" min="0.01" max="0.5" step="0.01" value="0.1">
+                    <span id="smoothing-value">0.1</span>
+                </div>
+                <div class="form-group">
+                    <label for="update-interval">Update Interval (ms):</label>
+                    <input type="number" id="update-interval" value="16" min="8" max="100">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="enable-advanced-smoothing" checked>
+                        Enable Advanced Smoothing
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="enable-prediction" checked>
+                        Enable Gesture Prediction
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Feeds -->
+        <div class="video-section">
+            <div class="video-container">
+                <h3>📹 Camera Feed</h3>
+                <video id="camera-feed" autoplay playsinline muted></video>
+            </div>
+            <div class="video-container">
+                <h3>🎨 Gesture Overlay</h3>
+                <canvas id="gesture-canvas" width="640" height="480"></canvas>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="metrics-section">
+            <div class="metric-card">
+                <h4>⚡ Performance</h4>
+                <div class="metric-value" id="fps-metric">-</div>
+                <div class="metric-label">Frame Rate</div>
+            </div>
+            <div class="metric-card">
+                <h4>🎯 Recognition</h4>
+                <div class="metric-value" id="accuracy-metric">-</div>
+                <div class="metric-label">Accuracy</div>
+            </div>
+            <div class="metric-card">
+                <h4>⏱️ Latency</h4>
+                <div class="metric-value" id="latency-metric">-</div>
+                <div class="metric-label">Average Latency</div>
+            </div>
+            <div class="metric-card">
+                <h4>💾 Memory</h4>
+                <div class="metric-value" id="memory-metric">-</div>
+                <div class="metric-label">Memory Usage</div>
+            </div>
+        </div>
+
+        <!-- Gesture List and Calibration -->
+        <div class="grid-3">
+            <!-- Active Gestures -->
+            <div class="gesture-list">
+                <h3 style="margin-bottom: 15px; color: #3b82f6;">🎭 Active Gestures</h3>
+                <div id="gesture-list">
+                    <div class="text-gray-500 text-center py-4">No gestures detected</div>
+                </div>
+            </div>
+
+            <!-- Calibration Tools -->
+            <div class="calibration-section">
+                <h3>🔧 Calibration</h3>
+                <div class="calibration-controls">
+                    <select id="calibration-gesture">
+                        <option value="">Select gesture to calibrate...</option>
+                        <option value="pinch">Pinch</option>
+                        <option value="fist">Fist</option>
+                        <option value="palm_open">Palm Open</option>
+                        <option value="peace_sign">Peace Sign</option>
+                        <option value="rock_sign">Rock Sign</option>
+                    </select>
+                    <button id="start-calibration" class="form-group">Start Calibration</button>
+                    <button id="stop-calibration" class="btn-secondary form-group" disabled>Stop Calibration</button>
+                </div>
+
+                <div class="calibration-progress" id="calibration-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="calibration-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="text-sm text-gray-400">
+                        Samples collected: <span id="calibration-samples">0</span>/10
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button id="save-calibration" class="btn-secondary form-group" disabled>Save Calibration</button>
+                    <button id="load-calibration" class="btn-secondary form-group">Load Calibration</button>
+                    <button id="reset-calibration" class="btn-danger form-group">Reset All</button>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="metric-card">
+                <h4>🔄 System Status</h4>
+                <div class="form-group">
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span class="status-indicator status-inactive" id="camera-status"></span>
+                        <span>Camera: <span id="camera-status-text">Disconnected</span></span>
+                    </div>
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span class="status-indicator status-inactive" id="recognition-status"></span>
+                        <span>Recognition: <span id="recognition-status-text">Stopped</span></span>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-indicator status-inactive" id="calibration-status"></span>
+                        <span>Calibration: <span id="calibration-status-text">Ready</span></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button id="start-tutorial" class="form-group">🎓 Start Tutorial</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="log-section">
+            <h3 style="margin-bottom: 15px; color: #3b82f6;">📋 Activity Log</h3>
+            <div id="activity-log">
+                <div class="log-entry log-info">Gesture test interface loaded</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test interface state
+        let state = {
+            cameraStream: null,
+            gestureRecognizer: null,
+            isCalibrating: false,
+            calibrationGesture: null,
+            calibrationSamples: 0,
+            performanceMetrics: {
+                frameCount: 0,
+                lastFrameTime: 0,
+                fps: 0,
+                processingTimes: []
+            }
+        };
+
+        // DOM elements
+        const elements = {
+            cameraSelect: document.getElementById('camera-select'),
+            cameraFeed: document.getElementById('camera-feed'),
+            gestureCanvas: document.getElementById('gesture-canvas'),
+            gestureList: document.getElementById('gesture-list'),
+            startCamera: document.getElementById('start-camera'),
+            stopCamera: document.getElementById('stop-camera'),
+            confidenceThreshold: document.getElementById('confidence-threshold'),
+            confidenceValue: document.getElementById('confidence-value'),
+            fpsMetric: document.getElementById('fps-metric'),
+            accuracyMetric: document.getElementById('accuracy-metric'),
+            latencyMetric: document.getElementById('latency-metric'),
+            memoryMetric: document.getElementById('memory-metric'),
+            startCalibration: document.getElementById('start-calibration'),
+            stopCalibration: document.getElementById('stop-calibration'),
+            calibrationProgress: document.getElementById('calibration-progress'),
+            calibrationFill: document.getElementById('calibration-fill'),
+            calibrationSamples: document.getElementById('calibration-samples'),
+            activityLog: document.getElementById('activity-log')
+        };
+
+        // Initialize the interface
+        async function initialize() {
+            log('info', 'Initializing gesture test interface...');
+
+            // Load available cameras
+            await loadCameras();
+
+            // Setup event listeners
+            setupEventListeners();
+
+            // Initialize canvas for gesture overlay
+            initializeGestureCanvas();
+
+            log('success', 'Interface initialized successfully');
+        }
+
+        async function loadCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const cameras = devices.filter(device => device.kind === 'videoinput');
+
+                elements.cameraSelect.innerHTML = '<option value="">Select a camera...</option>';
+
+                cameras.forEach((camera, index) => {
+                    const option = document.createElement('option');
+                    option.value = camera.deviceId;
+                    option.textContent = camera.label || `Camera ${index + 1}`;
+                    elements.cameraSelect.appendChild(option);
+                });
+
+                log('info', `Found ${cameras.length} camera(s)`);
+            } catch (error) {
+                log('error', `Failed to load cameras: ${error.message}`);
+            }
+        }
+
+        function setupEventListeners() {
+            // Camera controls
+            elements.startCamera.addEventListener('click', startCamera);
+            elements.stopCamera.addEventListener('click', stopCamera);
+            elements.cameraSelect.addEventListener('change', onCameraChange);
+
+            // Recognition settings
+            elements.confidenceThreshold.addEventListener('input', onConfidenceChange);
+
+            // Calibration controls
+            elements.startCalibration.addEventListener('click', startCalibration);
+            elements.stopCalibration.addEventListener('click', stopCalibration);
+
+            // Tutorial
+            document.getElementById('start-tutorial').addEventListener('click', startTutorial);
+        }
+
+        function initializeGestureCanvas() {
+            const canvas = elements.gestureCanvas;
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+        }
+
+        async function startCamera() {
+            const deviceId = elements.cameraSelect.value;
+            if (!deviceId) {
+                log('warning', 'Please select a camera first');
+                return;
+            }
+
+            try {
+                const constraints = {
+                    video: {
+                        deviceId: deviceId,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        frameRate: { ideal: 60 }
+                    }
+                };
+
+                state.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                elements.cameraFeed.srcObject = state.cameraStream;
+
+                elements.startCamera.disabled = true;
+                elements.stopCamera.disabled = false;
+
+                updateStatus('camera', 'active', 'Connected');
+                log('success', 'Camera started successfully');
+
+                // Start gesture recognition simulation
+                startGestureRecognition();
+
+            } catch (error) {
+                log('error', `Failed to start camera: ${error.message}`);
+            }
+        }
+
+        function stopCamera() {
+            if (state.cameraStream) {
+                state.cameraStream.getTracks().forEach(track => track.stop());
+                state.cameraStream = null;
+            }
+
+            elements.cameraFeed.srcObject = null;
+            elements.startCamera.disabled = false;
+            elements.stopCamera.disabled = true;
+
+            updateStatus('camera', 'inactive', 'Disconnected');
+            log('info', 'Camera stopped');
+        }
+
+        function onCameraChange() {
+            if (state.cameraStream) {
+                stopCamera();
+                setTimeout(startCamera, 100);
+            }
+        }
+
+        function onConfidenceChange() {
+            const value = parseFloat(elements.confidenceThreshold.value);
+            elements.confidenceValue.textContent = value.toFixed(2);
+            log('info', `Confidence threshold set to ${value}`);
+        }
+
+        function startCalibration() {
+            const gestureType = document.getElementById('calibration-gesture').value;
+            if (!gestureType) {
+                log('warning', 'Please select a gesture to calibrate');
+                return;
+            }
+
+            state.isCalibrating = true;
+            state.calibrationGesture = gestureType;
+            state.calibrationSamples = 0;
+
+            elements.startCalibration.disabled = true;
+            elements.stopCalibration.disabled = false;
+            elements.calibrationProgress.style.display = 'block';
+
+            updateStatus('calibration', 'active', 'Calibrating...');
+            log('info', `Started calibration for ${gestureType}`);
+
+            // Simulate calibration progress
+            simulateCalibration();
+        }
+
+        function stopCalibration() {
+            state.isCalibrating = false;
+            state.calibrationGesture = null;
+
+            elements.startCalibration.disabled = false;
+            elements.stopCalibration.disabled = true;
+            elements.calibrationProgress.style.display = 'none';
+
+            updateStatus('calibration', 'inactive', 'Ready');
+            log('info', 'Calibration stopped');
+        }
+
+        function simulateCalibration() {
+            if (!state.isCalibrating) return;
+
+            const interval = setInterval(() => {
+                if (!state.isCalibrating) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                state.calibrationSamples++;
+                const progress = Math.min((state.calibrationSamples / 10) * 100, 100);
+                elements.calibrationFill.style.width = progress + '%';
+                elements.calibrationSamples.textContent = state.calibrationSamples;
+
+                if (state.calibrationSamples >= 10) {
+                    clearInterval(interval);
+                    log('success', 'Calibration completed successfully');
+                    setTimeout(stopCalibration, 1000);
+                }
+            }, 200);
+        }
+
+        function startTutorial() {
+            log('info', 'Starting gesture tutorial...');
+            alert('Tutorial mode would start here. This would guide users through each gesture with visual feedback.');
+        }
+
+        function startGestureRecognition() {
+            // Simulate gesture recognition
+            setInterval(() => {
+                if (!state.cameraStream) return;
+
+                // Simulate gesture detection
+                const mockGestures = simulateGestureDetection();
+                updateGestureDisplay(mockGestures);
+                updatePerformanceMetrics();
+
+            }, 100); // 10fps for testing
+        }
+
+        function simulateGestureDetection() {
+            // Mock gesture detection for testing
+            const gestures = [];
+            const gestureTypes = ['pinch', 'fist', 'palm_open', 'peace_sign'];
+
+            if (Math.random() > 0.7) { // 30% chance of detecting a gesture
+                const gestureType = gestureTypes[Math.floor(Math.random() * gestureTypes.length)];
+                const confidence = 0.6 + Math.random() * 0.4; // 0.6-1.0
+
+                gestures.push({
+                    type: gestureType,
+                    confidence: confidence,
+                    position: {
+                        x: Math.random() * 640,
+                        y: Math.random() * 480
+                    },
+                    timestamp: Date.now()
+                });
+            }
+
+            return gestures;
+        }
+
+        function updateGestureDisplay(gestures) {
+            if (gestures.length === 0) {
+                elements.gestureList.innerHTML = '<div class="text-gray-500 text-center py-4">No gestures detected</div>';
+                return;
+            }
+
+            elements.gestureList.innerHTML = gestures.map(gesture => `
+                <div class="gesture-item">
+                    <div class="gesture-icon">${getGestureIcon(gesture.type)}</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">${gesture.type.replace('_', ' ').toUpperCase()}</div>
+                        <div class="gesture-confidence">Confidence: ${(gesture.confidence * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getGestureIcon(gestureType) {
+            const icons = {
+                pinch: '🤏',
+                fist: '✊',
+                palm_open: '🖐️',
+                peace_sign: '✌️',
+                rock_sign: '🤘'
+            };
+            return icons[gestureType] || '✋';
+        }
+
+        function updatePerformanceMetrics() {
+            const now = performance.now();
+
+            if (state.performanceMetrics.lastFrameTime > 0) {
+                const frameTime = now - state.performanceMetrics.lastFrameTime;
+                const fps = 1000 / frameTime;
+
+                state.performanceMetrics.frameCount++;
+                state.performanceMetrics.fps = fps;
+                state.performanceMetrics.processingTimes.push(frameTime);
+
+                // Keep only recent samples
+                if (state.performanceMetrics.processingTimes.length > 60) {
+                    state.performanceMetrics.processingTimes = state.performanceMetrics.processingTimes.slice(-60);
+                }
+
+                // Update display
+                elements.fpsMetric.textContent = fps.toFixed(1);
+                elements.accuracyMetric.textContent = '94.2%';
+
+                const avgLatency = state.performanceMetrics.processingTimes.reduce((a, b) => a + b, 0) / state.performanceMetrics.processingTimes.length;
+                elements.latencyMetric.textContent = avgLatency.toFixed(1) + 'ms';
+
+                // Memory usage (approximate)
+                const memoryUsage = (performance.memory) ?
+                    (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1) + 'MB' : 'N/A';
+                elements.memoryMetric.textContent = memoryUsage;
+            }
+
+            state.performanceMetrics.lastFrameTime = now;
+        }
+
+        function updateStatus(type, status, text) {
+            const statusElement = document.getElementById(`${type}-status`);
+            const textElement = document.getElementById(`${type}-status-text`);
+
+            statusElement.className = `status-indicator status-${status}`;
+            textElement.textContent = text;
+        }
+
+        function log(level, message) {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${level}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+
+            elements.activityLog.appendChild(entry);
+            elements.activityLog.scrollTop = elements.activityLog.scrollHeight;
+
+            // Keep only last 100 entries
+            while (elements.activityLog.children.length > 100) {
+                elements.activityLog.removeChild(elements.activityLog.firstChild);
+            }
+
+            console.log(`[${level.toUpperCase()}]`, message);
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>

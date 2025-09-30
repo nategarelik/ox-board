@@ -115,9 +115,9 @@ describe("StemControls", () => {
       expect(screen.getByRole("button", { name: /solo/i })).toBeInTheDocument();
 
       // Check for EQ knobs (by their labels)
-      expect(screen.getByText("HIGH")).toBeInTheDocument();
-      expect(screen.getByText("MID")).toBeInTheDocument();
-      expect(screen.getByText("LOW")).toBeInTheDocument();
+      expect(screen.getByText("high")).toBeInTheDocument();
+      expect(screen.getByText("mid")).toBeInTheDocument();
+      expect(screen.getByText("low")).toBeInTheDocument();
 
       // Check for pan control
       expect(screen.getByText("PAN")).toBeInTheDocument();
@@ -193,8 +193,7 @@ describe("StemControls", () => {
       const volumeSlider = screen.getByRole("slider");
 
       await act(async () => {
-        await user.clear(volumeSlider);
-        await user.type(volumeSlider, "0.5");
+        fireEvent.change(volumeSlider, { target: { value: "0.5" } });
       });
 
       expect(mockSetStemVolume).toHaveBeenCalledWith(0, "drums", 0.5);
@@ -229,8 +228,7 @@ describe("StemControls", () => {
 
       // Test upper bound
       await act(async () => {
-        await user.clear(volumeSlider);
-        await user.type(volumeSlider, "1.5");
+        fireEvent.change(volumeSlider, { target: { value: "1.5" } });
       });
 
       expect(mockSetStemVolume).toHaveBeenCalledWith(0, "bass", 1);
@@ -285,10 +283,9 @@ describe("StemControls", () => {
     it("adjusts EQ values when knobs are dragged", async () => {
       render(<StemControls channel={0} stemType="bass" />);
 
-      const highKnob = screen
-        .getByText("HIGH")
-        .closest("div")
-        ?.querySelector('[role="button"]') as HTMLElement;
+      const highKnob = screen.getByRole("button", {
+        name: /high eq control/i,
+      }) as HTMLElement;
 
       // Simulate mouse down and move
       fireEvent.mouseDown(highKnob, { clientY: 100 });
@@ -307,10 +304,9 @@ describe("StemControls", () => {
     it("resets EQ to 0 on double click", async () => {
       render(<StemControls channel={0} stemType="vocals" />);
 
-      const midKnob = screen
-        .getByText("MID")
-        .closest("div")
-        ?.querySelector('[role="button"]') as HTMLElement;
+      const midKnob = screen.getByRole("button", {
+        name: /mid eq control/i,
+      }) as HTMLElement;
 
       fireEvent.doubleClick(midKnob);
 
@@ -320,10 +316,9 @@ describe("StemControls", () => {
     it("clamps EQ values between -20 and +20", async () => {
       render(<StemControls channel={0} stemType="drums" />);
 
-      const lowKnob = screen
-        .getByText("LOW")
-        .closest("div")
-        ?.querySelector('[role="button"]') as HTMLElement;
+      const lowKnob = screen.getByRole("button", {
+        name: /low eq control/i,
+      }) as HTMLElement;
 
       // Simulate extreme upward movement
       fireEvent.mouseDown(lowKnob, { clientY: 100 });
@@ -369,10 +364,9 @@ describe("StemControls", () => {
     it("adjusts pan value when pan knob is dragged", async () => {
       render(<StemControls channel={0} stemType="vocals" />);
 
-      const panKnob = screen
-        .getByText("PAN")
-        .closest("div")
-        ?.querySelector('[role="button"]') as HTMLElement;
+      const panKnob = screen.getByRole("button", {
+        name: /pan control/i,
+      }) as HTMLElement;
 
       // Simulate horizontal drag
       fireEvent.mouseDown(panKnob, { clientX: 100 });
@@ -390,10 +384,9 @@ describe("StemControls", () => {
     it("has center detent for pan control", async () => {
       render(<StemControls channel={0} stemType="drums" />);
 
-      const panKnob = screen
-        .getByText("PAN")
-        .closest("div")
-        ?.querySelector('[role="button"]') as HTMLElement;
+      const panKnob = screen.getByRole("button", {
+        name: /pan control/i,
+      }) as HTMLElement;
 
       // Small movement should snap to center
       fireEvent.mouseDown(panKnob, { clientX: 100 });
@@ -407,10 +400,9 @@ describe("StemControls", () => {
     it("resets pan to center on double click", async () => {
       render(<StemControls channel={0} stemType="bass" />);
 
-      const panKnob = screen
-        .getByText("PAN")
-        .closest("div")
-        ?.querySelector('[role="button"]') as HTMLElement;
+      const panKnob = screen.getByRole("button", {
+        name: /pan control/i,
+      }) as HTMLElement;
 
       fireEvent.doubleClick(panKnob);
 
@@ -457,7 +449,7 @@ describe("StemControls", () => {
       render(<StemControls channel={0} stemType="drums" />);
 
       // Level meter should have multiple segments
-      const levelMeter = screen.getByRole("generic", { hidden: true });
+      const levelMeter = screen.getByRole("generic");
       expect(levelMeter).toBeInTheDocument();
     });
 
@@ -514,10 +506,9 @@ describe("StemControls", () => {
       );
 
       // Start dragging to add listeners
-      const panKnob = screen
-        .getByText("PAN")
-        .closest("div")
-        ?.querySelector('[role="button"]') as HTMLElement;
+      const panKnob = screen.getByRole("button", {
+        name: /pan control/i,
+      }) as HTMLElement;
       fireEvent.mouseDown(panKnob);
 
       unmount();
@@ -597,8 +588,7 @@ describe("StemControls", () => {
       const volumeSlider = screen.getByRole("slider");
 
       await act(async () => {
-        await user.clear(volumeSlider);
-        await user.type(volumeSlider, "0.6");
+        fireEvent.change(volumeSlider, { target: { value: "0.6" } });
       });
 
       expect(onVolumeChange).toHaveBeenCalledWith("bass", 0.6);
@@ -629,10 +619,9 @@ describe("StemControls", () => {
         <StemControls channel={0} stemType="drums" onEQChange={onEQChange} />,
       );
 
-      const highKnob = screen
-        .getByText("HIGH")
-        .closest("div")
-        ?.querySelector('[role="button"]') as HTMLElement;
+      const highKnob = screen.getByRole("button", {
+        name: /high eq control/i,
+      }) as HTMLElement;
       fireEvent.doubleClick(highKnob);
 
       expect(onEQChange).toHaveBeenCalledWith("drums", "high", 0);

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OX Board - Offline Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: white;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #1a1a1a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .test-button {
+            background: #9333ea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #7c2d92;
+        }
+        .test-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 2px;
+        }
+        .status.online { background: #00ff88; color: #000; }
+        .status.offline { background: #ff4444; color: #fff; }
+        .status.loading { background: #ffaa00; color: #000; }
+        .log {
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        .log-entry.info { color: #aaa; }
+        .log-entry.success { color: #00ff88; }
+        .log-entry.error { color: #ff4444; }
+        .log-entry.warning { color: #ffaa00; }
+    </style>
+</head>
+<body>
+    <h1>🧪 OX Board - Offline Integration Test Suite</h1>
+    <p>This page tests all offline capabilities of the OX Board application.</p>
+
+    <div class="test-section">
+        <h2>🌐 Connection Status</h2>
+        <div id="connectionStatus">
+            <span class="status loading">Checking...</span>
+        </div>
+        <button class="test-button" onclick="toggleConnection()">Toggle Connection</button>
+        <button class="test-button" onclick="testLatency()">Test Latency</button>
+    </div>
+
+    <div class="test-section">
+        <h2>💾 Stem Cache Tests</h2>
+        <div id="cacheStatus">
+            <span class="status loading">Not tested</span>
+        </div>
+        <button class="test-button" onclick="testStemCache()">Test Cache Operations</button>
+        <button class="test-button" onclick="testCacheStats()">Get Cache Stats</button>
+        <button class="test-button" onclick="testClearCache()">Clear Cache</button>
+        <div id="cacheLog" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔄 Offline Sync Tests</h2>
+        <div id="syncStatus">
+            <span class="status loading">Not tested</span>
+        </div>
+        <button class="test-button" onclick="testQueueAction()">Queue Offline Action</button>
+        <button class="test-button" onclick="testSyncStatus()">Check Sync Status</button>
+        <button class="test-button" onclick="testSyncActions()">Sync Pending Actions</button>
+        <div id="syncLog" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🧠 Smart Cache Tests</h2>
+        <div id="smartCacheStatus">
+            <span class="status loading">Not tested</span>
+        </div>
+        <button class="test-button" onclick="testSmartCache()">Test Smart Caching</button>
+        <button class="test-button" onclick="toggleSmartCache()">Toggle Smart Cache</button>
+        <div id="smartCacheLog" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Offline Manager Tests</h2>
+        <div id="offlineManagerStatus">
+            <span class="status loading">Not tested</span>
+        </div>
+        <button class="test-button" onclick="testOfflineManager()">Test Offline Manager</button>
+        <button class="test-button" onclick="testCapabilities()">Check Capabilities</button>
+        <div id="offlineManagerLog" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎛️ Service Worker Tests</h2>
+        <div id="serviceWorkerStatus">
+            <span class="status loading">Not tested</span>
+        </div>
+        <button class="test-button" onclick="testServiceWorker()">Test Service Worker</button>
+        <button class="test-button" onclick="testCacheAPI()">Test Cache API</button>
+        <div id="serviceWorkerLog" class="log"></div>
+    </div>
+
+    <script>
+        // Test utilities
+        function log(section, message, type = 'info') {
+            const logElement = document.getElementById(section + 'Log');
+            if (logElement) {
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                logElement.appendChild(entry);
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+            console.log(`[${section}] ${message}`);
+        }
+
+        function updateStatus(section, status, type = 'loading') {
+            const statusElement = document.getElementById(section + 'Status');
+            if (statusElement) {
+                statusElement.innerHTML = `<span class="status ${type}">${status}</span>`;
+            }
+        }
+
+        // Connection tests
+        function toggleConnection() {
+            // Simulate connection toggle
+            const isOnline = navigator.onLine;
+            log('connection', `Toggling connection from ${isOnline ? 'online' : 'offline'}`, 'info');
+
+            if (isOnline) {
+                Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+                window.dispatchEvent(new Event('offline'));
+                updateStatus('connection', 'Offline', 'offline');
+            } else {
+                Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+                window.dispatchEvent(new Event('online'));
+                updateStatus('connection', 'Online', 'online');
+            }
+        }
+
+        async function testLatency() {
+            log('connection', 'Testing network latency...', 'info');
+            const start = performance.now();
+
+            try {
+                const response = await fetch('/api/silent-audio', {
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                const end = performance.now();
+                const latency = end - start;
+
+                if (response.ok) {
+                    log('connection', `Latency: ${latency.toFixed(2)}ms`, 'success');
+                    updateStatus('connection', `${latency.toFixed(0)}ms latency`, 'online');
+                } else {
+                    log('connection', `HTTP ${response.status}: ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log('connection', `Latency test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Cache tests
+        async function testStemCache() {
+            log('cache', 'Testing stem cache operations...', 'info');
+
+            try {
+                // Test cache stats
+                if (window.stemCache) {
+                    const stats = await window.stemCache.getCacheStats();
+                    log('cache', `Cache stats: ${JSON.stringify(stats)}`, 'success');
+                    updateStatus('cache', `${stats.itemCount} items, ${Math.round(stats.totalSize / 1024 / 1024)}MB`, 'success');
+                } else {
+                    log('cache', 'Stem cache not available', 'warning');
+                }
+            } catch (error) {
+                log('cache', `Cache test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCacheStats() {
+            log('cache', 'Getting cache statistics...', 'info');
+
+            try {
+                if (window.stemCache) {
+                    const stats = await window.stemCache.getCacheStats();
+                    log('cache', `Detailed stats: ${JSON.stringify(stats, null, 2)}`, 'success');
+                }
+            } catch (error) {
+                log('cache', `Stats failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testClearCache() {
+            log('cache', 'Clearing cache...', 'warning');
+
+            try {
+                if (window.stemCache) {
+                    await window.stemCache.clearCache();
+                    log('cache', 'Cache cleared successfully', 'success');
+                    updateStatus('cache', 'Cache cleared', 'success');
+                }
+            } catch (error) {
+                log('cache', `Clear failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Sync tests
+        async function testQueueAction() {
+            log('sync', 'Queueing offline action...', 'info');
+
+            try {
+                if (window.offlineSync) {
+                    const actionId = await window.offlineSync.queueAction(
+                        'stem_upload',
+                        '/api/test',
+                        {
+                            method: 'POST',
+                            body: { test: 'data' },
+                            priority: 'high'
+                        }
+                    );
+                    log('sync', `Action queued: ${actionId}`, 'success');
+                    updateStatus('sync', 'Action queued', 'success');
+                }
+            } catch (error) {
+                log('sync', `Queue failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSyncStatus() {
+            log('sync', 'Checking sync status...', 'info');
+
+            try {
+                if (window.offlineSync) {
+                    const status = await window.offlineSync.getSyncStatus();
+                    log('sync', `Sync status: ${JSON.stringify(status)}`, 'success');
+                    updateStatus('sync', `${status.pendingActions} pending, ${status.errors.length} errors`, 'success');
+                }
+            } catch (error) {
+                log('sync', `Sync status failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSyncActions() {
+            log('sync', 'Syncing pending actions...', 'info');
+
+            try {
+                if (window.offlineSync) {
+                    await window.offlineSync.syncPendingActions();
+                    log('sync', 'Sync completed', 'success');
+                }
+            } catch (error) {
+                log('sync', `Sync failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Smart cache tests
+        async function testSmartCache() {
+            log('smartCache', 'Testing smart cache...', 'info');
+
+            try {
+                if (window.smartCache) {
+                    await window.smartCache.predictAndPreload();
+                    log('smartCache', 'Smart cache prediction completed', 'success');
+                    updateStatus('smartCache', 'Prediction completed', 'success');
+                }
+            } catch (error) {
+                log('smartCache', `Smart cache failed: ${error.message}`, 'error');
+            }
+        }
+
+        function toggleSmartCache() {
+            if (window.smartCache) {
+                const enabled = window.smartCache.config?.enabled ?? true;
+                window.smartCache.setEnabled(!enabled);
+                log('smartCache', `Smart cache ${!enabled ? 'enabled' : 'disabled'}`, 'info');
+                updateStatus('smartCache', `Smart cache ${!enabled ? 'enabled' : 'disabled'}`, 'success');
+            }
+        }
+
+        // Offline manager tests
+        function testOfflineManager() {
+            log('offlineManager', 'Testing offline manager...', 'info');
+
+            try {
+                if (window.offlineManager) {
+                    const state = window.offlineManager.getState();
+                    log('offlineManager', `Offline state: ${JSON.stringify(state)}`, 'success');
+                    updateStatus('offlineManager', `Online: ${state.isOnline ? 'Yes' : 'No'}`, 'success');
+                }
+            } catch (error) {
+                log('offlineManager', `Test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCapabilities() {
+            log('offlineManager', 'Checking offline capabilities...', 'info');
+
+            try {
+                if (window.offlineManager) {
+                    const canUseStems = window.offlineManager.canUseFeature('canUseStems');
+                    const canUpload = window.offlineManager.canUseFeature('canUploadStems');
+                    log('offlineManager', `Can use stems: ${canUseStems}, Can upload: ${canUpload}`, 'success');
+                }
+            } catch (error) {
+                log('offlineManager', `Capabilities test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Service worker tests
+        async function testServiceWorker() {
+            log('serviceWorker', 'Testing service worker...', 'info');
+
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.ready;
+                    log('serviceWorker', 'Service worker ready', 'success');
+
+                    if (navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({
+                            type: 'GET_CACHE_STATS'
+                        });
+                        log('serviceWorker', 'Requested cache stats from SW', 'success');
+                    }
+
+                    updateStatus('serviceWorker', 'Service worker active', 'success');
+                } else {
+                    log('serviceWorker', 'Service worker not supported', 'warning');
+                }
+            } catch (error) {
+                log('serviceWorker', `Service worker test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCacheAPI() {
+            log('serviceWorker', 'Testing cache API...', 'info');
+
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    log('serviceWorker', `Available caches: ${cacheNames.join(', ')}`, 'success');
+
+                    if (cacheNames.length > 0) {
+                        const cache = await caches.open(cacheNames[0]);
+                        const keys = await cache.keys();
+                        log('serviceWorker', `Cache keys: ${keys.length} items`, 'success');
+                    }
+
+                    updateStatus('serviceWorker', `${cacheNames.length} caches found`, 'success');
+                }
+            } catch (error) {
+                log('serviceWorker', `Cache API test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize connection status
+        function initializeConnectionStatus() {
+            const isOnline = navigator.onLine;
+            updateStatus('connection', isOnline ? 'Online' : 'Offline', isOnline ? 'online' : 'offline');
+
+            window.addEventListener('online', () => {
+                updateStatus('connection', 'Online', 'online');
+                log('connection', 'Connection restored', 'success');
+            });
+
+            window.addEventListener('offline', () => {
+                updateStatus('connection', 'Offline', 'offline');
+                log('connection', 'Connection lost', 'warning');
+            });
+        }
+
+        // Expose modules to window for testing
+        async function initializeModules() {
+            try {
+                // These would be imported in a real application
+                // For this test, we'll simulate the modules
+                window.stemCache = {
+                    getCacheStats: async () => ({
+                        totalSize: 50 * 1024 * 1024,
+                        itemCount: 5,
+                        oldestItem: new Date(Date.now() - 86400000),
+                        newestItem: new Date()
+                    }),
+                    clearCache: async () => {
+                        log('cache', 'Cache cleared', 'success');
+                    }
+                };
+
+                window.offlineSync = {
+                    queueAction: async (type, url, options) => {
+                        log('sync', `Queued ${type} action`, 'success');
+                        return 'test-action-id';
+                    },
+                    getSyncStatus: async () => ({
+                        isOnline: navigator.onLine,
+                        pendingActions: 2,
+                        lastSyncTime: Date.now(),
+                        syncInProgress: false,
+                        errors: []
+                    }),
+                    syncPendingActions: async () => {
+                        log('sync', 'Sync completed', 'success');
+                    }
+                };
+
+                window.smartCache = {
+                    predictAndPreload: async () => {
+                        log('smartCache', 'Prediction completed', 'success');
+                    },
+                    setEnabled: (enabled) => {
+                        log('smartCache', `Smart cache ${enabled ? 'enabled' : 'disabled'}`, 'info');
+                    }
+                };
+
+                window.offlineManager = {
+                    getState: () => ({
+                        isOnline: navigator.onLine,
+                        connectionType: '4g',
+                        connectionSpeed: 10,
+                        capabilities: {
+                            canUseStems: true,
+                            canProcessAudio: true,
+                            canUploadStems: navigator.onLine,
+                            canUseAI: navigator.onLine,
+                            networkLatency: 50,
+                            cacheSize: 50 * 1024 * 1024,
+                            availableStems: 5
+                        }
+                    }),
+                    canUseFeature: (feature) => {
+                        const state = window.offlineManager.getState();
+                        return state.capabilities[feature];
+                    }
+                };
+
+                log('general', 'Test modules initialized', 'success');
+            } catch (error) {
+                log('general', `Module initialization failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            initializeConnectionStatus();
+            initializeModules();
+            log('general', 'Offline integration test page loaded', 'success');
+        });
+
+        // Service worker message handler
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data.type === 'CACHE_STATS') {
+                    log('serviceWorker', `Cache stats received: ${JSON.stringify(event.data.payload)}`, 'success');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

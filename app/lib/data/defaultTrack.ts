@@ -15,7 +15,7 @@ const baseStems: StemMeta[] = [
     solo: false,
     waveform: createMockWaveform(512, 0.4),
     latencyMs: 42,
-    hlsUrl: "/media/demo-track/vocals.m3u8",
+    hlsUrl: "/api/silent-audio?duration=276&stem=vocals",
   },
   {
     id: "drums",
@@ -26,7 +26,7 @@ const baseStems: StemMeta[] = [
     solo: false,
     waveform: createMockWaveform(512, 0.6),
     latencyMs: 38,
-    hlsUrl: "/media/demo-track/drums.m3u8",
+    hlsUrl: "/api/silent-audio?duration=276&stem=drums",
   },
   {
     id: "bass",
@@ -37,7 +37,7 @@ const baseStems: StemMeta[] = [
     solo: false,
     waveform: createMockWaveform(512, 0.5),
     latencyMs: 45,
-    hlsUrl: "/media/demo-track/bass.m3u8",
+    hlsUrl: "/api/silent-audio?duration=276&stem=bass",
   },
   {
     id: "other",
@@ -48,7 +48,7 @@ const baseStems: StemMeta[] = [
     solo: false,
     waveform: createMockWaveform(512, 0.55),
     latencyMs: 50,
-    hlsUrl: "/media/demo-track/melody.m3u8",
+    hlsUrl: "/api/silent-audio?duration=276&stem=melody",
   },
 ];
 

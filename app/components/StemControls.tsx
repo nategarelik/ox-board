@@ -491,16 +491,19 @@ const StemControlsComponent: React.FC<StemControlsProps> = ({
     setStemEQ,
   } = useEnhancedDJStore();
 
+  // Get controls early for the early return check
   const controls = stemControls[channel];
   const stemControl =
-    stemType === "original" ? controls.original : controls[stemType];
+    stemType === "original" ? controls?.original : controls?.[stemType];
   const color = stemColors[stemType];
   const label = stemLabels[stemType];
 
-  // Mock level for demo - in real implementation this would come from audio analysis
+  // ALL hooks must be at the very top before any conditional logic
   const [mockLevel, setMockLevel] = useState(0);
 
   useEffect(() => {
+    if (!stemControl) return;
+
     let animationId: number;
 
     const updateLevel = () => {
@@ -519,7 +522,7 @@ const StemControlsComponent: React.FC<StemControlsProps> = ({
         cancelAnimationFrame(animationId);
       }
     };
-  }, [stemControl.volume, stemControl.muted]);
+  }, [stemControl]);
 
   const handleVolumeChange = useCallback(
     (volume: number) => {
@@ -530,16 +533,18 @@ const StemControlsComponent: React.FC<StemControlsProps> = ({
   );
 
   const handleMuteToggle = useCallback(() => {
+    if (!stemControl) return;
     const newMuted = !stemControl.muted;
     setStemMute(channel, stemType, newMuted);
     onMuteToggle?.(stemType, newMuted);
-  }, [channel, stemType, stemControl.muted, setStemMute, onMuteToggle]);
+  }, [channel, stemType, stemControl, setStemMute, onMuteToggle]);
 
   const handleSoloToggle = useCallback(() => {
+    if (!stemControl) return;
     const newSoloed = !stemControl.soloed;
     setStemSolo(channel, stemType, newSoloed);
     onSoloToggle?.(stemType, newSoloed);
-  }, [channel, stemType, stemControl.soloed, setStemSolo, onSoloToggle]);
+  }, [channel, stemType, stemControl, setStemSolo, onSoloToggle]);
 
   const handlePanChange = useCallback(
     (pan: number) => {
@@ -551,11 +556,18 @@ const StemControlsComponent: React.FC<StemControlsProps> = ({
 
   const handleEQChange = useCallback(
     (band: "low" | "mid" | "high", value: number) => {
+      if (!stemControl) return;
       setStemEQ(channel, stemType, band, value);
       onEQChange?.(stemType, band, value);
     },
-    [channel, stemType, setStemEQ, onEQChange],
+    [channel, stemType, setStemEQ, onEQChange, stemControl],
   );
+
+  // Early return if controls are not available
+  if (!controls || !stemControl) {
+    console.error(`Invalid channel: ${channel}`);
+    return null;
+  }
 
   return (
     <div className="bg-gray-900 rounded-lg p-4 border border-gray-700 w-32">
@@ -659,5 +671,8 @@ const StemControlsComponent: React.FC<StemControlsProps> = ({
   );
 };
 
-export default memo(StemControlsComponent);
+const StemControls = memo(StemControlsComponent);
+StemControls.displayName = "StemControls";
+
+export default StemControls;
 export { StemControlsComponent as StemControls };

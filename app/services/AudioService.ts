@@ -48,12 +48,27 @@ export class AudioService implements AudioServiceInterface {
     channels: 2,
   };
   private performanceMonitor: NodeJS.Timeout | null = null;
+  private latencyMonitor: NodeJS.Timeout | null = null;
   private masterGain: Tone.Gain | null = null;
   private cueGain: Tone.Gain | null = null;
   private masterOutput: Tone.Gain | null = null;
   private crossfader: Tone.CrossFade | null = null;
   private masterVolume: number = 1;
   private crossfaderValue: number = 0.5;
+
+  // AudioWorklet support
+  private workletSupported: boolean = false;
+  private workletLoaded: boolean = false;
+  private audioWorkletModules: Set<string> = new Set();
+
+  // Performance metrics
+  private performanceMetrics = {
+    audioWorkletLatency: 0,
+    webAudioLatency: 0,
+    totalLatency: 0,
+    cpuUsage: 0,
+    bufferUnderruns: 0,
+  };
 
   private constructor(config?: Partial<AudioServiceConfig>) {
     if (config) {
@@ -123,8 +138,12 @@ export class AudioService implements AudioServiceInterface {
         ((this.context.rawContext as any)?.baseLatency || 0) +
         this.context.lookAhead;
 
+      // Check for AudioWorklet support
+      this.checkAudioWorkletSupport();
+
       // Start performance monitoring
       this.startPerformanceMonitoring();
+      this.startLatencyMonitoring();
 
       this.initialized = true;
       console.log("AudioService initialized successfully", this.stats);
@@ -154,6 +173,11 @@ export class AudioService implements AudioServiceInterface {
     if (this.performanceMonitor) {
       clearInterval(this.performanceMonitor);
       this.performanceMonitor = null;
+    }
+
+    if (this.latencyMonitor) {
+      clearInterval(this.latencyMonitor);
+      this.latencyMonitor = null;
     }
 
     if (this.crossfader) {
@@ -325,6 +349,141 @@ export class AudioService implements AudioServiceInterface {
     // activeVoices doesn't exist on Context, return placeholder value
     // A real implementation would track active audio nodes
     return 0;
+  }
+
+  // AudioWorklet support methods
+  private checkAudioWorkletSupport(): void {
+    if (typeof window !== "undefined" && this.context?.rawContext) {
+      const audioContext = this.context.rawContext as AudioContext;
+      this.workletSupported = "audioWorklet" in audioContext;
+      console.log(
+        `AudioWorklet support: ${this.workletSupported ? "✅ Available" : "❌ Not available"}`,
+      );
+    }
+  }
+
+  public isAudioWorkletSupported(): boolean {
+    return this.workletSupported;
+  }
+
+  public async loadAudioWorkletModule(modulePath: string): Promise<boolean> {
+    if (!this.workletSupported || !this.context?.rawContext) {
+      console.warn("AudioWorklet not supported or context not initialized");
+      return false;
+    }
+
+    try {
+      const audioContext = this.context.rawContext as AudioContext;
+      await audioContext.audioWorklet.addModule(modulePath);
+      this.audioWorkletModules.add(modulePath);
+      this.workletLoaded = true;
+      console.log(`✅ AudioWorklet module loaded: ${modulePath}`);
+      return true;
+    } catch (error) {
+      console.error(
+        `❌ Failed to load AudioWorklet module ${modulePath}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  public createAudioWorkletNode(
+    processorName: string,
+    options: AudioWorkletNodeOptions = {},
+  ): AudioWorkletNode | null {
+    if (!this.workletLoaded || !this.context?.rawContext) {
+      console.warn("AudioWorklet not loaded or context not initialized");
+      return null;
+    }
+
+    try {
+      const audioContext = this.context.rawContext as AudioContext;
+      const workletNode = new AudioWorkletNode(
+        audioContext,
+        processorName,
+        options,
+      );
+
+      // Set up performance monitoring
+      workletNode.port.onmessage = (event) => {
+        this.handleWorkletMessage(event);
+      };
+
+      return workletNode;
+    } catch (error) {
+      console.error(
+        `Failed to create AudioWorkletNode ${processorName}:`,
+        error,
+      );
+      return null;
+    }
+  }
+
+  private handleWorkletMessage(event: MessageEvent): void {
+    const { type, data } = event.data;
+
+    switch (type) {
+      case "PERFORMANCE_UPDATE":
+        this.performanceMetrics.audioWorkletLatency =
+          data.averageProcessTime || 0;
+        this.performanceMetrics.cpuUsage = data.cpuUsage || 0;
+        break;
+
+      case "LATENCY_REPORT":
+        this.performanceMetrics.audioWorkletLatency = data.latency || 0;
+        break;
+
+      default:
+        console.log("Unhandled worklet message:", type, data);
+    }
+  }
+
+  private startLatencyMonitoring(): void {
+    if (this.latencyMonitor) {
+      clearInterval(this.latencyMonitor);
+    }
+
+    this.latencyMonitor = setInterval(() => {
+      this.updateLatencyMetrics();
+    }, 1000); // Update every second
+  }
+
+  private updateLatencyMetrics(): void {
+    if (!this.context?.rawContext) return;
+
+    const audioContext = this.context.rawContext as AudioContext;
+
+    // Get Web Audio latency
+    const baseLatency = (audioContext as any).baseLatency || 0;
+    const outputLatency = audioContext.outputLatency || 0;
+    this.performanceMetrics.webAudioLatency = baseLatency + outputLatency;
+
+    // Calculate total latency
+    this.performanceMetrics.totalLatency =
+      this.performanceMetrics.webAudioLatency +
+      this.performanceMetrics.audioWorkletLatency;
+
+    // Estimate CPU usage (simplified)
+    this.performanceMetrics.cpuUsage = this.estimateCPUUsage();
+  }
+
+  public getPerformanceMetrics() {
+    return { ...this.performanceMetrics };
+  }
+
+  public getLatencyInfo(): {
+    targetLatency: number;
+    actualLatency: number;
+    audioWorkletLatency: number;
+    webAudioLatency: number;
+  } {
+    return {
+      targetLatency: 0.021, // 21ms target
+      actualLatency: this.performanceMetrics.totalLatency,
+      audioWorkletLatency: this.performanceMetrics.audioWorkletLatency,
+      webAudioLatency: this.performanceMetrics.webAudioLatency,
+    };
   }
 
   // Utility methods

@@ -2,6 +2,7 @@ import * as Tone from "tone";
 import { StemPlayer, StemPlayerConfig } from "./stemPlayer";
 import { DemucsOutput, StemType, StemLoadResult } from "./demucsProcessor";
 import { Crossfader } from "./crossfader";
+import { getAudioService } from "../../services/AudioService";
 
 export interface ChannelEQ {
   low: number;
@@ -66,6 +67,13 @@ export class EnhancedAudioMixer {
   private stemMixerConfig: StemMixerConfig;
   private isInitialized: boolean = false;
   private useCustomCrossfader: boolean = false;
+
+  // AudioWorklet support
+  private useAudioWorklet: boolean = false;
+  private audioWorkletNode: AudioWorkletNode | null = null;
+  private workletStemInputs: Map<number, MediaElementAudioSourceNode> =
+    new Map();
+  private workletPerformanceMonitor: NodeJS.Timeout | null = null;
 
   constructor(stemMixerConfig: StemMixerConfig = {}) {
     this.stemMixerConfig = {
@@ -163,13 +171,7 @@ export class EnhancedAudioMixer {
     if (this.isInitialized) return;
 
     try {
-      // Ensure we're in a user gesture context
-      const context = Tone.getContext();
-      if (context.rawContext.state === "suspended") {
-        await context.resume();
-      }
-
-      // Start Tone.js audio context
+      // Start Tone.js audio context - this will be deferred until user gesture
       await Tone.start();
 
       // Now create all audio nodes after AudioContext is ready
@@ -181,12 +183,110 @@ export class EnhancedAudioMixer {
 
       // Initialize stem players for enabled channels
       await this.initializeStemPlayers();
+
+      // Initialize AudioWorklet support if available
+      await this.initializeAudioWorklet();
     } catch (error) {
       console.error("Failed to initialize audio:", error);
+      // Don't throw error - let it fail gracefully and retry on user gesture
+      console.warn("Audio initialization deferred until user interaction");
+    }
+  }
+
+  // Initialize audio context on user gesture
+  async initializeOnUserGesture(): Promise<void> {
+    try {
+      // Ensure AudioContext is started (required for user gesture)
+      await Tone.start();
+
+      // Resume context if suspended
+      const context = Tone.getContext();
+      if (context.rawContext.state === "suspended") {
+        await context.resume();
+      }
+
+      // If not yet initialized, do it now
+      if (!this.isInitialized) {
+        this.createAudioNodes();
+        this.initializeChannels();
+        this.connectNodes();
+        this.isInitialized = true;
+
+        // Initialize stem players for enabled channels
+        await this.initializeStemPlayers();
+      }
+
+      console.log("✅ Audio system initialized on user gesture");
+    } catch (error) {
+      console.error("❌ Failed to initialize audio on user gesture:", error);
       throw new Error(
-        'Audio initialization requires user interaction. Please click "Start DJ Session" to begin.',
+        "Audio initialization failed. Please ensure you interact with the page first.",
       );
     }
+  }
+
+  private async initializeAudioWorklet(): Promise<void> {
+    try {
+      const audioService = getAudioService();
+
+      // Check if AudioWorklet is supported
+      if (!audioService.isAudioWorkletSupported()) {
+        console.log("AudioWorklet not supported, using standard Web Audio");
+        this.useAudioWorklet = false;
+        return;
+      }
+
+      // Load AudioWorklet module
+      const moduleLoaded = await audioService.loadAudioWorkletModule(
+        "/worklets/stem-processor.js",
+      );
+      if (!moduleLoaded) {
+        console.log(
+          "Failed to load AudioWorklet module, using standard Web Audio",
+        );
+        this.useAudioWorklet = false;
+        return;
+      }
+
+      // Create AudioWorklet node for low-latency mixing
+      this.audioWorkletNode = audioService.createAudioWorkletNode(
+        "stem-processor",
+        {
+          numberOfInputs: 4, // Four stem inputs
+          numberOfOutputs: 1,
+          outputChannelCount: [2], // Stereo output
+          processorOptions: {
+            sampleRate: Tone.getContext().sampleRate,
+            bufferSize: 128,
+          },
+        },
+      );
+
+      // AudioWorklet integration is handled by StemPlaybackEngine
+      // This mixer provides the high-level mixing interface
+      this.useAudioWorklet = audioService.isAudioWorkletSupported();
+      console.log(
+        `AudioWorklet status: ${this.useAudioWorklet ? "Available" : "Not available (using standard Web Audio)"}`,
+      );
+    } catch (error) {
+      console.error("AudioWorklet initialization failed:", error);
+      this.useAudioWorklet = false;
+    }
+  }
+
+  /**
+   * Check if AudioWorklet is being used for low-latency processing
+   */
+  isUsingAudioWorklet(): boolean {
+    return this.useAudioWorklet;
+  }
+
+  /**
+   * Get latency information including AudioWorklet performance
+   */
+  getLatencyInfo() {
+    const audioService = getAudioService();
+    return audioService.getLatencyInfo();
   }
 
   private createAudioNodes(): void {
@@ -609,15 +709,41 @@ export class EnhancedAudioMixer {
 
   getChannelConfig(channel: number): ChannelConfig | null {
     if (channel < 0 || channel >= 4) return null;
+
+    // If channels haven't been initialized yet, return default config
+    if (this.channels.length === 0 || !this.channels[channel]) {
+      return {
+        gain: 0.75,
+        eq: { low: 0, mid: 0, high: 0 },
+        filterType: "off",
+        filterFreq: 1000,
+        filterResonance: 1,
+        cueEnable: false,
+        stemPlayerEnabled: false,
+      };
+    }
+
     return { ...this.channels[channel].config };
   }
 
   getCrossfaderConfig(): CrossfaderConfig {
-    return { ...this.crossfaderConfig };
+    return {
+      position: this.crossfaderConfig?.position ?? 0.5,
+      curve: this.crossfaderConfig?.curve ?? "linear",
+    };
   }
 
   getMasterConfig(): MasterConfig {
-    return { ...this.masterConfig };
+    return {
+      gain: this.masterConfig?.gain ?? 0.8,
+      limiterEnabled: this.masterConfig?.limiterEnabled ?? true,
+      limiterThreshold: this.masterConfig?.limiterThreshold ?? -1,
+      compressorEnabled: this.masterConfig?.compressorEnabled ?? true,
+      compressorRatio: this.masterConfig?.compressorRatio ?? 4,
+      compressorThreshold: this.masterConfig?.compressorThreshold ?? -24,
+      compressorAttack: this.masterConfig?.compressorAttack ?? 0.003,
+      compressorRelease: this.masterConfig?.compressorRelease ?? 0.25,
+    };
   }
 
   getCueOutput(): Tone.Gain {
@@ -754,6 +880,12 @@ export class EnhancedAudioMixer {
   }
 
   dispose(): void {
+    // Stop worklet performance monitoring
+    if (this.workletPerformanceMonitor) {
+      clearInterval(this.workletPerformanceMonitor);
+      this.workletPerformanceMonitor = null;
+    }
+
     // Dispose stem players
     this.channels.forEach((channel, index) => {
       if (channel.stemPlayer) {

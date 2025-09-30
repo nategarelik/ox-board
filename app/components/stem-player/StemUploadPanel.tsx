@@ -8,6 +8,15 @@ import {
 import { StemTrack } from "../../types/stem-player";
 import { requestStemSeparation } from "../../services/aiStemService";
 
+// Poll for job completion
+const pollJobStatus = async (jobId: string): Promise<any> => {
+  const response = await fetch(`/api/stemify?jobId=${jobId}`);
+  if (!response.ok) {
+    throw new Error("Failed to check job status");
+  }
+  return response.json();
+};
+
 interface StemUploadPanelProps {
   onUploadStart: () => void;
   onUploadProgress: (value: number) => void;
@@ -32,18 +41,48 @@ export default function StemUploadPanel({
     setError(null);
     onUploadStart();
 
-    for (let i = 1; i <= 4; i += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      onUploadProgress(i / 5);
-    }
-
     try {
-      const response = await requestStemSeparation({
+      // Step 1: Queue the stem separation job
+      const jobResponse = await requestStemSeparation({
         fileName: file.name,
         mimeType: file.type,
         size: file.size,
       });
 
+      console.log("🎵 Stem separation job queued:", jobResponse.jobId);
+
+      // Step 2: Poll for completion if status is not complete
+      let finalResponse = jobResponse;
+      if (jobResponse.status !== "complete") {
+        console.log("⏳ Polling for job completion...");
+        onUploadProgress(0.2);
+
+        // Poll every 2 seconds for up to 60 seconds
+        const maxPolls = 30;
+        for (let poll = 0; poll < maxPolls; poll++) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+
+          try {
+            const statusResponse = await pollJobStatus(jobResponse.jobId);
+            if (statusResponse.status === "complete") {
+              finalResponse = statusResponse;
+              console.log("✅ Stem separation completed!");
+              break;
+            } else if (statusResponse.status === "failed") {
+              throw new Error("Stem separation failed");
+            }
+            // Still processing, continue polling
+            onUploadProgress(0.2 + (poll / maxPolls) * 0.6);
+          } catch (pollError) {
+            console.warn("⚠️ Job status poll failed:", pollError);
+            if (poll === maxPolls - 1) {
+              throw new Error("Job status polling timed out");
+            }
+          }
+        }
+      }
+
+      // Step 3: Create track with real stem URLs
       const baseTrack = createDefaultTrack();
       const newTrack: StemTrack = {
         ...baseTrack,
@@ -51,7 +90,9 @@ export default function StemUploadPanel({
         title: file.name.replace(/\.[^/.]+$/, ""),
         createdAt: new Date().toISOString(),
         stems: baseTrack.stems.map((stem) => {
-          const apiStem = response.stems.find((item) => item.id === stem.id);
+          const apiStem = finalResponse.stems.find(
+            (item) => item.id === stem.id,
+          );
           return {
             ...stem,
             hlsUrl: apiStem?.url ?? stem.hlsUrl,
@@ -61,7 +102,7 @@ export default function StemUploadPanel({
             solo: false,
           };
         }),
-        durationSeconds: response.metadata.durationSeconds,
+        durationSeconds: finalResponse.metadata.durationSeconds,
         updatedAt: new Date().toISOString(),
       };
 

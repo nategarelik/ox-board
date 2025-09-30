@@ -1,0 +1,139 @@
+{
+  "name": "OX Gesture Stem Player",
+  "short_name": "OX Player",
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "description": "Professional gesture-controlled stem mixing platform for DJs and music producers. Control audio stems with hand gestures using advanced MediaPipe technology.",
+  "icons": {
+    "16": "/icons/icon-16x16.png",
+    "32": "/icons/icon-32x32.png",
+    "48": "/icons/icon-48x48.png",
+    "128": "/icons/icon-128x128.png"
+  },
+  "app": {
+    "urls": ["https://ox-player.app/"],
+    "launch": {
+      "web_url": "https://ox-player.app/"
+    }
+  },
+  "offline_enabled": true,
+  "permissions": [],
+  "scope": "/",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#9333ea",
+  "background_color": "#0a0a0a",
+  "categories": ["music", "entertainment", "productivity"],
+  "lang": "en",
+  "dir": "ltr",
+  "orientation": "landscape-primary",
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop-1-1280x800.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/desktop-2-1280x800.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/mobile-1-640x400.png",
+      "sizes": "640x400",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshots/mobile-2-640x400.png",
+      "sizes": "640x400",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Mix",
+      "short_name": "Mix",
+      "description": "Start a quick mixing session",
+      "url": "/?mode=mix",
+      "icons": [
+        {
+          "src": "/icons/shortcut-mix.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Stem Player",
+      "short_name": "Stems",
+      "description": "Open stem player interface",
+      "url": "/?mode=stems",
+      "icons": [
+        {
+          "src": "/icons/shortcut-stems.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Gesture Control",
+      "short_name": "Gestures",
+      "description": "Access gesture control interface",
+      "url": "/?mode=gestures",
+      "icons": [
+        {
+          "src": "/icons/shortcut-gestures.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+oxplayer",
+      "url": "/?import=%s"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "audio/*": [".wav", ".mp3", ".flac", ".aac", ".ogg"]
+      }
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "audio",
+          "accept": ["audio/*"]
+        }
+      ]
+    }
+  },
+  "action_handlers": [
+    {
+      "action": "share",
+      "src": "/share-handler.js"
+    }
+  ]
+}
