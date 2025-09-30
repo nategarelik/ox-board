@@ -1,46 +1,41 @@
-import { NextRequest } from "next/server";
-import { createMockWaveform } from "../../lib/data/defaultTrack";
+import { NextRequest, NextResponse } from "next/server";
+
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 export async function POST(request: NextRequest) {
-  let body:
-    | Partial<{
-        fileName: string;
-        mimeType: string;
-        size: number;
-      }>
-    | undefined;
-
   try {
-    body = await request.json();
-  } catch {
-    return new Response(JSON.stringify({ message: "Invalid JSON payload" }), {
-      status: 400,
+    const formData = await request.formData();
+
+    // Forward the request to the Python backend
+    const response = await fetch(`${BACKEND_URL}/stemify`, {
+      method: "POST",
+      body: formData,
     });
-  }
 
-  const { fileName, mimeType, size } = body ?? {};
+    if (!response.ok) {
+      const error = await response.json();
+      return NextResponse.json(error, { status: response.status });
+    }
 
-  if (!fileName || !mimeType || !size) {
-    return new Response(
-      JSON.stringify({ message: "Missing required upload metadata" }),
-      { status: 400 },
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Error proxying to backend:", error);
+    return NextResponse.json(
+      {
+        error: {
+          code: "BACKEND_ERROR",
+          message: "Failed to connect to processing backend",
+        },
+      },
+      { status: 502 },
     );
   }
-
-  const stems = ["vocals", "drums", "bass", "other"].map((stemId, index) => ({
-    id: stemId,
-    label: stemId.charAt(0).toUpperCase() + stemId.slice(1),
-    url: `/media/${encodeURIComponent(fileName)}/${stemId}.m3u8`,
-    waveform: createMockWaveform(512, 0.4 + index * 0.1),
-  }));
-
-  return Response.json({
-    jobId: `stem-${Date.now()}`,
-    status: "complete",
-    stems,
-    metadata: {
-      durationSeconds: Math.round(180 + Math.random() * 120),
-      estimatedLatencyMs: Math.round(45 + Math.random() * 20),
-    },
-  });
 }
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};

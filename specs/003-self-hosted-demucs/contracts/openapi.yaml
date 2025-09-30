@@ -1,0 +1,441 @@
+openapi: 3.0.3
+info:
+  title: Self-Hosted Demucs API
+  description: Production-ready AI-powered audio stem separation API with YouTube integration
+  version: 1.0.0
+  contact:
+    name: OX Board API Support
+    email: support@oxboard.com
+
+servers:
+  - url: https://api.oxboard.com
+    description: Production server
+  - url: http://localhost:8000
+    description: Development server
+
+components:
+  schemas:
+    StemifyRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Audio file to separate (max 50MB)
+        youtubeUrl:
+          type: string
+          format: uri
+          description: YouTube URL to download and process
+        options:
+          $ref: "#/components/schemas/StemSeparationOptions"
+      oneOf:
+        - required: [file]
+        - required: [youtubeUrl]
+
+    StemSeparationOptions:
+      type: object
+      properties:
+        model:
+          type: string
+          enum: [htdemucs, htdemucs_ft, mdx_extra, mdx_extra_q]
+          default: htdemucs
+          description: Demucs model to use for separation
+        quality:
+          type: string
+          enum: [fast, balanced, best]
+          default: balanced
+          description: Quality preset affecting processing speed
+        outputFormat:
+          type: string
+          enum: [wav, mp3, flac]
+          default: wav
+          description: Output audio format
+        normalize:
+          type: boolean
+          default: true
+          description: Normalize output audio levels
+        removeVocals:
+          type: boolean
+          default: false
+          description: Remove vocals for karaoke mode
+      additionalProperties: false
+
+    StemifyResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+          format: uuid
+          description: Unique job identifier
+        status:
+          type: string
+          enum: [pending]
+          description: Initial job status
+        estimatedDuration:
+          type: integer
+          minimum: 1
+          description: Estimated processing time in seconds
+        message:
+          type: string
+          description: Success message
+      required:
+        - jobId
+        - status
+        - message
+
+    JobStatus:
+      type: string
+      enum: [pending, processing, completed, failed]
+      description: Current job status
+
+    JobResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Processing progress percentage
+        result:
+          $ref: "#/components/schemas/JobResult"
+        error:
+          type: string
+          description: Error message if job failed
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - jobId
+        - status
+        - createdAt
+        - updatedAt
+
+    JobResult:
+      type: object
+      properties:
+        outputDir:
+          type: string
+          description: Directory containing separated stems
+        stems:
+          $ref: "#/components/schemas/StemFiles"
+        processingTime:
+          type: integer
+          description: Actual processing duration in seconds
+        modelUsed:
+          type: string
+          description: Model that was actually used
+        qualityMetrics:
+          $ref: "#/components/schemas/QualityMetrics"
+        fileSize:
+          type: integer
+          description: Total size of all output files in bytes
+        cdnUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: CDN URLs for accessing stems
+      required:
+        - stems
+        - processingTime
+        - modelUsed
+
+    StemFiles:
+      type: object
+      properties:
+        vocals:
+          $ref: "#/components/schemas/StemInfo"
+        drums:
+          $ref: "#/components/schemas/StemInfo"
+        bass:
+          $ref: "#/components/schemas/StemInfo"
+        other:
+          $ref: "#/components/schemas/StemInfo"
+      required:
+        - vocals
+        - drums
+        - bass
+        - other
+
+    StemInfo:
+      type: object
+      properties:
+        filename:
+          type: string
+          description: Output filename
+        path:
+          type: string
+          description: Local file path
+        size:
+          type: integer
+          description: File size in bytes
+        duration:
+          type: number
+          format: float
+          description: Audio duration in seconds
+        format:
+          type: string
+          enum: [wav, mp3, flac]
+        sampleRate:
+          type: integer
+          description: Audio sample rate in Hz
+        bitrate:
+          type: integer
+          nullable: true
+          description: Audio bitrate for compressed formats
+        cdnUrl:
+          type: string
+          format: uri
+          nullable: true
+        downloadUrl:
+          type: string
+          format: uri
+          description: Temporary download URL (expires in 24 hours)
+      required:
+        - filename
+        - path
+        - size
+        - duration
+        - format
+        - sampleRate
+
+    QualityMetrics:
+      type: object
+      properties:
+        overallScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        vocalIsolation:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        drumSeparation:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        bassIsolation:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        artifactReduction:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        method:
+          type: string
+          description: Quality assessment method used
+      required:
+        - overallScore
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error details
+      required:
+        - error
+        - code
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+paths:
+  /api/stemify:
+    post:
+      summary: Request stem separation
+      description: |
+        Submit an audio file or YouTube URL for AI-powered stem separation.
+        Returns a job ID for tracking progress.
+      operationId: requestStemSeparation
+      tags:
+        - Stem Separation
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/StemifyRequest"
+      responses:
+        "202":
+          description: Stem separation job created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StemifyResponse"
+        "400":
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "413":
+          description: File too large (max 50MB)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "415":
+          description: Unsupported file format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limit exceeded (max 5 jobs per hour)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+
+  /api/jobs/{jobId}:
+    get:
+      summary: Get job status and results
+      description: |
+        Retrieve the current status and results of a stem separation job.
+        Returns progress information and download URLs when complete.
+      operationId: getJobStatus
+      tags:
+        - Job Management
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique job identifier
+      responses:
+        "200":
+          description: Job status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobResponse"
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/models:
+    get:
+      summary: Get available models
+      description: Retrieve information about available Demucs models and their capabilities
+      operationId: getAvailableModels
+      tags:
+        - Model Information
+      responses:
+        "200":
+          description: Model information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        quality:
+                          type: string
+                          enum: [fast, balanced, best]
+                        estimatedTime:
+                          type: integer
+                          description: Estimated processing time in seconds for 3-minute track
+                      required:
+                        - name
+                        - description
+                        - quality
+                        - estimatedTime
+
+  /health:
+    get:
+      summary: Health check
+      description: Check if the API is healthy and ready to accept requests
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                required:
+                  - status
+                  - timestamp
+
+tags:
+  - name: Stem Separation
+    description: AI-powered audio stem separation operations
+  - name: Job Management
+    description: Job tracking and result retrieval
+  - name: Model Information
+    description: Information about available processing models
+  - name: System
+    description: System health and information endpoints

@@ -1,0 +1,94 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: oxboard-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oxboard-api
+    ports:
+      - "8000:8000"
+      - "9090:9090" # Prometheus metrics
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - REDIS_URL=redis://redis:6379
+      - DEMUCS_GPU_ENABLED=false
+      - DEMUCS_MODELS_PATH=/models
+      - YOUTUBE_DOWNLOAD_DIR=/tmp/downloads
+      - API_CORS_ORIGINS=["*"]
+    volumes:
+      - demucs-models:/models
+      - temp-downloads:/tmp/downloads
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import requests; requests.get('http://localhost:8000/api/v1/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oxboard-worker
+    command: python -m backend.worker
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - REDIS_URL=redis://redis:6379
+      - DEMUCS_GPU_ENABLED=false
+      - DEMUCS_MODELS_PATH=/models
+      - YOUTUBE_DOWNLOAD_DIR=/tmp/downloads
+    volumes:
+      - demucs-models:/models
+      - temp-downloads:/tmp/downloads
+      - job-output:/app/output
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+
+  # Optional: Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: oxboard-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+
+volumes:
+  redis-data:
+  demucs-models:
+  temp-downloads:
+  job-output:
+  prometheus-data:
