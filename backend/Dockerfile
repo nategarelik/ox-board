@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy requirements
-COPY requirements.txt .
+# Copy requirements from backend directory
+COPY backend/requirements.txt .
 
 # Install CPU-only PyTorch first (much smaller)
 RUN pip install --no-cache-dir --user \
@@ -44,7 +44,7 @@ WORKDIR /app
 COPY --from=builder /root/.local /home/appuser/.local
 
 # Copy application code to /app/backend
-COPY . ./backend
+COPY backend ./backend
 
 # Set ownership
 RUN chown -R appuser:appuser /app
