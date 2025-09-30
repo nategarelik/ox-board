@@ -52,8 +52,9 @@ RUN chown -R appuser:appuser /app
 # Switch to app user
 USER appuser
 
-# Add .local/bin to PATH
+# Add .local/bin to PATH and set PYTHONPATH
 ENV PATH=/home/appuser/.local/bin:$PATH
+ENV PYTHONPATH=/app
 
 # Expose port
 EXPOSE 8000
