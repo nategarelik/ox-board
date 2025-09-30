@@ -89,11 +89,15 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
+    import os
+
+    # Get port from environment (Railway sets PORT)
+    port = int(os.getenv("PORT", config.port))
 
     uvicorn.run(
-        "backend.main:app",
+        "main:app",
         host=config.host,
-        port=config.port,
+        port=port,
         reload=config.debug,
         log_level=config.log_level.lower(),
     )
