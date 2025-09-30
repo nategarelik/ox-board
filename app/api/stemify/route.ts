@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
 
     // Forward the request to the Python backend
-    const response = await fetch(`${BACKEND_URL}/stemify`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/stemify`, {
       method: "POST",
       body: formData,
     });

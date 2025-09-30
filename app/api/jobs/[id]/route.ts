@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: { id: string } },
 ) {
   try {
-    const response = await fetch(`${BACKEND_URL}/jobs/${params.id}`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/jobs/${params.id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -41,7 +41,7 @@ export async function DELETE(
   { params }: { params: { id: string } },
 ) {
   try {
-    const response = await fetch(`${BACKEND_URL}/jobs/${params.id}`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/jobs/${params.id}`, {
       method: "DELETE",
     });
 
