@@ -12,7 +12,7 @@ import { StemType } from "../lib/audio/demucsProcessor";
 import useEnhancedDJStore from "../stores/enhancedDjStoreWithGestures";
 import StemControls from "./StemControls";
 import StemWaveform from "./StemWaveform";
-import StemMixer from "./StemMixer";
+// import StemMixer from "./StemMixer"; // Removed in cleanup
 
 interface StemVisualizerPanelProps {
   className?: string;
@@ -544,10 +544,13 @@ const StemVisualizerPanel: React.FC<StemVisualizerPanelProps> = ({
         {/* Mixer */}
         {layout.showMixer && (
           <div className={layout.orientation === "horizontal" ? "w-80" : ""}>
-            <StemMixer
+            {/* <StemMixer
               channel={activeChannel}
               showAdvancedControls={!layout.compactMode}
-            />
+            /> */}
+            <div className="text-white/60 text-sm p-4">
+              Stem Mixer (removed in cleanup)
+            </div>
           </div>
         )}
       </div>

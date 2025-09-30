@@ -5,7 +5,7 @@ import { AudioMixerProps } from "@/types/dj";
 
 const DeckPlayer = dynamic(() => import("./DeckPlayer"), { ssr: false });
 const EnhancedMixer = dynamic(() => import("./EnhancedMixer"), { ssr: false });
-const StemMixer = dynamic(() => import("../StemMixer"), { ssr: false });
+// const StemMixer = dynamic(() => import("../StemMixer"), { ssr: false }); // Removed in cleanup
 
 export default function AudioMixer({ viewMode, decks }: AudioMixerProps) {
   const renderViewContent = () => {
@@ -78,7 +78,10 @@ export default function AudioMixer({ viewMode, decks }: AudioMixerProps) {
                 <h3 className="text-lg font-medium text-purple-400 mb-4 flex items-center gap-2">
                   <span className="text-2xl">🎧</span> DECK A STEMS
                 </h3>
-                <StemMixer channel={0} showAdvancedControls={true} />
+                {/* <StemMixer channel={0} showAdvancedControls={true} /> */}
+                <div className="text-white/60 text-sm">
+                  Stem Mixer (removed in cleanup)
+                </div>
               </div>
             </div>
             <div className="flex-1 max-w-2xl">
@@ -86,7 +89,10 @@ export default function AudioMixer({ viewMode, decks }: AudioMixerProps) {
                 <h3 className="text-lg font-medium text-purple-400 mb-4 flex items-center gap-2">
                   <span className="text-2xl">🎧</span> DECK B STEMS
                 </h3>
-                <StemMixer channel={1} showAdvancedControls={true} />
+                {/* <StemMixer channel={1} showAdvancedControls={true} /> */}
+                <div className="text-white/60 text-sm">
+                  Stem Mixer (removed in cleanup)
+                </div>
               </div>
             </div>
           </div>
@@ -161,13 +167,19 @@ export default function AudioMixer({ viewMode, decks }: AudioMixerProps) {
             <h4 className="text-xs font-medium text-purple-400 mb-2">
               DECK A STEMS
             </h4>
-            <StemMixer channel={0} showAdvancedControls={false} />
+            {/* <StemMixer channel={0} showAdvancedControls={false} /> */}
+            <div className="text-white/60 text-sm">
+              Stem Mixer (removed in cleanup)
+            </div>
           </div>
           <div className="flex-1 bg-gradient-to-b from-gray-800/30 to-gray-900/30 rounded-lg border border-purple-500/10 p-3">
             <h4 className="text-xs font-medium text-purple-400 mb-2">
               DECK B STEMS
             </h4>
-            <StemMixer channel={1} showAdvancedControls={false} />
+            {/* <StemMixer channel={1} showAdvancedControls={false} /> */}
+            <div className="text-white/60 text-sm">
+              Stem Mixer (removed in cleanup)
+            </div>
           </div>
         </div>
       )}

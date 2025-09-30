@@ -5,7 +5,8 @@
 
 import { StemId, StemTrack } from "../../types/stem-player";
 import { performanceMonitor } from "../optimization/performanceMonitor";
-import { bufferPoolManager } from "../optimization/bufferPool";
+// import { bufferPoolManager } from "../optimization/bufferPool"; // Removed in cleanup
+const bufferPoolManager: any = null; // TODO: Restore buffer pool or remove this dependency
 
 export interface BufferPoolConfig {
   initialSize: number;
@@ -918,6 +919,7 @@ export class StemBufferManager {
    */
   integrateBufferPool(): void {
     // Use global buffer pool manager for enhanced performance
+    if (!bufferPoolManager) return; // Buffer pool removed in cleanup
     const globalStats = bufferPoolManager.getStats();
 
     // Update local stats with global pool information
@@ -931,11 +933,11 @@ export class StemBufferManager {
    * Get enhanced statistics including global pool info
    */
   getEnhancedStats(): BufferPoolStats & {
-    globalPoolStats: ReturnType<typeof bufferPoolManager.getStats>;
+    globalPoolStats: any; // ReturnType<typeof bufferPoolManager.getStats>;
   } {
     return {
       ...this.stats,
-      globalPoolStats: bufferPoolManager.getStats(),
+      globalPoolStats: bufferPoolManager ? bufferPoolManager.getStats() : null,
     };
   }
 
