@@ -7,8 +7,7 @@ pydantic-settings==2.1.0
 
 # Audio Processing
 demucs==4.0.0
-torch==2.1.0
-torchaudio==2.1.0
+# torch and torchaudio installed separately as CPU-only in Dockerfile
 librosa==0.10.1
 pydub==0.25.1
 numpy==1.25.2

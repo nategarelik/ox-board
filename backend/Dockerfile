@@ -16,7 +16,13 @@ WORKDIR /app
 # Copy requirements
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install CPU-only PyTorch first (much smaller)
+RUN pip install --no-cache-dir --user \
+    torch==2.1.0+cpu \
+    torchaudio==2.1.0+cpu \
+    -f https://download.pytorch.org/whl/torch_stable.html
+
+# Install remaining dependencies
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # Runtime stage
