@@ -7,10 +7,12 @@ Production-ready Demucs backend with observability, logging, and error handling.
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 from backend.api.middleware import setup_middleware
 from backend.api.routes import router
 from backend.core.config import get_config
+from backend.core.exceptions import DemucsException
 from backend.core.logging import get_logger, setup_logging
 from backend.core.observability import setup_prometheus, setup_tracing
 
@@ -73,6 +75,25 @@ setup_middleware(app)
 
 # Include routes
 app.include_router(router, prefix="/api/v1")
+
+
+# Exception handler for DemucsException
+@app.exception_handler(DemucsException)
+async def demucs_exception_handler(request, exc: DemucsException):
+    """
+    Handle DemucsException globally.
+
+    Args:
+        request: Request object
+        exc: DemucsException instance
+
+    Returns:
+        JSONResponse with error details
+    """
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=exc.to_dict(),
+    )
 
 
 # Root endpoint

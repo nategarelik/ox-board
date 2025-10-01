@@ -294,22 +294,3 @@ async def health_check(
                 "workers_available": 0,
             },
         )
-
-
-# Exception handler for DemucsException
-@router.exception_handler(DemucsException)
-async def demucs_exception_handler(request, exc: DemucsException):
-    """
-    Handle DemucsException globally.
-
-    Args:
-        request: Request object
-        exc: DemucsException instance
-
-    Returns:
-        JSONResponse with error details
-    """
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=exc.to_dict(),
-    )
