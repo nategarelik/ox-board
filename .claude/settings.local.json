@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh issue list:*)",
+      "Read(//c/Users/Nate2/AppData/Roaming/Claude/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

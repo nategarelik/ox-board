@@ -4,6 +4,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > Think carefully and implement the most concise solution that changes as little code as possible.
 
+## Project Context
+
+OX Board is a gesture-controlled DJ platform using webcam hand tracking. It combines:
+
+- Real-time gesture recognition via MediaPipe
+- Professional audio mixing with Web Audio API (Tone.js)
+- Stem separation and AI-powered music analysis
+- Progressive Web App capabilities
+
+### UI Modes
+
+OX Board has two UI modes accessible via feature flag toggle:
+
+1. **Classic UI** (`app/components/stem-player/StemPlayerDashboard.tsx`)
+   - Modern gradient design
+   - Full-featured DJ interface
+   - Default mode
+
+2. **Terminal UI** (`app/components/terminal/TerminalApp.tsx`)
+   - Retro CRT/terminal aesthetic
+   - Green-on-black color scheme
+   - Scanline and flicker effects
+   - Same functionality, different presentation
+   - Documentation: `docs/TERMINAL-UI-ARCHITECTURE.md`
+
+Toggle between modes using the button in bottom-right corner.
+
 ## USE SUB-AGENTS FOR CONTEXT OPTIMIZATION
 
 ### 1. Always use the file-analyzer sub-agent when asked to read files.
@@ -233,3 +260,76 @@ Use these TypeScript path aliases:
 - Test files in `tests/` directory
 - Mock Tone.js with `tests/__mocks__/toneMock.ts`
 - Verbose output for debugging
+
+## Important Development Notes
+
+### Browser Environment Requirements
+
+- **Client-side only**: Audio and gesture features require browser APIs
+- **SSR Disabled**: Components using Web Audio, MediaPipe, or Three.js must use dynamic imports with `ssr: false`
+- **User Gesture Required**: Audio initialization must be triggered by user interaction (browser autoplay policy)
+
+### Async Initialization Pattern
+
+Many services use async initialization separate from construction:
+
+```typescript
+// AudioService and DeckManager
+const service = getAudioService();
+await service.initialize(); // Separate async step
+
+const deckManager = getDeckManager();
+await deckManager.initializeDecks(); // Must wait for AudioService first
+```
+
+### State Management with Zustand
+
+- `enhancedDjStoreWithGestures.ts` is the main store
+- 4 deck architecture (0-3)
+- Gesture controls integrated with stem controls
+- Mixer state synchronized with audio services
+
+### Web Workers
+
+- `musicAnalyzer.worker.ts`: BPM, key detection, spectral analysis
+- `audioAnalyzer.worker.ts`: Heavy audio processing
+- Uses Essentia.js (WASM-based) for music analysis
+- Fallback implementations when workers fail
+
+### Error Boundaries
+
+Multi-level error handling:
+
+- `DJErrorBoundary`: Top-level DJ mode errors
+- `AudioErrorBoundary`: Audio-specific errors
+- `CameraErrorBoundary`: Gesture/camera errors
+
+### Performance Considerations
+
+- Gesture processing throttled to 60 FPS
+- Buffer pooling for memory efficiency
+- Web Audio latency target: <20ms
+- Kalman filtering for gesture smoothing
+
+## Common Pitfalls
+
+- **Don't initialize audio in SSR**: Always check `typeof window !== 'undefined'`
+- **Don't access audio context before user gesture**: Will fail due to autoplay policy
+- **Don't forget to dispose audio nodes**: Memory leaks from undisposed Tone.js nodes
+- **Don't skip deck initialization**: DeckManager requires explicit `initializeDecks()` call
+- **Don't assume workers load**: Always provide fallback when Web Workers fail
+
+## Development Workflow
+
+1. Start dev server: `npm run dev`
+2. For audio features, click UI to trigger audio initialization
+3. Grant camera permissions for gesture control
+4. Use browser DevTools for Web Audio debugging (chrome://webaudio-internals)
+5. Check Service Worker in DevTools → Application → Service Workers
+
+# important-instruction-reminders
+
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (\*.md) or README files. Only create documentation files if explicitly requested by the User.

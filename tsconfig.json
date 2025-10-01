@@ -35,6 +35,7 @@
   "exclude": [
     "node_modules",
     "specs/**/contracts/**/*.test.ts",
-    "tests/unit/lib/offline/**/*.test.ts"
+    "tests/unit/lib/offline/**/*.test.ts",
+    "frontend-plan/**/*"
   ]
 }

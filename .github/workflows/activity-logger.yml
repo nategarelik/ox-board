@@ -1,0 +1,93 @@
+name: Activity Logger
+
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    types: [opened, closed, reopened]
+  release:
+    types: [published]
+  deployment:
+    types: [created]
+
+jobs:
+  log-activity:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Log Push Activity
+        if: github.event_name == 'push'
+        run: |
+          echo "📝 Push Activity Logged"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+          echo "Message: ${{ github.event.head_commit.message }}"
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+      - name: Log PR Activity
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔀 PR Activity Logged"
+          echo "Action: ${{ github.event.action }}"
+          echo "PR #: ${{ github.event.pull_request.number }}"
+          echo "Title: ${{ github.event.pull_request.title }}"
+          echo "Author: ${{ github.event.pull_request.user.login }}"
+          echo "Base: ${{ github.event.pull_request.base.ref }}"
+          echo "Head: ${{ github.event.pull_request.head.ref }}"
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+      - name: Log Release Activity
+        if: github.event_name == 'release'
+        run: |
+          echo "🚀 Release Activity Logged"
+          echo "Tag: ${{ github.event.release.tag_name }}"
+          echo "Name: ${{ github.event.release.name }}"
+          echo "Author: ${{ github.event.release.author.login }}"
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+      - name: Log Deployment Activity
+        if: github.event_name == 'deployment'
+        run: |
+          echo "🌐 Deployment Activity Logged"
+          echo "Environment: ${{ github.event.deployment.environment }}"
+          echo "Ref: ${{ github.event.deployment.ref }}"
+          echo "Creator: ${{ github.event.deployment.creator.login }}"
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+      - name: Generate Activity Summary
+        run: |
+          mkdir -p .github/activity-logs
+          cat > .github/activity-logs/activity-$(date +%Y%m%d-%H%M%S).json << EOF
+          {
+            "event": "${{ github.event_name }}",
+            "repository": "${{ github.repository }}",
+            "actor": "${{ github.actor }}",
+            "ref": "${{ github.ref }}",
+            "sha": "${{ github.sha }}",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "workflow": "${{ github.workflow }}",
+            "run_id": "${{ github.run_id }}",
+            "run_number": "${{ github.run_number }}"
+          }
+          EOF
+          cat .github/activity-logs/activity-*.json
+
+      - name: Upload Activity Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: activity-logs-${{ github.run_number }}
+          path: .github/activity-logs/
+          retention-days: 90
