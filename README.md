@@ -2,7 +2,24 @@
 
 **🎵 Control music with your hands!** Revolutionary gesture-controlled stem player with AI-powered mixing, real-time hand tracking, and professional DJ capabilities.
 
-## 🚀 Quick Start - How to Run
+## 🌐 Live Demo
+
+**Try it now:** [https://ox-board.vercel.app](https://ox-board.vercel.app)
+
+- **Frontend**: Vercel (https://ox-board.vercel.app)
+- **Backend**: Railway (https://ox-board-production.up.railway.app)
+- **Status**: ✅ Production Ready
+
+## 🚀 Quick Start
+
+### Try the Live App
+
+1. Visit [https://ox-board.vercel.app](https://ox-board.vercel.app)
+2. Allow camera access when prompted
+3. Upload an audio file or paste a YouTube URL
+4. Use hand gestures to control the music!
+
+### Run Locally
 
 1. **Install dependencies:**
 

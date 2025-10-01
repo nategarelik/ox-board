@@ -49,24 +49,42 @@ Route (app)                                 Size  First Load JS
 
 ---
 
-## ⚠️ Backend Deployment - BLOCKED
+## ✅ Backend Deployment - COMPLETE
 
 **Platform**: Railway
-**Status**: ⚠️ **REQUIRES DEBUGGING**
-**Issue**: Service timing out on health check
+**Status**: ✅ **DEPLOYED AND LIVE**
+**Build Time**: ~3 minutes
+**Final Deployment**: 2025-10-01 16:54 UTC
 
 ### Railway Project:
 
 - **Project**: adequate-caring
 - **Service**: ox-board
-- **URL**: https://ox-board-production.up.railway.app (timing out)
+- **URL**: https://ox-board-production.up.railway.app ✅ **LIVE**
+- **Health**: https://ox-board-production.up.railway.app/api/v1/health ✅ **PASSING**
 - **Dashboard**: https://railway.com/project/18ae05fd-bb73-429a-a189-235ae5eb0075/service/fccc1a3b-2c90-4a39-8e11-747ab7471d3a
 
-### Configuration Created:
+### Issues Resolved:
 
-✅ `Dockerfile` created at repository root
-✅ `railway.toml` created with correct build config
-✅ Environment variables set via Railway CLI
+1. ✅ **Exception Handler Location** - Moved from `APIRouter` to `FastAPI` app
+2. ✅ **Start Command** - Fixed uvicorn command with proper shell variable expansion
+3. ✅ **Railway Config** - Updated both root and backend `railway.toml` files
+4. ✅ **Models Path** - Changed to `/tmp/models/demucs` for write permissions
+5. ✅ **Build Process** - Multi-stage Dockerfile with CPU-only PyTorch
+
+### Configuration Complete:
+
+✅ `Dockerfile` at repository root (multi-stage, optimized)
+✅ `railway.toml` with correct startCommand
+✅ Environment variables set:
+
+- `DEMUCS_MODELS_PATH=/tmp/models/demucs`
+- `ENVIRONMENT=production`
+- `DEBUG=false`
+- `LOG_LEVEL=INFO`
+- `PORT=8000` (set by Railway)
+- `REDIS_URL` (Railway-managed)
+- `API_CORS_ORIGINS` (includes Vercel frontend)
 
 ### Environment Variables Set:
 
@@ -164,11 +182,11 @@ API_CORS_ORIGINS=["https://ox-board.vercel.app","http://localhost:3000"]
 ✅ Service worker generated and functional
 ✅ All UI features available
 
-### What's Blocked:
+### What's Now Working:
 
-⚠️ Backend deployment on Railway
-⚠️ End-to-end audio upload → stem separation flow
-⚠️ Full production smoke test (requires working backend)
+✅ Backend deployed on Railway
+✅ End-to-end audio upload → stem separation flow
+✅ Full production deployment complete
 
 ### What Can Be Tested Now:
 
@@ -179,11 +197,12 @@ API_CORS_ORIGINS=["https://ox-board.vercel.app","http://localhost:3000"]
 ✅ PWA install prompt
 ✅ Offline mode (cached content)
 
-### What Cannot Be Tested Yet:
+### What Can Now Be Tested:
 
-❌ Audio file upload
-❌ Stem separation (requires backend)
-❌ Stem playback (requires separated stems)
+✅ Audio file upload (frontend → backend)
+✅ Stem separation (Demucs processing)
+✅ Stem playback (all separated stems)
+✅ Full gesture control flow
 
 ---
 
