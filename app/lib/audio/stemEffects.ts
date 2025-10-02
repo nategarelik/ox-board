@@ -3,7 +3,19 @@
  * Provides gesture-controlled real-time audio effects with <10ms latency
  */
 
-import * as Tone from "tone";
+import {
+  Reverb,
+  Filter,
+  Distortion,
+  Compressor,
+  Phaser,
+  Chorus,
+  FeedbackDelay,
+  Gain,
+  ToneAudioNode,
+  InputNode,
+  OutputNode,
+} from "tone";
 
 export type EffectType =
   | "reverb"
@@ -146,52 +158,52 @@ export interface EffectPreset {
  * Individual effect processor with Tone.js integration
  */
 class EffectProcessor {
-  private effect: Tone.ToneAudioNode;
-  private input: Tone.Gain;
-  private output: Tone.Gain;
-  private wetGain: Tone.Gain;
-  private dryGain: Tone.Gain;
+  private effect: ToneAudioNode;
+  private input: Gain;
+  private output: Gain;
+  private wetGain: Gain;
+  private dryGain: Gain;
   private bypass: boolean = false;
   private type: EffectType;
 
   constructor(type: EffectType) {
     this.type = type;
-    this.input = new Tone.Gain(1);
-    this.output = new Tone.Gain(1);
-    this.wetGain = new Tone.Gain(0.5);
-    this.dryGain = new Tone.Gain(0.5);
+    this.input = new Gain(1);
+    this.output = new Gain(1);
+    this.wetGain = new Gain(0.5);
+    this.dryGain = new Gain(0.5);
 
     this.effect = this.createEffect(type);
     this.connectNodes();
   }
 
-  private createEffect(type: EffectType): Tone.ToneAudioNode {
+  private createEffect(type: EffectType): ToneAudioNode {
     switch (type) {
       case "reverb":
-        return new Tone.Reverb(1.5); // decay time in seconds
+        return new Reverb(1.5); // decay time in seconds
 
       case "delay":
-        return new Tone.FeedbackDelay({
+        return new FeedbackDelay({
           delayTime: "8n",
           feedback: 0.3,
           wet: 0.3,
         });
 
       case "filter":
-        return new Tone.Filter({
+        return new Filter({
           frequency: 1000,
           type: "lowpass",
           Q: 1,
         });
 
       case "distortion":
-        return new Tone.Distortion({
+        return new Distortion({
           distortion: 0.4,
           oversample: "2x",
         });
 
       case "compression":
-        return new Tone.Compressor({
+        return new Compressor({
           threshold: -24,
           ratio: 4,
           attack: 0.003,
@@ -199,14 +211,14 @@ class EffectProcessor {
         });
 
       case "phaser":
-        return new Tone.Phaser({
+        return new Phaser({
           frequency: 0.5,
           octaves: 3,
           baseFrequency: 350,
         });
 
       case "flanger":
-        return new Tone.Chorus({
+        return new Chorus({
           frequency: 1.5,
           delayTime: 3.5,
           depth: 0.7,
@@ -215,7 +227,7 @@ class EffectProcessor {
         });
 
       default:
-        return new Tone.Gain(1);
+        return new Gain(1);
     }
   }
 
@@ -339,19 +351,19 @@ class EffectProcessor {
     }
   }
 
-  connect(destination: Tone.InputNode): void {
+  connect(destination: InputNode): void {
     this.output.connect(destination);
   }
 
-  disconnect(destination?: Tone.InputNode): void {
+  disconnect(destination?: InputNode): void {
     this.output.disconnect(destination);
   }
 
-  getInput(): Tone.InputNode {
+  getInput(): InputNode {
     return this.input;
   }
 
-  getOutput(): Tone.OutputNode {
+  getOutput(): OutputNode {
     return this.output;
   }
 
@@ -369,8 +381,8 @@ class EffectProcessor {
  */
 export class StemEffectsProcessor {
   private stemChains: Map<number, Map<EffectType, EffectProcessor>> = new Map();
-  private stemInputs: Map<number, Tone.Gain> = new Map();
-  private stemOutputs: Map<number, Tone.Gain> = new Map();
+  private stemInputs: Map<number, Gain> = new Map();
+  private stemOutputs: Map<number, Gain> = new Map();
   private stemConfigs: Map<number, EffectChainConfig> = new Map();
   private gestureMapping: GestureEffectMapping[] = [];
   private presets: Map<PresetType, EffectPreset> = new Map();
@@ -393,8 +405,8 @@ export class StemEffectsProcessor {
     }
 
     // Create input/output nodes
-    const input = new Tone.Gain(1);
-    const output = new Tone.Gain(1);
+    const input = new Gain(1);
+    const output = new Gain(1);
 
     this.stemInputs.set(stemIndex, input);
     this.stemOutputs.set(stemIndex, output);
@@ -596,19 +608,19 @@ export class StemEffectsProcessor {
         "flanger",
       ];
 
-      let previousNode: Tone.ToneAudioNode = input;
+      let previousNode: ToneAudioNode = input;
 
       for (const effectType of effectOrder) {
         const effect = effectChain.get(effectType)!;
         previousNode.connect(effect.getInput());
-        previousNode = effect.getOutput() as Tone.ToneAudioNode;
+        previousNode = effect.getOutput() as ToneAudioNode;
       }
 
       previousNode.connect(output);
     } else {
       // Parallel connection: mix all effects with dry signal
-      const parallelMix = new Tone.Gain(1);
-      const dryGain = new Tone.Gain(0.7); // Reduce dry signal in parallel mode
+      const parallelMix = new Gain(1);
+      const dryGain = new Gain(0.7); // Reduce dry signal in parallel mode
 
       input.connect(dryGain);
       dryGain.connect(output);
@@ -1624,7 +1636,7 @@ export class StemEffectsProcessor {
   /**
    * Get stem input node for connection
    */
-  getStemInput(stemIndex: number): Tone.InputNode {
+  getStemInput(stemIndex: number): InputNode {
     const input = this.stemInputs.get(stemIndex);
     if (!input) {
       throw new Error(`Stem ${stemIndex} not initialized`);
@@ -1635,7 +1647,7 @@ export class StemEffectsProcessor {
   /**
    * Get stem output node for connection
    */
-  getStemOutput(stemIndex: number): Tone.OutputNode {
+  getStemOutput(stemIndex: number): OutputNode {
     const output = this.stemOutputs.get(stemIndex);
     if (!output) {
       throw new Error(`Stem ${stemIndex} not initialized`);
@@ -1646,7 +1658,7 @@ export class StemEffectsProcessor {
   /**
    * Connect a source to a stem's effect chain
    */
-  connectSource(stemIndex: number, source: Tone.ToneAudioNode): void {
+  connectSource(stemIndex: number, source: ToneAudioNode): void {
     const input = this.getStemInput(stemIndex);
     source.connect(input);
   }
@@ -1654,7 +1666,7 @@ export class StemEffectsProcessor {
   /**
    * Connect a stem's output to a destination
    */
-  connectDestination(stemIndex: number, destination: Tone.InputNode): void {
+  connectDestination(stemIndex: number, destination: InputNode): void {
     const output = this.getStemOutput(stemIndex);
     output.connect(destination as any);
   }
