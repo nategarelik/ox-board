@@ -45,6 +45,7 @@ epic-*/
 
 # malformed files
 C:*
+nul
 
 # IDEs and editors
 /.idea
