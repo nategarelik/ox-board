@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 
 interface CamelotWheelVisualizerProps {
-  currentKey?: { key: string; scale: 'major' | 'minor' };
+  currentKey?: { key: string; scale: "major" | "minor" };
   compatibleKeys?: string[];
   className?: string;
 }
@@ -15,42 +15,50 @@ interface CamelotWheelVisualizerProps {
 export const CamelotWheelVisualizer: React.FC<CamelotWheelVisualizerProps> = ({
   currentKey,
   compatibleKeys = [],
-  className = ''
+  className = "",
 }) => {
   // Camelot Wheel positions (outer = major, inner = minor)
   const wheelPositions = [
-    { position: 1, major: 'B', minor: 'G#m', angle: 0 },
-    { position: 2, major: 'F#', minor: 'D#m', angle: 30 },
-    { position: 3, major: 'C#', minor: 'A#m', angle: 60 },
-    { position: 4, major: 'G#', minor: 'Fm', angle: 90 },
-    { position: 5, major: 'D#', minor: 'Cm', angle: 120 },
-    { position: 6, major: 'A#', minor: 'Gm', angle: 150 },
-    { position: 7, major: 'F', minor: 'Dm', angle: 180 },
-    { position: 8, major: 'C', minor: 'Am', angle: 210 },
-    { position: 9, major: 'G', minor: 'Em', angle: 240 },
-    { position: 10, major: 'D', minor: 'Bm', angle: 270 },
-    { position: 11, major: 'A', minor: 'F#m', angle: 300 },
-    { position: 12, major: 'E', minor: 'C#m', angle: 330 }
+    { position: 1, major: "B", minor: "G#m", angle: 0 },
+    { position: 2, major: "F#", minor: "D#m", angle: 30 },
+    { position: 3, major: "C#", minor: "A#m", angle: 60 },
+    { position: 4, major: "G#", minor: "Fm", angle: 90 },
+    { position: 5, major: "D#", minor: "Cm", angle: 120 },
+    { position: 6, major: "A#", minor: "Gm", angle: 150 },
+    { position: 7, major: "F", minor: "Dm", angle: 180 },
+    { position: 8, major: "C", minor: "Am", angle: 210 },
+    { position: 9, major: "G", minor: "Em", angle: 240 },
+    { position: 10, major: "D", minor: "Bm", angle: 270 },
+    { position: 11, major: "A", minor: "F#m", angle: 300 },
+    { position: 12, major: "E", minor: "C#m", angle: 330 },
   ];
 
   const getCurrentPosition = () => {
     if (!currentKey) return null;
 
-    const keyStr = currentKey.scale === 'major' ? currentKey.key : `${currentKey.key}m`;
-    return wheelPositions.find(pos =>
-      pos.major === keyStr || pos.minor === keyStr
+    const keyStr =
+      currentKey.scale === "major" ? currentKey.key : `${currentKey.key}m`;
+    return wheelPositions.find(
+      (pos) => pos.major === keyStr || pos.minor === keyStr,
     );
   };
 
-  const isCompatible = (position: typeof wheelPositions[0], type: 'major' | 'minor') => {
-    const keyStr = type === 'major' ? position.major : position.minor;
+  const isCompatible = (
+    position: (typeof wheelPositions)[0],
+    type: "major" | "minor",
+  ) => {
+    const keyStr = type === "major" ? position.major : position.minor;
     return compatibleKeys.includes(keyStr);
   };
 
-  const isCurrent = (position: typeof wheelPositions[0], type: 'major' | 'minor') => {
+  const isCurrent = (
+    position: (typeof wheelPositions)[0],
+    type: "major" | "minor",
+  ) => {
     if (!currentKey) return false;
-    const keyStr = type === 'major' ? position.major : position.minor;
-    const currentKeyStr = currentKey.scale === 'major' ? currentKey.key : `${currentKey.key}m`;
+    const keyStr = type === "major" ? position.major : position.minor;
+    const currentKeyStr =
+      currentKey.scale === "major" ? currentKey.key : `${currentKey.key}m`;
     return keyStr === currentKeyStr;
   };
 
@@ -63,14 +71,16 @@ export const CamelotWheelVisualizer: React.FC<CamelotWheelVisualizerProps> = ({
     const radian = (angle - 90) * (Math.PI / 180);
     return {
       x: centerX + radius * Math.cos(radian),
-      y: centerY + radius * Math.sin(radian)
+      y: centerY + radius * Math.sin(radian),
     };
   };
 
   const currentPosition = getCurrentPosition();
 
   return (
-    <div className={`bg-gray-900/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4 ${className}`}>
+    <div
+      className={`bg-gray-900/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4 ${className}`}
+    >
       <div className="text-center mb-4">
         <h3 className="text-lg font-semibold text-white mb-1">Camelot Wheel</h3>
         <p className="text-sm text-gray-400">Harmonic Mixing Guide</p>
@@ -85,7 +95,12 @@ export const CamelotWheelVisualizer: React.FC<CamelotWheelVisualizerProps> = ({
       </div>
 
       <div className="flex justify-center">
-        <svg width="240" height="240" viewBox="0 0 240 240" className="drop-shadow-lg">
+        <svg
+          width="240"
+          height="240"
+          viewBox="0 0 240 240"
+          className="drop-shadow-lg"
+        >
           {/* Background circles */}
           <circle
             cx={centerX}
@@ -129,11 +144,11 @@ export const CamelotWheelVisualizer: React.FC<CamelotWheelVisualizerProps> = ({
                   cy={outerCoords.y}
                   r="12"
                   className={`${
-                    isCurrent(pos, 'major')
-                      ? 'fill-blue-500 stroke-blue-300'
-                      : isCompatible(pos, 'major')
-                      ? 'fill-green-500/70 stroke-green-300'
-                      : 'fill-gray-700 stroke-gray-500'
+                    isCurrent(pos, "major")
+                      ? "fill-blue-500 stroke-blue-300"
+                      : isCompatible(pos, "major")
+                        ? "fill-green-500/70 stroke-green-300"
+                        : "fill-gray-700 stroke-gray-500"
                   } stroke-2 transition-all duration-300`}
                 />
                 <text
@@ -142,9 +157,9 @@ export const CamelotWheelVisualizer: React.FC<CamelotWheelVisualizerProps> = ({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   className={`text-xs font-semibold ${
-                    isCurrent(pos, 'major') || isCompatible(pos, 'major')
-                      ? 'fill-white'
-                      : 'fill-gray-300'
+                    isCurrent(pos, "major") || isCompatible(pos, "major")
+                      ? "fill-white"
+                      : "fill-gray-300"
                   }`}
                 >
                   B
@@ -156,11 +171,11 @@ export const CamelotWheelVisualizer: React.FC<CamelotWheelVisualizerProps> = ({
                   cy={innerCoords.y}
                   r="12"
                   className={`${
-                    isCurrent(pos, 'minor')
-                      ? 'fill-blue-500 stroke-blue-300'
-                      : isCompatible(pos, 'minor')
-                      ? 'fill-green-500/70 stroke-green-300'
-                      : 'fill-gray-700 stroke-gray-500'
+                    isCurrent(pos, "minor")
+                      ? "fill-blue-500 stroke-blue-300"
+                      : isCompatible(pos, "minor")
+                        ? "fill-green-500/70 stroke-green-300"
+                        : "fill-gray-700 stroke-gray-500"
                   } stroke-2 transition-all duration-300`}
                 />
                 <text
@@ -169,37 +184,38 @@ export const CamelotWheelVisualizer: React.FC<CamelotWheelVisualizerProps> = ({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   className={`text-xs font-semibold ${
-                    isCurrent(pos, 'minor') || isCompatible(pos, 'minor')
-                      ? 'fill-white'
-                      : 'fill-gray-300'
+                    isCurrent(pos, "minor") || isCompatible(pos, "minor")
+                      ? "fill-white"
+                      : "fill-gray-300"
                   }`}
                 >
                   A
                 </text>
 
                 {/* Connection lines for current key */}
-                {currentPosition && currentPosition.position === pos.position && (
-                  <>
-                    <line
-                      x1={centerX}
-                      y1={centerY}
-                      x2={outerCoords.x}
-                      y2={outerCoords.y}
-                      stroke="rgb(59, 130, 246)"
-                      strokeWidth="2"
-                      opacity="0.5"
-                    />
-                    <line
-                      x1={centerX}
-                      y1={centerY}
-                      x2={innerCoords.x}
-                      y2={innerCoords.y}
-                      stroke="rgb(59, 130, 246)"
-                      strokeWidth="2"
-                      opacity="0.5"
-                    />
-                  </>
-                )}
+                {currentPosition &&
+                  currentPosition.position === pos.position && (
+                    <>
+                      <line
+                        x1={centerX}
+                        y1={centerY}
+                        x2={outerCoords.x}
+                        y2={outerCoords.y}
+                        stroke="rgb(59, 130, 246)"
+                        strokeWidth="2"
+                        opacity="0.5"
+                      />
+                      <line
+                        x1={centerX}
+                        y1={centerY}
+                        x2={innerCoords.x}
+                        y2={innerCoords.y}
+                        stroke="rgb(59, 130, 246)"
+                        strokeWidth="2"
+                        opacity="0.5"
+                      />
+                    </>
+                  )}
               </g>
             );
           })}
@@ -253,7 +269,9 @@ export const CamelotWheelVisualizer: React.FC<CamelotWheelVisualizerProps> = ({
       {/* Compatible keys list */}
       {compatibleKeys.length > 0 && (
         <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-300 mb-2">Compatible Keys</h4>
+          <h4 className="text-sm font-medium text-gray-300 mb-2">
+            Compatible Keys
+          </h4>
           <div className="flex flex-wrap gap-2">
             {compatibleKeys.map((key) => (
               <span

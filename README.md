@@ -1,315 +1,232 @@
-# OX Board 🎛️✋
+# 🎛️ OX Board - Gesture-Controlled DJ Terminal
 
-**🎵 Control music with your hands!** Revolutionary gesture-controlled stem player with AI-powered mixing, real-time hand tracking, and professional DJ capabilities.
+**A revolutionary DJ platform with terminal aesthetics and gesture control via webcam hand tracking.**
 
-## 🌐 Live Demo
-
-**Try it now:** [https://ox-board.vercel.app](https://ox-board.vercel.app)
-
-- **Frontend**: Vercel (https://ox-board.vercel.app)
-- **Backend**: Railway (https://ox-board-production.up.railway.app)
-- **Status**: ✅ Production Ready
+![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
+![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## 🚀 Quick Start
-
-### Try the Live App
-
-1. Visit [https://ox-board.vercel.app](https://ox-board.vercel.app)
-2. Allow camera access when prompted
-3. Upload an audio file or paste a YouTube URL
-4. Use hand gestures to control the music!
-
-### Run Locally
-
-1. **Install dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-2. **Run the app:**
-
-   ```bash
-   npm run dev
-   ```
-
-3. **Open in browser:**
-   Go to http://localhost:3000
-
-4. **Allow camera access** when prompted (for gesture control)
-
-5. **Upload an audio file** or use the default track
-
-6. **Use hand gestures** to control the music:
-   - ✋ Open hand = Play/Pause
-   - ✊ Closed fist = Stop
-   - 👌 Pinch = Adjust volume
-   - 👉 Point = Navigate
-
----
-
-## 🌟 Key Features
-
-### 🎭 **Advanced Gesture Control**
-
-- **MediaPipe Hand Tracking**: Ultra-low latency gesture recognition with 21-point hand landmarks
-- **Multi-Gesture Support**: Pinch, spread, fist, swipe, and two-hand gestures
-- **Customizable Mappings**: Assign any gesture to any audio parameter
-- **Performance Optimized**: SIMD operations and buffer pooling for 60fps+ recognition
-- **Gesture Recording**: Record and playback gesture sequences for automation
-
-### 🎵 **Professional Stem Processing**
-
-- **Multi-Stem Architecture**: Independent control of drums, bass, melody, vocals, and original
-- **Real-time Effects Rack**: Reverb, delay, filter, distortion, compressor with live parameter control
-- **Advanced EQ & Panning**: 3-band EQ and stereo panning per stem
-- **Audio Analysis**: BPM detection, key analysis, spectral analysis with Essentia.js
-- **Web Audio Optimization**: Ultra-low latency playback with advanced buffering
-
-### 🤖 **AI-Powered Intelligence**
-
-- **Smart Recommendations**: AI-powered mix suggestions and track compatibility analysis
-- **Auto-Mixing**: Intelligent stem balancing and transition suggestions
-- **Mood Detection**: Real-time energy and mood analysis
-- **Camelot Wheel**: Harmonic mixing assistance with key compatibility visualization
-
-### 📱 **Progressive Web App**
-
-- **Offline Support**: Full functionality without internet connection
-- **Installable**: Native app-like experience on mobile and desktop
-- **Background Sync**: Automatic upload and sync when connection returns
-- **Service Worker**: Advanced caching strategies for instant loading
-
-### 📊 **Performance & Monitoring**
-
-- **Real-time Metrics**: Live latency, buffer health, and performance monitoring
-- **Web Vitals**: Core Web Vitals tracking and optimization
-- **Memory Management**: Advanced buffer pooling and garbage collection
-- **Error Tracking**: Comprehensive error reporting and recovery
-
-## 🏗️ Architecture
-
-```
-app/
-├── 🎵 api/                    # Serverless endpoints
-│   ├── generate/             # AI music generation
-│   ├── recommendations/      # Smart suggestions
-│   ├── stemify/             # Audio separation
-│   └── silent-audio/        # Web Audio unlock
-├── 🎛️ components/
-│   ├── DJ/                  # Professional DJ interface
-│   │   ├── ProfessionalDeck/    # Advanced deck controls
-│   │   ├── EnhancedMixer/       # Multi-stem mixer
-│   │   └── WaveformDisplay/     # Visual waveform
-│   ├── stem-player/         # Core stem functionality
-│   ├── AI/                  # AI assistance widgets
-│   └── accessibility/       # A11y enhancements
-├── 🎣 hooks/                # Custom React hooks
-│   ├── useEnhancedStemPlayer/   # Main player hook
-│   ├── useGestures/            # Gesture recognition
-│   └── useStemPerformance/     # Performance monitoring
-├── 🔧 lib/
-│   ├── audio/              # Audio processing
-│   │   ├── optimizedStemProcessor/  # High-performance processing
-│   │   ├── enhancedMixer/         # Advanced mixing
-│   │   └── musicAnalyzer/         # Audio analysis
-│   ├── gesture/            # Gesture recognition
-│   │   ├── optimizedRecognition/  # Performance-optimized
-│   │   └── gestureStemMapper/     # Gesture-to-audio mapping
-│   ├── optimization/       # Performance optimization
-│   │   ├── bufferPool/           # Memory management
-│   │   ├── performanceMonitor/    # Real-time monitoring
-│   │   └── webVitalsMonitor/      # Web performance
-│   └── workers/            # Web Workers
-│       ├── audioAnalyzer/        # Heavy audio processing
-│       └── musicAnalyzer/        # Music analysis
-├── 🗂️ stores/               # State management
-│   ├── enhancedStemPlayerStore/  # Main Zustand store
-│   └── slices/                  # Modular state slices
-└── 🎨 types/                # TypeScript definitions
-```
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Node.js**: 18.0.0 or higher
-- **Camera**: Webcam for gesture control
-- **Modern Browser**: Chrome 88+, Firefox 85+, Safari 14+
-
-### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/ox-board.git
-cd ox-board
-
 # Install dependencies
-npm ci
+npm install
 
-# Start development server
+# Run development server
 npm run dev
+
+# Open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and **grant camera permissions** to begin gesture control.
+## 🎨 Terminal UI - The Primary Interface
 
-### Basic Usage
+OX Board uses a **retro terminal UI** as its primary interface, featuring:
 
-1. **Enable Camera**: Allow camera access for hand tracking
-2. **Load Audio**: Upload an MP3/WAV file or use the demo track
-3. **Stem Separation**: Audio automatically separates into stems
-4. **Gesture Control**: Use hand gestures to control volume, effects, and mixing
-5. **AI Assistance**: Enable AI recommendations for intelligent mixing
+- 🖥️ **CRT Aesthetic**: Green-on-black display with scanlines and flicker effects
+- 🎹 **Full DJ Functionality**: Dual decks, mixer, effects, stem separation
+- 👋 **Gesture Control**: Control everything with hand gestures via webcam
+- 🎵 **Professional Audio**: Powered by Tone.js and Web Audio API
 
-## 🎮 Gesture Controls
+## 📁 Project Structure
 
-### Single Hand Gestures
+```
+ox-board/
+├── app/
+│   ├── components/
+│   │   ├── terminal/          # 🎮 ACTIVE UI - Terminal interface
+│   │   ├── ui-archive/        # 📦 Archived UI implementations
+│   │   │   ├── professional-dj/   # Professional DJ interface
+│   │   │   ├── stem-player/       # Stem player dashboard
+│   │   │   └── visualizations/    # Audio visualizations
+│   │   ├── offline/           # PWA & offline support
+│   │   └── Camera/            # Gesture recognition
+│   ├── lib/
+│   │   ├── audio/            # Audio processing libraries
+│   │   ├── gestures/         # Gesture detection & mapping
+│   │   └── optimization/     # Performance utilities
+│   ├── services/             # Core services
+│   │   ├── audioService.ts   # Audio context management
+│   │   ├── deckManager.ts    # Deck control system
+│   │   └── aiStemService.ts  # AI-powered features
+│   ├── stores/               # State management (Zustand)
+│   └── hooks/                # React hooks
+├── backend/                  # Python FastAPI backend
+│   ├── api/                  # API endpoints
+│   ├── core/                 # Core backend logic
+│   └── Dockerfile            # Container configuration
+├── config/                   # Configuration files
+└── tests/                    # Test suites
+```
 
-- **👌 Pinch**: Volume control (closer = quieter, wider = louder)
-- **🖐️ Spread**: Effect intensity (wider = stronger effects)
-- **✊ Fist**: Mute/unmute stems
-- **👆 Point**: Solo/unsolo stems
+## 🎯 Key Features
 
-### Two-Hand Gestures
+### Terminal UI Navigation
 
-- **🤏 Two-Hand Pinch**: Master volume control
-- **👐 Spread Apart**: Crossfade between stems
-- **🔄 Circular Motion**: Filter frequency sweep
+- **Dashboard**: System overview and quick stats
+- **Studio**: Main DJ interface with decks and mixer
+- **Music Library**: Track browser and management
+- **Settings**: Configuration and preferences
 
-## 🔧 Advanced Features
+### Audio Capabilities
 
-### Professional DJ Interface
+- 🎚️ **Dual Deck System**: A/B deck architecture
+- 🎛️ **Professional Mixer**: EQ, filters, crossfader
+- 🎵 **Stem Separation**: Isolate drums, bass, vocals, other
+- 🎹 **Effects Rack**: Reverb, delay, filters, and more
+- 📊 **BPM Detection**: Automatic tempo analysis
+- 🔊 **Recording**: Capture your mixes
 
-- **Dual Deck Player**: Professional DJ setup with sync and beatmatching
-- **Waveform Visualization**: Real-time waveform display with beat grid
-- **Track Browser**: Advanced track management and organization
-- **Performance Mode**: Optimized interface for live performances
+### Gesture Control
 
-### Audio Processing
+- ✋ **Hand Tracking**: MediaPipe-powered detection
+- 🎚️ **Volume Control**: Vertical hand movement
+- ↔️ **Crossfader**: Horizontal hand position
+- 🎛️ **EQ Control**: Pinch gestures for bands
+- ⏯️ **Playback**: Open/closed hand for play/pause
 
-- **Stem Upload**: Support for MP3, WAV, FLAC, and other formats
-- **Real-time Effects**: Professional-grade audio effects
-- **BPM Sync**: Automatic beat synchronization
-- **Key Detection**: Harmonic mixing with Camelot wheel
+## 🛠️ Technology Stack
 
-### Performance Optimization
+### Frontend
 
-- **60fps Gesture Recognition**: Optimized MediaPipe processing
-- **Ultra-low Latency**: <10ms audio latency
-- **Memory Efficient**: Advanced buffer pooling and caching
-- **Web Workers**: Heavy processing in background threads
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **UI**: Custom Terminal UI with CSS
+- **State**: Zustand
+- **Audio**: Tone.js, Web Audio API
+- **Gestures**: MediaPipe, TensorFlow.js
 
-## 📊 Performance Metrics
+### Backend
 
-- **Gesture Recognition**: 60fps with <5ms processing time
-- **Audio Latency**: <10ms total round-trip latency
-- **Memory Usage**: Optimized buffer management with LRU caching
-- **Web Vitals**: 90+ scores across all Core Web Vitals
-- **Browser Support**: Chrome 88+, Firefox 85+, Safari 14+, Edge 88+
+- **Framework**: FastAPI (Python)
+- **Deployment**: Railway
+- **Audio Processing**: Demucs (stem separation)
+- **API**: RESTful + WebSocket
 
-## 🌐 Browser Compatibility
+### Infrastructure
 
-| Browser | Version | Gesture Control | Audio Processing | PWA Features |
-| ------- | ------- | --------------- | ---------------- | ------------ |
-| Chrome  | 88+     | ✅ Full         | ✅ Full          | ✅ Full      |
-| Firefox | 85+     | ✅ Full         | ✅ Full          | ✅ Full      |
-| Safari  | 14+     | ✅ Full         | ✅ Full          | ✅ Full      |
-| Edge    | 88+     | ✅ Full         | ✅ Full          | ✅ Full      |
+- **Hosting**: Vercel (frontend) + Railway (backend)
+- **CDN**: Cloudflare
+- **Database**: PostgreSQL (planned)
+- **Monitoring**: Sentry
 
-## 🔌 API Overview
+## 🎮 Using the Terminal UI
 
-### Core Endpoints
+### Keyboard Shortcuts
 
-- `POST /api/stemify` - Upload and separate audio into stems
-- `POST /api/generate` - Generate music with AI prompts
-- `GET /api/recommendations` - Get AI-powered music suggestions
-- `GET /api/silent-audio` - Web Audio context unlock
+```
+Space       - Play/Pause
+← →        - Navigate tabs
+↑ ↓        - Adjust values
+Enter      - Select/Confirm
+Esc        - Cancel/Back
+Tab        - Next field
+Shift+Tab  - Previous field
+```
 
-### Gesture API
-
-- Real-time gesture recognition with confidence scoring
-- Custom gesture-to-parameter mapping
-- Gesture history and recording
-- Performance monitoring and optimization
-
-## 🚢 Deployment
-
-### Vercel (Recommended)
+### Terminal Commands (Coming Soon)
 
 ```bash
-# Deploy to Vercel
-npm i -g vercel
-vercel --prod
+/play deck:a              # Play deck A
+/stop deck:b              # Stop deck B
+/crossfade 50             # Set crossfader to center
+/effect reverb amount:30  # Apply reverb effect
+/bpm sync                 # Sync BPM between decks
 ```
 
-### Docker
-
-```bash
-# Build and run with Docker
-docker build -t ox-board .
-docker run -p 3000:3000 ox-board
-```
-
-### Self-Hosted
-
-```bash
-# Production build
-npm run build:prod
-npm start
-```
-
-## 🧪 Development
+## 🔧 Development
 
 ### Available Scripts
 
 ```bash
-npm run dev              # Start development server
-npm run build           # Production build
-npm run build:analyze   # Build with bundle analysis
-npm test                # Run test suite
-npm run test:coverage   # Generate coverage report
-npm run type-check      # TypeScript validation
-npm run lint            # ESLint code quality
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Run production server
+npm test            # Run test suite
+npm run lint        # Lint code
+npm run type-check  # Check TypeScript types
 ```
 
-### Testing
+### Environment Variables
 
-- **80%+ Coverage**: Comprehensive test coverage required
-- **Performance Tests**: Automated performance regression testing
-- **Gesture Tests**: Mock-based gesture recognition testing
-- **Integration Tests**: End-to-end workflow testing
+Create a `.env.local` file:
 
-### Code Quality
+```env
+# Backend API
+NEXT_PUBLIC_API_URL=https://your-railway-backend.railway.app
+NEXT_PUBLIC_WEBSOCKET_URL=wss://your-railway-backend.railway.app
 
-- **ESLint**: Strict code quality enforcement
-- **Prettier**: Consistent code formatting
-- **TypeScript**: Strict type checking
-- **Commitlint**: Conventional commit messages
-- **Husky**: Git hooks for quality enforcement
+# Optional Services
+SENTRY_DSN=your-sentry-dsn
+GOOGLE_ANALYTICS_ID=your-ga-id
+```
+
+## 🏗️ Architecture Decisions
+
+### Why Terminal UI?
+
+1. **Unique Identity**: Stand out with retro aesthetics
+2. **Performance**: Lightweight, fast rendering
+3. **Accessibility**: Keyboard-first navigation
+4. **Focus**: Minimal distractions, maximum functionality
+
+### Archived UI Implementations
+
+Previous UI implementations are preserved in `ui-archive/` for:
+
+- Reference and learning
+- Future feature extraction
+- Design inspiration
+- Component reuse
+
+### Audio Architecture
+
+```
+User Input → Gesture/Keyboard → Store → Services → Audio Output
+               ↑                    ↓
+            State ←──────────────────┘
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run with coverage
+npm run test:coverage
+
+# Run specific test file
+npm test -- path/to/test.spec.ts
+
+# Run in watch mode
+npm run test:watch
+```
+
+## 📦 Deployment
+
+### Frontend (Vercel)
+
+```bash
+# Automatic deployment on push to main
+git push origin main
+```
+
+### Backend (Railway)
+
+```bash
+# Deploy backend
+cd backend/
+railway up
+```
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
-
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass: `npm test`
-6. Commit with conventional commits: `git commit -m 'feat: add amazing feature'`
-7. Push to branch: `git push origin feature/amazing-feature`
-8. Open a Pull Request
-
-### Contribution Areas
-
-- **Gesture Recognition**: Improve accuracy and add new gestures
-- **Audio Processing**: Enhance stem separation and effects
-- **AI Features**: Develop new recommendation algorithms
-- **Performance**: Optimize for better speed and memory usage
-- **Accessibility**: Improve support for all users
-- **Documentation**: Help improve our documentation
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📝 License
 
@@ -317,21 +234,20 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **MediaPipe** for incredible hand tracking technology
-- **Tone.js** for professional Web Audio framework
-- **Next.js** for the amazing React framework
-- **Vercel** for deployment and hosting platform
-- **Essentia.js** for advanced audio analysis
+- **Tone.js** - Web Audio framework
+- **MediaPipe** - Hand tracking technology
+- **Demucs** - Stem separation engine
+- **Next.js** - React framework
+- **Railway** - Backend hosting
 
-## 🆘 Support
+## 📫 Support
 
-- **Documentation**: [Full Documentation](./docs/)
-- **Issues**: [GitHub Issues](https://github.com/your-org/ox-board/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/ox-board/discussions)
-- **Security**: See [SECURITY.md](SECURITY.md) for security policy
+- **Issues**: [GitHub Issues](https://github.com/yourusername/ox-board/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/ox-board/discussions)
+- **Email**: support@ox-board.app
 
 ---
 
-**Built with ❤️ for the future of music creation**
+**Built with 💚 by the OX Board Team**
 
-_Transform any space into a professional music studio with the power of your hands_ 🎵✋
+_Making DJing accessible through gesture control and terminal aesthetics_

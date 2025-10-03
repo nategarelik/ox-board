@@ -1,8 +1,8 @@
 "use client";
 
 import clsx from "clsx";
-import { getSubscriptionPlans } from "../../services/subscriptionService";
-import { SubscriptionTier } from "../../types/stem-player";
+import { getSubscriptionPlans } from "../../../services/subscriptionService";
+import { SubscriptionTier } from "../../../types/stem-player";
 
 interface SubscriptionPlansProps {
   currentTier: SubscriptionTier;

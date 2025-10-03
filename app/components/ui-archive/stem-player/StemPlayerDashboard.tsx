@@ -1,21 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
-import { usePlayer } from "../../hooks/usePlayer";
-import { useStemPlayback } from "../../hooks/useStemPlayback";
-import { useGestures } from "../../hooks/useGestures";
-import { requestAutoMixSuggestion } from "../../services/aiStemService";
-import { fetchPersonalizedRecommendations } from "../../services/recommendationService";
-import useEnhancedDJStore from "../../stores/enhancedDjStoreWithGestures";
-import { performanceMonitor } from "../../lib/optimization/performanceMonitor";
+import { usePlayer } from "../../../hooks/usePlayer";
+import { useStemPlayback } from "../../../hooks/useStemPlayback";
+import { useGestures } from "../../../hooks/useGestures";
+import { requestAutoMixSuggestion } from "../../../services/aiStemService";
+import { fetchPersonalizedRecommendations } from "../../../services/recommendationService";
+import useEnhancedDJStore from "../../../stores/enhancedDjStoreWithGestures";
+import { performanceMonitor } from "../../../lib/optimization/performanceMonitor";
 import StemMixerPanel from "./StemMixerPanel";
 import AIGenerationPanel from "./AIGenerationPanel";
 import RecommendationPanel from "./RecommendationPanel";
 import SubscriptionPlans from "./SubscriptionPlans";
 import UsageMetrics from "./UsageMetrics";
 import AudioUploadInterface from "./AudioUploadInterface";
-import GestureVisualization from "../GestureVisualization";
-import PerformanceMonitorUI from "../PerformanceMonitorUI";
+import GestureVisualization from "../../GestureVisualization";
+import PerformanceMonitorUI from "../../PerformanceMonitorUI";
 import { Camera, Activity, Box as BoxIcon, X } from "lucide-react";
 
 // Lazy load 3D visualizer for performance

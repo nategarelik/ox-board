@@ -1,6 +1,6 @@
 "use client";
 
-import { PlayerAnalytics } from "../../types/stem-player";
+import { PlayerAnalytics } from "../../../types/stem-player";
 
 interface UsageMetricsProps {
   analytics: PlayerAnalytics;

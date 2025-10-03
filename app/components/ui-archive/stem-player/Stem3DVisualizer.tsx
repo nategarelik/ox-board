@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Sphere, Box, Text } from "@react-three/drei";
 import { motion } from "framer-motion";
 import * as THREE from "three";
-import { GestureData } from "../../hooks/useGestures";
+import { GestureData } from "../../../hooks/useGestures";
 
 interface Stem3DVisualizerProps {
   gestureData?: GestureData | null;

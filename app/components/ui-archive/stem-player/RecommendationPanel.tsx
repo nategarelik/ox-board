@@ -1,6 +1,6 @@
 "use client";
 
-import { Recommendation, SubscriptionTier } from "../../types/stem-player";
+import { Recommendation, SubscriptionTier } from "../../../types/stem-player";
 
 interface RecommendationPanelProps {
   recommendations: Recommendation[];

@@ -1,8 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { usePlayer } from "../../hooks/usePlayer";
-import { requestTrackGeneration } from "../../services/aiStemService";
+import { usePlayer } from "../../../hooks/usePlayer";
+import { requestTrackGeneration } from "../../../services/aiStemService";
 
 const STYLES = ["Cinematic", "Lo-fi", "Hip-hop", "Afrobeats", "Techno"];
 

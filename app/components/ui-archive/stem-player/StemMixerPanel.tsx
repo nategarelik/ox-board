@@ -2,13 +2,13 @@
 
 import clsx from "clsx";
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { PlaybackState, StemTrack } from "../../types/stem-player";
-import { GestureFeedback } from "../GestureFeedback";
-import { useGestures } from "../../hooks/useGestures";
+import { PlaybackState, StemTrack } from "../../../types/stem-player";
+import { GestureFeedback } from "../../GestureFeedback";
+import { useGestures } from "../../../hooks/useGestures";
 import {
   GestureStemMapper,
   GestureDetectionResult,
-} from "../../lib/gestures/gestureStemMapper";
+} from "../../../lib/gestures/gestureStemMapper";
 
 interface StemMixerPanelProps {
   track: StemTrack | null;

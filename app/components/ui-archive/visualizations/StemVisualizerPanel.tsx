@@ -8,10 +8,10 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import { StemType } from "../lib/audio/demucsProcessor";
-import useEnhancedDJStore from "../stores/enhancedDjStoreWithGestures";
-import StemControls from "./StemControls";
-import StemWaveform from "./StemWaveform";
+import { StemType } from "../../../lib/audio/demucsProcessor";
+import useEnhancedDJStore from "../../../stores/enhancedDjStoreWithGestures";
+import StemControls from "../../StemControls";
+import StemWaveform from "../../StemWaveform";
 // import StemMixer from "./StemMixer"; // Removed in cleanup
 
 interface StemVisualizerPanelProps {
