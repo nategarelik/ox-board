@@ -14,10 +14,16 @@ const createParam = (initial = 0) => {
 };
 
 const attachNodeHelpers = (target: any) => {
-  target.connect = (node?: any) => node ?? target;
-  target.disconnect = noop;
-  target.dispose = noop;
-  target.toDestination = noop;
+  target._connections = [];
+  target.connect = jest.fn((node?: any) => {
+    if (node) target._connections.push(node);
+    return node ?? target;
+  });
+  target.disconnect = jest.fn(() => {
+    target._connections = [];
+  });
+  target.dispose = jest.fn();
+  target.toDestination = jest.fn();
   return target;
 };
 
@@ -206,18 +212,18 @@ export class Player {
     return this;
   }
 
-  start(time?: number, offset?: number, duration?: number): this {
+  start = jest.fn((time?: number, offset?: number, duration?: number): this => {
     this.state = "started";
     return this;
-  }
+  });
 
-  stop(time?: number): this {
+  stop = jest.fn((time?: number): this => {
     this.state = "stopped";
     if (this.onstop) {
       this.onstop();
     }
     return this;
-  }
+  });
 
   stopAtTime(time: number): this {
     // Schedule stop for later
@@ -380,9 +386,9 @@ export const getContext = (): Context => currentContext;
 export const getDestination = () =>
   attachNodeHelpers({ context: currentContext });
 
-export const start = async () => {
+export const start = jest.fn(async () => {
   await currentContext.resume();
-};
+});
 
 export const now = () => Date.now() / 1000;
 

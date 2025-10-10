@@ -31,7 +31,9 @@
       "Write(C:/Users/Nate2/code/ox-board/**)",
       "Write(C:/Users/Nate2/code/ox-board/.claude/state/**)",
       "Write(C:/Users/Nate2/code/ox-board/.specify/**)",
-      "Read(//c/Users/Nate2/AppData/Roaming/Claude/**)"
+      "Read(//c/Users/Nate2/AppData/Roaming/Claude/**)",
+      "Bash(gh issue view:*)",
+      "Bash(gh api:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",
