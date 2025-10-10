@@ -1,0 +1,63 @@
+{
+  "mcp_servers": {
+    "gmail": {
+      "package": "@modelcontextprotocol/server-gmail",
+      "version": "^0.6.2",
+      "enabled": true,
+      "oauth2_required": true,
+      "rate_limits": {
+        "requests_per_minute": 60
+      },
+      "scopes": [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.send",
+        "https://www.googleapis.com/auth/gmail.labels",
+        "https://www.googleapis.com/auth/gmail.modify"
+      ],
+      "restrictions": {
+        "no_permanent_delete": true,
+        "logging_required": true
+      }
+    },
+    "google_calendar": {
+      "package": "@modelcontextprotocol/server-google-calendar",
+      "version": "^0.1.0",
+      "enabled": true,
+      "oauth2_required": true,
+      "rate_limits": {
+        "requests_per_minute": 30
+      },
+      "scopes": [
+        "https://www.googleapis.com/auth/calendar.readonly",
+        "https://www.googleapis.com/auth/calendar.events"
+      ],
+      "restrictions": {
+        "logging_required": true
+      }
+    }
+  },
+  "security_logging": {
+    "enabled": true,
+    "log_file": ".claude/security-audit.log",
+    "log_events": [
+      "mcp_operation",
+      "file_write",
+      "network_request",
+      "git_operation",
+      "denied_operation"
+    ]
+  },
+  "data_protection": {
+    "sensitive_paths": [
+      "**/.env",
+      "**/.env.*",
+      "**/credentials.json",
+      "**/secrets.json",
+      "**/.ssh/**",
+      "**/id_rsa*",
+      "**/config/database.yml"
+    ],
+    "warn_on_access": true,
+    "deny_commit": true
+  }
+}

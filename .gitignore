@@ -78,6 +78,11 @@ plan.md
 IMPLEMENTATION_*.md
 REQUIREMENTS.md
 
+# Claude Code configuration state (runtime only)
+.claude/state/
+.claude/checkpoints/
+.claude/security-audit.log
+
 # Test coverage reports
 *.coverage
 coverage/

@@ -1,0 +1,75 @@
+{
+  "auto_approve": {
+    "description": "Commands and operations that can execute without approval",
+    "file_operations": ["Read(**)", "Grep(**)", "Glob(**)"],
+    "git_operations": [
+      "Bash(git status*)",
+      "Bash(git branch*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(gh pr create*)",
+      "Bash(gh pr list*)",
+      "Bash(gh issue list*)",
+      "Bash(gh copilot*)"
+    ],
+    "safe_commands": [
+      "Bash(npm run*)",
+      "Bash(npm test*)",
+      "Bash(npm install*)",
+      "Bash(python*)",
+      "Bash(docker ps*)",
+      "Bash(docker logs*)",
+      "Bash(kubectl get*)",
+      "Bash(dir*)",
+      "Bash(ls*)",
+      "Bash(pwd*)",
+      "Bash(echo*)",
+      "Bash(cat*)",
+      "Bash(type*)",
+      "Bash(mkdir*)"
+    ],
+    "write_paths": [
+      "Write(C:/Users/Nate2/code/ox-board/**)",
+      "Write(C:/Users/Nate2/code/ox-board/.claude/state/**)",
+      "Write(C:/Users/Nate2/code/ox-board/.specify/**)"
+    ]
+  },
+  "deny": {
+    "description": "Hard denials for destructive operations",
+    "operations": [
+      "git push --force",
+      "git reset --hard HEAD~",
+      "rm -rf /*",
+      "rm -rf /",
+      "del /f /s /q C:\\*",
+      "format C:",
+      "terraform destroy",
+      "kubectl delete namespace",
+      "docker system prune -a",
+      "npm run build --force",
+      "DROP DATABASE",
+      "TRUNCATE TABLE",
+      "DELETE FROM * WHERE 1=1",
+      "chmod 777 -R /",
+      "chown root -R /",
+      "> /dev/sda"
+    ]
+  },
+  "ask": {
+    "description": "Operations requiring user approval",
+    "operations": [
+      "git push",
+      "git merge",
+      "git rebase",
+      "npm publish",
+      "docker build",
+      "docker push",
+      "Write outside allowed paths",
+      "Delete files",
+      "Network operations",
+      "CI/CD changes"
+    ]
+  }
+}

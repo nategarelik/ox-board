@@ -1,0 +1,8 @@
+# Runtime state (should not be committed)
+state/
+checkpoints/
+security-audit.log
+
+# Keep directory structure
+!state/.gitkeep
+!checkpoints/.gitkeep

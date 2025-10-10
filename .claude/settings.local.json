@@ -1,13 +1,55 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir:*)",
-      "Bash(npm run type-check:*)",
+      "Read(**)",
+      "Grep(**)",
+      "Glob(**)",
+      "Bash(git status:*)",
+      "Bash(git branch:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh pr create:*)",
       "Bash(gh pr list:*)",
       "Bash(gh issue list:*)",
+      "Bash(gh copilot:*)",
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)",
+      "Bash(python:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker logs:*)",
+      "Bash(kubectl get:*)",
+      "Bash(dir:*)",
+      "Bash(ls:*)",
+      "Bash(pwd:*)",
+      "Bash(echo:*)",
+      "Bash(cat:*)",
+      "Bash(type:*)",
+      "Bash(mkdir:*)",
+      "Write(C:/Users/Nate2/code/ox-board/**)",
+      "Write(C:/Users/Nate2/code/ox-board/.claude/state/**)",
+      "Write(C:/Users/Nate2/code/ox-board/.specify/**)",
       "Read(//c/Users/Nate2/AppData/Roaming/Claude/**)"
     ],
-    "deny": [],
-    "ask": []
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(rm -rf /:*)",
+      "Bash(del /f /s /q C:\\:*)",
+      "Bash(format C::*)",
+      "Bash(terraform destroy:*)",
+      "Bash(kubectl delete namespace:*)",
+      "Bash(docker system prune -a:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(npm publish:*)",
+      "Bash(docker build:*)",
+      "Bash(docker push:*)"
+    ]
   }
 }
