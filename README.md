@@ -2,10 +2,12 @@
 
 **A revolutionary DJ platform with terminal aesthetics and gesture control via webcam hand tracking.**
 
-![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
+![Version](https://img.shields.io/badge/version-0.9.0--pre--mvp-yellow.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
+
+> **⚠️ Pre-MVP Status**: OX Board is currently in active development (v0.9.0-pre-mvp). Some features are functional prototypes, while others use mock implementations. See [Feature Status](#-feature-status) below.
 
 ## 🚀 Quick Start
 
@@ -35,10 +37,6 @@ ox-board/
 ├── app/
 │   ├── components/
 │   │   ├── terminal/          # 🎮 ACTIVE UI - Terminal interface
-│   │   ├── ui-archive/        # 📦 Archived UI implementations
-│   │   │   ├── professional-dj/   # Professional DJ interface
-│   │   │   ├── stem-player/       # Stem player dashboard
-│   │   │   └── visualizations/    # Audio visualizations
 │   │   ├── offline/           # PWA & offline support
 │   │   └── Camera/            # Gesture recognition
 │   ├── lib/
@@ -51,12 +49,19 @@ ox-board/
 │   │   └── aiStemService.ts  # AI-powered features
 │   ├── stores/               # State management (Zustand)
 │   └── hooks/                # React hooks
-├── backend/                  # Python FastAPI backend
+├── backend/                  # Python FastAPI backend (planned - see specs/003)
 │   ├── api/                  # API endpoints
 │   ├── core/                 # Core backend logic
 │   └── Dockerfile            # Container configuration
-├── config/                   # Configuration files
-└── tests/                    # Test suites
+├── docs/                     # 📚 Comprehensive documentation
+│   ├── OPTIMAL-VISION.md     # Product roadmap & feature plan
+│   ├── ANALYSIS-SUMMARY.md   # Codebase analysis
+│   ├── domain/               # Business domain documentation
+│   ├── architecture/         # System architecture
+│   ├── patterns/             # Design patterns catalog
+│   └── interfaces/           # API reference
+├── specs/                    # Feature specifications (001-004)
+└── tests/                    # Test suites (113 tests, 85.8% passing)
 ```
 
 ## 🎯 Key Features
@@ -160,6 +165,41 @@ NEXT_PUBLIC_WEBSOCKET_URL=wss://your-railway-backend.railway.app
 SENTRY_DSN=your-sentry-dsn
 GOOGLE_ANALYTICS_ID=your-ga-id
 ```
+
+## ✅ Feature Status
+
+### Working Features (Production-Ready)
+
+- ✅ Terminal UI with CRT aesthetic
+- ✅ Gesture recognition via MediaPipe
+- ✅ Audio playback with Tone.js
+- ✅ Dual deck system
+- ✅ Basic mixer controls
+- ✅ PWA support (offline capability)
+- ✅ Feature flag system (Terminal/Classic UI toggle)
+
+### Prototype Features (Functional but Limited)
+
+- 🟡 BPM detection (client-side only)
+- 🟡 Key detection (basic implementation)
+- 🟡 Effects rack (limited effects)
+- 🟡 Recording (browser-based)
+
+### Mock Implementations (UI Only)
+
+- 🔴 Stem separation (requires Demucs backend - see `specs/003-self-hosted-demucs/`)
+- 🔴 AI mixing suggestions (placeholder logic)
+- 🔴 Harmonic compatibility (basic algorithm)
+- 🔴 Music library management (local only)
+
+### Planned Features
+
+- 📋 Self-hosted Demucs backend ([specs/003](specs/003-self-hosted-demucs/START-HERE.md))
+- 📋 Real-time collaboration
+- 📋 Cloud sync for mixes
+- 📋 Mobile app (React Native)
+
+> **📖 For complete roadmap**, see [docs/OPTIMAL-VISION.md](docs/OPTIMAL-VISION.md)
 
 ## 🏗️ Architecture Decisions
 
