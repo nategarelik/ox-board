@@ -1,3 +1,10 @@
+# Terminal UI Audio Integration Example
+
+This document shows how to integrate the `useDeckManager` hook with `TerminalStudio.tsx`.
+
+## Complete Integration Example
+
+```tsx
 "use client";
 
 import React from "react";
@@ -29,6 +36,8 @@ export function TerminalStudio() {
 
     // Controls
     initialize,
+    playDeck,
+    pauseDeck,
     togglePlayDeck,
     setDeckVolume,
     setCrossfader,
@@ -228,7 +237,7 @@ export function TerminalStudio() {
           </CardContent>
         </Card>
 
-        {/* Deck B */}
+        {/* Deck B (same structure as Deck A) */}
         <Card>
           <CardHeader className="bg-gradient-to-r from-blue-900/30 to-transparent">
             <CardTitle className="flex items-center gap-2">
@@ -436,3 +445,116 @@ export function TerminalStudio() {
     </div>
   );
 }
+```
+
+## Key Changes from Original
+
+### 1. Import useDeckManager Hook
+
+```tsx
+import { useDeckManager } from "@/hooks/useDeckManager";
+```
+
+### 2. Destructure Hook Return
+
+```tsx
+const {
+  deckA,
+  deckB,
+  crossfader,
+  master,
+  audioInit,
+  initialize,
+  playDeck,
+  pauseDeck,
+  togglePlayDeck,
+  setDeckVolume,
+  setCrossfader,
+  setMasterVolume,
+} = useDeckManager();
+```
+
+### 3. Initialization UI
+
+Show button if audio not ready:
+
+```tsx
+if (!audioInit.isReady) {
+  return <button onClick={initialize}>INITIALIZE_AUDIO_SYSTEM</button>;
+}
+```
+
+### 4. Wire Controls to Real Audio
+
+**Play/Pause:**
+
+```tsx
+<button onClick={() => togglePlayDeck("A")}>
+  {deckA.isPlaying ? <Pause /> : <Play />}
+</button>
+```
+
+**Volume:**
+
+```tsx
+<input
+  type="range"
+  value={deckA.volume * 100}
+  onChange={(e) => setDeckVolume("A", parseInt(e.target.value) / 100)}
+/>
+```
+
+**Crossfader:**
+
+```tsx
+<input
+  type="range"
+  value={crossfader.position * 100}
+  onChange={(e) => setCrossfader(parseInt(e.target.value) / 100)}
+/>
+```
+
+### 5. Display Real State
+
+**Track info:**
+
+```tsx
+{
+  deckA.track ? `Track: ${deckA.track.title}` : "NO TRACK LOADED";
+}
+```
+
+**Playback status:**
+
+```tsx
+STATUS: {
+  deckA.isPlaying ? "PLAYING" : deckA.isPaused ? "PAUSED" : "STOPPED";
+}
+```
+
+## Testing Checklist
+
+- [ ] Click "INITIALIZE_AUDIO_SYSTEM" button
+- [ ] AudioService initializes successfully
+- [ ] DeckManager initializes successfully
+- [ ] Play/pause buttons trigger real audio (once tracks loaded)
+- [ ] Volume sliders control actual audio volume
+- [ ] Crossfader mixes between decks
+- [ ] Master volume controls overall output
+- [ ] UI reflects real deck state (playing, volume, etc.)
+- [ ] Error handling shows user-friendly messages
+
+## Next Steps
+
+1. **Track Loading**: Add file upload to load actual audio files
+2. **Stem Controls**: Extend Deck class to support per-stem volume/mute
+3. **Waveform Visualization**: Add real-time waveform display
+4. **Performance Monitoring**: Display audio latency and CPU usage
+5. **Gesture Integration**: Connect gesture recognition to deck controls
+
+## File Locations
+
+- **Hook**: `app/hooks/useDeckManager.ts`
+- **Types**: `app/types/deckManager.ts`
+- **Component**: `app/components/terminal/TerminalStudio.tsx`
+- **Services**: `app/services/DeckManager.ts`, `app/services/AudioService.ts`
