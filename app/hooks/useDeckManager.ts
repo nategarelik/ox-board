@@ -56,6 +56,11 @@ const INITIAL_DECK_STATE: ReactDeckState = {
   position: 0,
   volume: 0.75,
   pitch: 0,
+  eq: {
+    low: 0,
+    mid: 0,
+    high: 0,
+  },
   track: null,
 };
 
@@ -149,6 +154,7 @@ export function useDeckManager(): UseDeckManagerReturn {
       position: internalState.position || 0,
       volume: internalState.volume || 0.75,
       pitch: internalState.pitch || 0,
+      eq: internalState.eq || { low: 0, mid: 0, high: 0 },
       track: internalState.track || null,
     }),
     [],
@@ -417,6 +423,30 @@ export function useDeckManager(): UseDeckManagerReturn {
     deckInstance.setPitch(clamped);
   }, []);
 
+  const setDeckEQ = useCallback(
+    (deck: "A" | "B", band: "low" | "mid" | "high", value: number): void => {
+      if (!deckManagerRef.current) {
+        console.warn("DeckManager not initialized");
+        return;
+      }
+      // Clamp to -24 to +24 dB range
+      const clamped = Math.max(-24, Math.min(24, value));
+      const deckInstance =
+        deck === "A"
+          ? deckManagerRef.current.deckA
+          : deckManagerRef.current.deckB;
+      deckInstance.setEQ(band, clamped);
+
+      // Update local state immediately for UI responsiveness
+      const updateDeck = deck === "A" ? setDeckA : setDeckB;
+      updateDeck((prev) => ({
+        ...prev,
+        eq: { ...prev.eq, [band]: clamped },
+      }));
+    },
+    [],
+  );
+
   const seekDeck = useCallback((deck: "A" | "B", position: number): void => {
     if (!deckManagerRef.current) {
       console.warn("DeckManager not initialized");
@@ -571,6 +601,7 @@ export function useDeckManager(): UseDeckManagerReturn {
     togglePlayDeck,
     setDeckVolume,
     setDeckPitch,
+    setDeckEQ,
     seekDeck,
     loadTrack,
 

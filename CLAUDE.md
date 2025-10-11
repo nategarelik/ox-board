@@ -327,6 +327,421 @@ Multi-level error handling:
 4. Use browser DevTools for Web Audio debugging (chrome://webaudio-internals)
 5. Check Service Worker in DevTools → Application → Service Workers
 
+---
+
+## 🎯 CURRENT PROJECT STATUS & EXECUTION PLAN
+
+**Last Updated**: 2025-10-10 (git commit: 583b76b)
+**Version**: v0.9.0-pre-mvp
+**Test Status**: 337/465 passing (72.5%)
+
+### ✅ COMPLETED: Track A - Audio Integration
+
+**Git Commit**: `583b76b` - "feat: integrate DeckManager audio with Terminal UI"
+
+**Files Created**:
+
+- `app/hooks/useDeckManager.ts` (607 lines) - Production-ready React hook
+- `app/types/deckManager.ts` - TypeScript types
+- `docs/AUDIO-INTEGRATION-CODE-GENERATION-SUMMARY.md`
+- `docs/TERMINAL-AUDIO-INTEGRATION-EXAMPLE.md`
+- `docs/USEDECK MANAGER-QUICK-REFERENCE.md`
+
+**Files Modified**:
+
+- `app/components/terminal/TerminalStudio.tsx` (242 lines changed)
+
+**Features Now Working**:
+
+1. Dual-Deck System: Deck A + Deck B with independent controls
+2. Transport Controls: Play/Pause buttons connected to real audio
+3. Volume Control: Per-deck volume sliders functional
+4. Crossfader: Mix between decks with real audio mixing
+5. Master Volume: Global volume control
+6. Initialization: User gesture-triggered audio start
+7. State Sync: Real-time UI updates from audio engine via events
+8. Error Handling: Comprehensive error messages and recovery
+
+**Build Status**: ✅ All checks passing (type-check, lint, build)
+
+---
+
+### ✅ COMPLETED: Track B - File Loading (commit: e39ab7a)
+
+**Git Commit**: `e39ab7a` - "feat: add file loading with drag-and-drop upload"
+
+**Files Created**:
+
+- `app/lib/audio/audioFileLoader.ts` (318 lines) - Complete file loading + BPM
+- `app/components/terminal/FileUploader.tsx` (370+ lines) - Drag-drop UI
+
+**Files Modified**:
+
+- `app/components/terminal/TerminalMusicLibrary.tsx` - Upload integration
+
+**Features Implemented**:
+
+1. Drag-and-drop audio file upload (MP3, WAV, FLAC, M4A, OGG)
+2. Real-time BPM detection (web-audio-beat-detector)
+3. Metadata extraction (music-metadata library)
+4. Progress tracking with terminal aesthetic
+5. Auto-load into Deck A after upload
+6. File validation (size 100MB max, type, format)
+
+**Build Status**: ✅ All checks passing (type-check, build 23s)
+
+---
+
+### 🎯 IN PROGRESS: Track C - EQ-Based Frequency Control
+
+**Current State**: Starting minimal implementation (NO QUALITY GATE STOPS)
+
+**Note**: Full per-stem control requires backend stem separation (Track F/G/H).
+For Track C, implementing EQ-based frequency control (Low/Mid/High) as interim solution.
+
+**Files to Modify**:
+
+- `app/hooks/useDeckManager.ts` - Add setDeckEQ() method
+- `app/types/deckManager.ts` - Add EQ to ReactDeckState
+- `app/components/terminal/TerminalStudio.tsx` - Add EQ sliders
+
+**Implementation**: Use Deck.setEQ() for Bass/Mids/Treble control
+
+**Next**: After Track C, update CLAUDE.md phase status, continue Phase 1
+
+---
+
+### Current State Summary
+
+#### ✅ What's Working NOW
+
+**Infrastructure:**
+
+- Terminal UI with CRT aesthetic (`app/components/terminal/`)
+- **NEWLY CONNECTED: Terminal UI → DeckManager audio** (Track A complete)
+- Backend exists: FastAPI + Demucs + Celery + Redis (`backend/`)
+- Audio playback engine production-ready
+- Gesture recognition with MediaPipe
+- 87 TypeScript files, comprehensive architecture
+- Comprehensive documentation in `docs/` and `specs/`
+
+**Audio Integration** (NEW):
+
+- `useDeckManager` hook for React integration
+- Event-driven state synchronization
+- Dual-deck mixing with crossfader
+- Master volume control
+- User gesture initialization handling
+
+#### ❌ Critical Gaps (Remaining)
+
+**BLOCKING ISSUES:**
+
+1. ~~Terminal UI NOT connected to real audio~~ ✅ **FIXED (Track A)**
+
+2. **File loading not implemented** - Users cannot load their own audio
+   - No drag-and-drop file upload
+   - No Web Audio file parsing
+   - No metadata extraction
+
+3. **Backend NOT integrated** - FastAPI backend exists but frontend has no API client
+   - No API calls from frontend to backend
+   - Upload functionality not connected to backend
+   - Stem separation feature completely mocked
+
+4. **Mock implementations everywhere**:
+   - `app/lib/audio/stemAnalyzer.ts` - All analysis functions return mock data
+   - `app/lib/data/defaultTrack.ts` - createMockWaveform() used everywhere
+   - `app/lib/cache/smartCache.ts` - generateMockStemData()
+   - Real audio analysis not implemented
+
+5. **Test failures**: 127 tests failing (72.5% pass rate)
+   - 100+ Essentia.js mock issues (P2 priority)
+   - 43 FeedbackDelay constructor missing (P1, 30min fix)
+   - 24 GestureFeedback infinite render loop (P1)
+   - Core audio tests pass 100%
+
+### 📋 Optimal Execution Plan
+
+## Phase 1: Connect Terminal UI to Real Audio (2-3 weeks)
+
+**Priority: P0 - CRITICAL**
+
+### Week 1: Wire Terminal UI to Audio Engine
+
+**Task 1.1: TerminalStudio Audio Integration**
+
+- Location: `app/components/terminal/TerminalStudio.tsx`
+- Connect deck controls to `stemPlaybackEngine`
+- Wire transport buttons (play/pause/skip) to `DeckManager`
+- Connect volume sliders to real audio volume control
+- Connect crossfader to audio mixing
+- **Output**: Working dual-deck DJ interface with real audio
+
+**Task 1.2: Real Track Loading**
+
+- Replace `defaultTrack` mock with actual audio file loading
+- Implement drag-and-drop file upload in Terminal Music Library
+- Add audio metadata extraction (duration, BPM, key)
+- Use Web Audio API for file parsing
+- **Output**: Users can load their own audio files
+
+**Task 1.3: Stem Control Integration**
+
+- Connect stem volume sliders to `stemPlaybackEngine`
+- Wire mute/solo buttons per stem
+- Add real-time audio response to gestures
+- Test latency (<20ms target)
+- **Output**: Individual stem control working
+
+**Files to modify:**
+
+- `app/components/terminal/TerminalStudio.tsx` - Add audio integration
+- `app/components/terminal/TerminalMusicLibrary.tsx` - Add file upload
+- `app/hooks/useStemPlayback.ts` - May need updates
+- `app/services/AudioService.ts` - Verify integration points
+
+### Week 2: Fix Test Suite & Core Issues
+
+**Task 2.1: Fix Test Failures**
+
+- Fix `tests/unit/components/GestureFeedback.test.tsx` infinite render loop
+- Fix 10 other failing tests
+- Review test structure for all failures
+- Achieve 90%+ test pass rate (45+ tests passing)
+- **Output**: Stable test suite
+
+**Task 2.2: Remove Mock Data Phase 1**
+
+- Replace mock waveforms with real Web Audio Analyzer data
+- Remove mock track data, use real audio analysis
+- Implement real-time waveform extraction
+- **Output**: Visual feedback matches actual audio
+
+**Files to modify:**
+
+- `app/lib/data/defaultTrack.ts` - Remove createMockWaveform
+- `app/lib/audio/stemAnalyzer.ts` - Remove mock implementations
+- Add real waveform analyzer utility
+- All test files with failures
+
+---
+
+## Phase 2: Backend Integration (2-3 weeks)
+
+**Priority: P0 - CRITICAL**
+
+### Week 3: Deploy Backend
+
+**Task 3.1: Railway/Render Deployment**
+
+- Deploy FastAPI backend to Railway (GPU-enabled) or Render
+- Configure Celery workers + Redis
+- Test Demucs stem separation end-to-end
+- Set up health checks and monitoring
+- Configure environment variables
+- **Output**: Working backend API at production URL
+
+**Task 3.2: Frontend API Client**
+
+- Create API client module: `app/lib/api/stemifyClient.ts`
+- Implement endpoints:
+  - `POST /api/v1/stemify` - Upload and process
+  - `GET /api/jobs/{jobId}` - Poll job status
+  - `GET /api/jobs/{jobId}/stems` - Download results
+- Add error handling and retry logic
+- Add request/response TypeScript types
+- **Output**: Frontend can communicate with backend
+
+**Backend files** (existing):
+
+- `backend/main.py` - FastAPI app
+- `backend/worker.py` - Celery worker
+- `backend/api/routes/` - API endpoints
+- `backend/services/demucs_service.py` - Stem separation
+
+**New frontend files**:
+
+- `app/lib/api/stemifyClient.ts` - API client
+- `app/types/api.ts` - API types
+
+### Week 4: Stem Separation Integration
+
+**Task 4.1: Connect Upload to Backend**
+
+- Add upload UI in `TerminalMusicLibrary.tsx`
+- Implement file upload with progress tracking
+- Add job status polling (every 2s)
+- Show processing progress in UI
+- Cache separated stems in IndexedDB
+- **Output**: Users can upload tracks and get real stem separation
+
+**Task 4.2: Playback Integration**
+
+- Load separated stems from backend into `stemPlaybackEngine`
+- Handle stem download and caching
+- Test full flow: upload → separate → playback
+- Error handling for failed jobs
+- **Output**: End-to-end stem separation working
+
+**Files to modify:**
+
+- `app/components/terminal/TerminalMusicLibrary.tsx` - Upload UI
+- `app/lib/storage/stemCache.ts` - Store separated stems
+- `app/hooks/useStemPlayback.ts` - Load from cache
+- `app/lib/api/stemifyClient.ts` - Complete integration
+
+---
+
+## Phase 3: Remove All Mocks & Polish (1-2 weeks)
+
+**Priority: P1 - HIGH**
+
+### Week 5: Real Audio Analysis
+
+**Task 5.1: Implement Real Analysis**
+
+- Integrate Essentia.js for BPM/key detection
+- Real-time waveform visualization with Web Audio Analyzer
+- Remove all remaining mock implementations
+- Add spectral analysis for visualizations
+- **Output**: All audio features use real data
+
+**Task 5.2: Gesture-Audio Integration**
+
+- Connect gesture recognition to deck controls
+- Test gesture latency (<50ms target)
+- Add calibration wizard for personalization
+- Fine-tune Kalman filtering parameters
+- **Output**: Gesture control fully functional
+
+**Files to modify:**
+
+- `app/lib/audio/musicAnalyzerClient.ts` - Real analysis
+- `app/workers/musicAnalyzer.worker.ts` - Essentia integration
+- Remove: All `createMockWaveform()` calls
+- Remove: All mock data generators
+
+---
+
+## Phase 4: Production Readiness (1 week)
+
+**Priority: P1 - HIGH**
+
+### Week 6: Testing & Deployment
+
+**Task 6.1: Complete Test Coverage**
+
+- Fix all remaining test failures
+- Add E2E tests for critical paths:
+  - Upload → Separation → Playback
+  - Gesture control flow
+  - Deck mixing
+- Achieve 80%+ coverage
+- **Output**: Production-quality test suite
+
+**Task 6.2: Performance & Documentation**
+
+- Performance optimization:
+  - Bundle size <500KB initial
+  - Time to interactive <3s
+  - Gesture latency <50ms
+- Update all documentation:
+  - README.md - Current state
+  - API documentation
+  - User guide
+- Deployment validation:
+  - Test on production URLs
+  - Cross-browser testing
+  - Performance monitoring
+- **Output**: Production-ready application
+
+---
+
+## Success Metrics
+
+### Technical Metrics
+
+- ✅ Terminal UI fully functional with real audio (no mocks)
+- ✅ Real stem separation working (Demucs backend)
+- ✅ 90%+ test pass rate, 80%+ coverage
+- ✅ <50ms gesture latency
+- ✅ <20ms audio latency
+- ✅ Full upload → separate → playback flow working
+- ✅ No mock implementations remaining
+
+### User Experience Metrics
+
+- ✅ Users can load their own audio files
+- ✅ Real-time deck mixing with low latency
+- ✅ Gesture control responsive and accurate
+- ✅ Stem separation completes in <2 min for 3-4 min track
+- ✅ Visual feedback (waveforms) matches actual audio
+
+### Performance Targets
+
+- Bundle size: <500KB initial load
+- Time to interactive: <3s
+- Audio latency: <20ms
+- Gesture latency: <50ms
+- Frame rate: 60 FPS
+- Test coverage: 80%+
+
+---
+
+## Key Files Reference
+
+### Core Audio (Production-Ready)
+
+- `app/lib/audio/stemPlaybackEngine.ts` - Audio engine (390 lines)
+- `app/services/AudioService.ts` - Audio context management
+- `app/services/DeckManager.ts` - Dual deck system
+
+### Terminal UI (Needs Audio Integration)
+
+- `app/components/terminal/TerminalApp.tsx` - Main app
+- `app/components/terminal/TerminalStudio.tsx` - DJ interface (NEEDS WORK)
+- `app/components/terminal/TerminalMusicLibrary.tsx` - Track browser (NEEDS UPLOAD)
+
+### Backend (Exists, Not Integrated)
+
+- `backend/main.py` - FastAPI server
+- `backend/worker.py` - Celery worker
+- `backend/services/demucs_service.py` - Stem separation
+
+### Mock Data (TO BE REMOVED)
+
+- `app/lib/data/defaultTrack.ts` - Mock track data
+- `app/lib/audio/stemAnalyzer.ts` - Mock analysis
+- `app/lib/cache/smartCache.ts` - Mock stem generation
+
+### Tests (78.4% Passing - Needs Work)
+
+- `tests/unit/components/GestureFeedback.test.tsx` - FAILING (infinite loop)
+- 10 other failing tests to investigate
+
+---
+
+## Development Priority Order
+
+1. **[P0] Connect Terminal UI to Audio** (Week 1-2)
+   - This unblocks everything else
+   - Makes app actually usable for testing
+
+2. **[P0] Deploy & Integrate Backend** (Week 3-4)
+   - Real stem separation is the core feature
+   - Backend exists, just needs frontend integration
+
+3. **[P1] Remove Mock Data** (Week 5)
+   - Replace mocks with real implementations
+   - Improves quality significantly
+
+4. **[P1] Fix Tests & Deploy** (Week 6)
+   - Production-ready quality
+   - Comprehensive testing
+
+---
+
 # important-instruction-reminders
 
 Do what has been asked; nothing more, nothing less.

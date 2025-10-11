@@ -25,6 +25,12 @@ export interface ReactDeckState {
   volume: number;
   /** Current pitch adjustment (-8 to +8 percent) */
   pitch: number;
+  /** EQ settings for frequency bands */
+  eq: {
+    low: number; // Bass (-24 to +24 dB)
+    mid: number; // Mids (-24 to +24 dB)
+    high: number; // Treble (-24 to +24 dB)
+  };
   /** Track metadata if loaded */
   track: {
     id: string;
@@ -88,6 +94,12 @@ export interface DeckControlMethods {
   setDeckVolume: (deck: "A" | "B", volume: number) => void;
   /** Set pitch for the specified deck (-8 to +8 percent) */
   setDeckPitch: (deck: "A" | "B", pitch: number) => void;
+  /** Set EQ band for the specified deck (-24 to +24 dB) */
+  setDeckEQ: (
+    deck: "A" | "B",
+    band: "low" | "mid" | "high",
+    value: number,
+  ) => void;
   /** Seek to position in the specified deck (0-1) */
   seekDeck: (deck: "A" | "B", position: number) => void;
   /** Load a track into the specified deck */
