@@ -15,6 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/terminal/TerminalCard";
+import { FileUploader } from "@/components/terminal/FileUploader";
+import { useDeckManager } from "@/hooks/useDeckManager";
 
 interface Track {
   id: string;
@@ -29,8 +31,13 @@ interface Track {
 export function TerminalMusicLibrary() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "bpm" | "key">("name");
+  const [showUploader, setShowUploader] = useState(false);
+  const [loadedTracks, setLoadedTracks] = useState<Track[]>([]);
 
-  // Mock data
+  // Get audio context from useDeckManager
+  const { audioInit, loadTrack } = useDeckManager();
+
+  // Mock data (will be replaced by user-loaded tracks)
   const tracks: Track[] = [
     {
       id: "1",
@@ -76,6 +83,54 @@ export function TerminalMusicLibrary() {
     { name: "Bass", count: 12 },
     { name: "Samples", count: 45 },
   ];
+
+  // Handle file loaded from FileUploader
+  const handleFileLoaded = async (track: {
+    id: string;
+    url: string;
+    title: string;
+    artist: string;
+    duration: number;
+    bpm?: number;
+    key?: string;
+  }) => {
+    console.log("✅ File loaded to library:", track.title);
+
+    // Format duration for display
+    const minutes = Math.floor(track.duration / 60);
+    const seconds = Math.floor(track.duration % 60);
+    const durationStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+    // Add to loaded tracks list
+    const newTrack: Track = {
+      id: track.id,
+      name: track.title,
+      artist: track.artist,
+      bpm: track.bpm || 120,
+      key: track.key || "C",
+      duration: durationStr,
+      size: "LOCAL", // File size unknown from object URL
+    };
+
+    setLoadedTracks((prev) => [...prev, newTrack]);
+
+    // Optionally auto-load into Deck A if no track loaded
+    try {
+      await loadTrack("A", track);
+      console.log(`✅ Auto-loaded ${track.title} into Deck A`);
+    } catch (error) {
+      console.error("Failed to auto-load track into deck:", error);
+    }
+  };
+
+  // Handle file upload errors
+  const handleError = (fileName: string, error: string) => {
+    console.error(`❌ Upload error for ${fileName}:`, error);
+    // Could show toast notification here
+  };
+
+  // Combine mock tracks with loaded tracks
+  const allTracks = [...loadedTracks, ...tracks];
 
   return (
     <div className="space-y-6">
@@ -125,17 +180,51 @@ export function TerminalMusicLibrary() {
                 SORT
               </button>
               <button
+                onClick={() => setShowUploader(!showUploader)}
                 className="border-2 border-green-500 bg-green-500/20 hover:bg-green-500/30
                                px-4 py-2 text-green-400 font-mono text-sm flex items-center gap-2
                                transition-all duration-200"
               >
                 <Upload className="w-4 h-4" />
-                UPLOAD
+                {showUploader ? "HIDE_UPLOAD" : "UPLOAD"}
               </button>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* File Uploader (conditionally shown) */}
+      {showUploader && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Upload className="w-4 h-4" />
+              FILE_UPLOAD
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FileUploader
+              onFileLoaded={handleFileLoaded}
+              onError={handleError}
+              audioContext={
+                audioInit.isReady
+                  ? (typeof window !== "undefined" &&
+                      window.AudioContext &&
+                      new AudioContext()) ||
+                    null
+                  : null
+              }
+              multiple={true}
+            />
+            {!audioInit.isReady && (
+              <div className="mt-4 p-3 border border-yellow-600 bg-yellow-500/10 text-yellow-400 font-mono text-xs">
+                ⚠️ Audio system not initialized. Initialize audio in Studio tab
+                first.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Folders Sidebar */}
@@ -170,7 +259,12 @@ export function TerminalMusicLibrary() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Music className="w-4 h-4" />
-              TRACKS ({tracks.length})
+              TRACKS ({allTracks.length})
+              {loadedTracks.length > 0 && (
+                <span className="text-green-600 text-xs">
+                  [{loadedTracks.length} LOCAL]
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -189,7 +283,7 @@ export function TerminalMusicLibrary() {
 
             {/* Track Rows */}
             <div className="space-y-1 mt-2">
-              {tracks.map((track) => (
+              {allTracks.map((track) => (
                 <button
                   key={track.id}
                   className="w-full grid grid-cols-12 gap-4 px-2 py-3
@@ -216,7 +310,11 @@ export function TerminalMusicLibrary() {
               className="mt-4 pt-4 border-t-2 border-green-700/50
                           flex items-center justify-between text-green-600 font-mono text-xs"
             >
-              <span>{tracks.length} TRACKS LOADED</span>
+              <span>
+                {allTracks.length} TRACKS LOADED
+                {loadedTracks.length > 0 &&
+                  ` (${loadedTracks.length} LOCAL FILES)`}
+              </span>
               <span>TOTAL: 33.5MB</span>
             </div>
           </CardContent>
