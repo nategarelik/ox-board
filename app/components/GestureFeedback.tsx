@@ -274,6 +274,9 @@ export function GestureFeedback({
           });
         }
       });
+
+      // Update gesture trails when feedback updates
+      updateGestureTrails(feedback.activeGestures);
     };
 
     mapper.on("feedbackUpdate", handleFeedbackUpdate);
@@ -281,7 +284,7 @@ export function GestureFeedback({
     return () => {
       mapper.off("feedbackUpdate", handleFeedbackUpdate);
     };
-  }, [mapper]);
+  }, [mapper, updateGestureTrails]);
 
   if (!isActive || !feedbackState) {
     return null;
@@ -735,10 +738,6 @@ export function GestureFeedback({
           <div className="space-y-3">
             {feedbackState.activeGestures.length > 0 ? (
               feedbackState.activeGestures.map((gesture, index) => {
-                // Update gesture trails when rendering gestures
-                if (showGestureTrails) {
-                  updateGestureTrails([gesture]);
-                }
                 return renderGestureIndicator(gesture, index);
               })
             ) : (

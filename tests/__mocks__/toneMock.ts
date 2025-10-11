@@ -272,6 +272,21 @@ export class Delay {
   }
 }
 
+export class FeedbackDelay {
+  public delayTime = createParam(0);
+  public feedback = createParam(0);
+  public wet = createParam(0.5);
+  public maxDelay = 1;
+
+  constructor(options: any = {}) {
+    this.delayTime.value = options.delayTime ?? 0;
+    this.feedback.value = options.feedback ?? 0;
+    this.wet.value = options.wet ?? 0.5;
+    this.maxDelay = options.maxDelay ?? 1;
+    attachNodeHelpers(this);
+  }
+}
+
 export class Distortion {
   public distortion = 0.4;
   public wet = createParam(1);
@@ -304,6 +319,29 @@ export class AutoFilter {
     this.frequency.value = options.frequency ?? 1;
     this.type = options.type ?? "sine";
     this.depth.value = options.depth ?? 1;
+    this.wet.value = options.wet ?? 1;
+    attachNodeHelpers(this);
+  }
+
+  start(): this {
+    return this;
+  }
+
+  stop(): this {
+    return this;
+  }
+}
+
+export class Phaser {
+  public frequency = createParam(0.5);
+  public octaves = 3;
+  public baseFrequency = 350;
+  public wet = createParam(1);
+
+  constructor(options: any = {}) {
+    this.frequency.value = options.frequency ?? 0.5;
+    this.octaves = options.octaves ?? 3;
+    this.baseFrequency = options.baseFrequency ?? 350;
     this.wet.value = options.wet ?? 1;
     attachNodeHelpers(this);
   }
@@ -424,9 +462,11 @@ export default {
   Player,
   Reverb,
   Delay,
+  FeedbackDelay,
   Distortion,
   BitCrusher,
   AutoFilter,
+  Phaser,
   Volume,
   Channel,
   ToneAudioBuffer,
