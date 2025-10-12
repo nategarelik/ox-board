@@ -349,6 +349,55 @@ export class Channel {
   }
 }
 
+export class FeedbackDelay {
+  public delayTime = createParam(0);
+  public feedback = createParam(0);
+  public wet = createParam(0.5);
+
+  constructor(options: any = {}) {
+    this.delayTime.value = options.delayTime ?? 0;
+    this.feedback.value = options.feedback ?? 0;
+    this.wet.value = options.wet ?? 0.5;
+    attachNodeHelpers(this);
+  }
+}
+
+export class Analyser {
+  public size: number;
+  public type: string;
+  public smoothing: number;
+  public results: Float32Array;
+
+  constructor(options: any = {}) {
+    this.size = options.size ?? 1024;
+    this.type = options.type ?? "fft";
+    this.smoothing = options.smoothing ?? 0.8;
+    this.results = new Float32Array(this.size);
+    attachNodeHelpers(this);
+  }
+
+  getValue(): Float32Array {
+    return this.results;
+  }
+}
+
+export class FFT {
+  public size: number;
+  public normalRange: boolean;
+  public results: Float32Array;
+
+  constructor(size: number = 1024) {
+    this.size = size;
+    this.normalRange = false;
+    this.results = new Float32Array(size);
+    attachNodeHelpers(this);
+  }
+
+  getValue(): Float32Array {
+    return this.results;
+  }
+}
+
 export class ToneAudioBuffer {
   public duration = 0;
   public length = 0;
@@ -429,6 +478,9 @@ export default {
   AutoFilter,
   Volume,
   Channel,
+  FeedbackDelay,
+  Analyser,
+  FFT,
   ToneAudioBuffer,
   context,
   setContext,
