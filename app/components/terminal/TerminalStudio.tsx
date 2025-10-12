@@ -31,11 +31,12 @@ export function TerminalStudio() {
     initialize,
     togglePlayDeck,
     setDeckVolume,
+    setDeckEQ,
     setCrossfader,
     setMasterVolume,
   } = useDeckManager();
 
-  const stems = ["drums", "bass", "vocals", "other"] as const;
+  const eqBands = ["low", "mid", "high"] as const;
 
   // ============================================================================
   // AUDIO INITIALIZATION UI
@@ -199,28 +200,42 @@ export function TerminalStudio() {
               />
             </div>
 
-            {/* Stem Controls (Placeholder - Not yet implemented) */}
-            <div className="space-y-3 opacity-50">
+            {/* EQ Controls */}
+            <div className="space-y-3">
               <div className="flex items-center gap-2 text-green-600 text-xs font-mono">
                 <Sliders className="w-4 h-4" />
-                STEM_CONTROLS [COMING SOON]
+                EQ_CONTROLS
               </div>
-              {stems.map((stem) => (
-                <div key={stem} className="space-y-1">
+              {eqBands.map((band) => (
+                <div key={band} className="space-y-1">
                   <div className="flex items-center justify-between text-xs font-mono text-green-600">
-                    <span className="uppercase">{stem}</span>
-                    <span className="text-green-400">100%</span>
+                    <span className="uppercase">
+                      {band === "low"
+                        ? "BASS"
+                        : band === "mid"
+                          ? "MIDS"
+                          : "TREBLE"}
+                    </span>
+                    <span className="text-green-400">
+                      {deckA.eq[band] > 0 ? "+" : ""}
+                      {deckA.eq[band].toFixed(1)} dB
+                    </span>
                   </div>
                   <input
                     type="range"
-                    min="0"
-                    max="100"
-                    defaultValue="100"
-                    disabled
+                    min="-24"
+                    max="24"
+                    step="0.5"
+                    value={deckA.eq[band]}
+                    onChange={(e) =>
+                      setDeckEQ("A", band, parseFloat(e.target.value))
+                    }
+                    disabled={!deckA.hasTrack}
                     className="w-full h-1 bg-black border border-green-700 appearance-none
                                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3
                                [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-green-400
-                               [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-green-500"
+                               [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-green-500
+                               disabled:opacity-50"
                   />
                 </div>
               ))}
@@ -320,28 +335,42 @@ export function TerminalStudio() {
               />
             </div>
 
-            {/* Stem Controls (Placeholder) */}
-            <div className="space-y-3 opacity-50">
+            {/* EQ Controls */}
+            <div className="space-y-3">
               <div className="flex items-center gap-2 text-green-600 text-xs font-mono">
                 <Sliders className="w-4 h-4" />
-                STEM_CONTROLS [COMING SOON]
+                EQ_CONTROLS
               </div>
-              {stems.map((stem) => (
-                <div key={stem} className="space-y-1">
+              {eqBands.map((band) => (
+                <div key={band} className="space-y-1">
                   <div className="flex items-center justify-between text-xs font-mono text-green-600">
-                    <span className="uppercase">{stem}</span>
-                    <span className="text-green-400">100%</span>
+                    <span className="uppercase">
+                      {band === "low"
+                        ? "BASS"
+                        : band === "mid"
+                          ? "MIDS"
+                          : "TREBLE"}
+                    </span>
+                    <span className="text-green-400">
+                      {deckB.eq[band] > 0 ? "+" : ""}
+                      {deckB.eq[band].toFixed(1)} dB
+                    </span>
                   </div>
                   <input
                     type="range"
-                    min="0"
-                    max="100"
-                    defaultValue="100"
-                    disabled
+                    min="-24"
+                    max="24"
+                    step="0.5"
+                    value={deckB.eq[band]}
+                    onChange={(e) =>
+                      setDeckEQ("B", band, parseFloat(e.target.value))
+                    }
+                    disabled={!deckB.hasTrack}
                     className="w-full h-1 bg-black border border-green-700 appearance-none
                                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3
                                [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-green-400
-                               [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-green-500"
+                               [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-green-500
+                               disabled:opacity-50"
                   />
                 </div>
               ))}
