@@ -93,6 +93,118 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   disconnect: jest.fn(),
 }));
 
+// Mock IndexedDB
+const createIndexedDBMock = () => {
+  const stores = new Map();
+
+  const createObjectStore = jest.fn((name, options = {}) => {
+    const store = {
+      name,
+      data: new Map(),
+      add: jest.fn((value, key) => {
+        const actualKey = key || Date.now().toString();
+        store.data.set(actualKey, value);
+        return Promise.resolve(actualKey);
+      }),
+      get: jest.fn((key) => {
+        return Promise.resolve(store.data.get(key));
+      }),
+      put: jest.fn((value, key) => {
+        const actualKey = key || Date.now().toString();
+        store.data.set(actualKey, value);
+        return Promise.resolve(actualKey);
+      }),
+      delete: jest.fn((key) => {
+        store.data.delete(key);
+        return Promise.resolve();
+      }),
+      clear: jest.fn(() => {
+        store.data.clear();
+        return Promise.resolve();
+      }),
+      getAll: jest.fn(() => {
+        return Promise.resolve(Array.from(store.data.values()));
+      }),
+      openCursor: jest.fn(() => {
+        return Promise.resolve({
+          continue: jest.fn(),
+          delete: jest.fn(),
+          update: jest.fn(),
+        });
+      }),
+      createIndex: jest.fn(),
+      index: jest.fn(() => ({
+        get: jest.fn(() => Promise.resolve()),
+        getAll: jest.fn(() => Promise.resolve([])),
+        openCursor: jest.fn(() => Promise.resolve()),
+      })),
+      transaction: jest.fn(() => ({
+        objectStore: jest.fn(() => store),
+        abort: jest.fn(),
+        complete: Promise.resolve(),
+      })),
+    };
+    stores.set(name, store);
+    return store;
+  });
+
+  const db = {
+    name: "testdb",
+    version: 1,
+    objectStoreNames: {
+      contains: jest.fn((name) => stores.has(name)),
+    },
+    createObjectStore,
+    transaction: jest.fn((storeNames, mode) => ({
+      objectStore: jest.fn(
+        (name) => stores.get(name) || createObjectStore(name),
+      ),
+      abort: jest.fn(),
+      complete: Promise.resolve(),
+    })),
+    close: jest.fn(),
+    deleteObjectStore: jest.fn((name) => {
+      stores.delete(name);
+    }),
+  };
+
+  const request = {
+    result: db,
+    error: null,
+    onsuccess: null,
+    onerror: null,
+    onupgradeneeded: null,
+  };
+
+  return {
+    open: jest.fn((name, version) => {
+      setTimeout(() => {
+        if (request.onupgradeneeded) {
+          request.onupgradeneeded({ target: request });
+        }
+        if (request.onsuccess) {
+          request.onsuccess({ target: request });
+        }
+      }, 0);
+      return request;
+    }),
+    deleteDatabase: jest.fn(() => {
+      const deleteRequest = {
+        onsuccess: null,
+        onerror: null,
+      };
+      setTimeout(() => {
+        if (deleteRequest.onsuccess) {
+          deleteRequest.onsuccess({ target: deleteRequest });
+        }
+      }, 0);
+      return deleteRequest;
+    }),
+  };
+};
+
+global.indexedDB = createIndexedDBMock();
+
 // Mock console methods for cleaner test output
 const originalError = console.error;
 console.error = (...args) => {

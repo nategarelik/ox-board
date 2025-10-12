@@ -168,6 +168,9 @@ export class CoordinateNormalizer {
   }
 
   static distance(p1: Point2D, p2: Point2D): number {
+    if (!p1 || !p2) {
+      return 0;
+    }
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
     return Math.sqrt(dx * dx + dy * dy);
@@ -204,6 +207,9 @@ export class CoordinateNormalizer {
   }
 
   static calculateAngle(p1: Point2D, p2: Point2D, p3: Point2D): number {
+    if (!p1 || !p2 || !p3) {
+      return 0;
+    }
     const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
     const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
 
@@ -683,6 +689,7 @@ export class AdvancedGestureRecognizer {
 
     let extendedCount = 0;
     for (let i = 0; i < fingerTips.length; i++) {
+      if (!fingerTips[i] || !fingerPips[i]) continue;
       if (fingerTips[i].y < fingerPips[i].y - 0.02) {
         extendedCount++;
       }
@@ -719,6 +726,7 @@ export class AdvancedGestureRecognizer {
 
     let fingerCount = 0;
     for (let i = 0; i < fingerTips.length; i++) {
+      if (!fingerTips[i] || !fingerPips[i]) continue;
       if (fingerTips[i].y < fingerPips[i].y - 0.03) {
         fingerCount++;
       }
@@ -727,7 +735,9 @@ export class AdvancedGestureRecognizer {
     // Check thumb separately
     const thumbTip = landmarks[HandLandmark.THUMB_TIP];
     const thumbIp = landmarks[HandLandmark.THUMB_IP];
-    if (thumbTip.y < thumbIp.y - 0.03) {
+    if (!thumbTip || !thumbIp) {
+      // Skip thumb check if landmarks are undefined
+    } else if (thumbTip.y < thumbIp.y - 0.03) {
       fingerCount++;
     }
 

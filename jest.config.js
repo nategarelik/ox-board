@@ -28,6 +28,7 @@ const customJestConfig = {
     "^@/app/(.*)$": "<rootDir>/app/$1",
     "^@/(.*)$": "<rootDir>/app/$1",
     tone: "<rootDir>/tests/__mocks__/toneMock.ts",
+    "essentia.js": "<rootDir>/tests/__mocks__/essentia.js-core.es.js",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
     "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$":
       "<rootDir>/tests/__mocks__/fileMock.js",
