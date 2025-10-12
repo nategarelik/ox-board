@@ -211,6 +211,13 @@ export function GestureFeedback({
     [showPredictions],
   );
 
+  // Update gesture trails when feedback state changes
+  useEffect(() => {
+    if (feedbackState && showGestureTrails) {
+      updateGestureTrails(feedbackState.activeGestures);
+    }
+  }, [feedbackState?.activeGestures, showGestureTrails, updateGestureTrails]);
+
   // Animation system for smooth value transitions
   useEffect(() => {
     if (!isActive) return;
@@ -735,10 +742,6 @@ export function GestureFeedback({
           <div className="space-y-3">
             {feedbackState.activeGestures.length > 0 ? (
               feedbackState.activeGestures.map((gesture, index) => {
-                // Update gesture trails when rendering gestures
-                if (showGestureTrails) {
-                  updateGestureTrails([gesture]);
-                }
                 return renderGestureIndicator(gesture, index);
               })
             ) : (
