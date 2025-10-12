@@ -1,7 +1,7 @@
 /**
  * @fileoverview Terminal UI File Uploader Component
  * @description Drag-and-drop audio file uploader with terminal aesthetic
- * Integrates with audioFileLoader for audio processing
+ * Integrates with audioFileLoader for audio processing and backend stem separation
  */
 
 "use client";
@@ -15,6 +15,8 @@ import {
   validateAudioFile,
   type UploadProgress,
 } from "@/lib/audio/audioFileLoader";
+import { stemifyClient } from "@/lib/api/stemifyClient";
+import type { JobResult } from "@/types/api";
 
 interface FileUploaderProps {
   /**
@@ -54,6 +56,16 @@ interface FileUploaderProps {
    * Allow multiple file uploads (default: true)
    */
   multiple?: boolean;
+
+  /**
+   * Enable backend stem separation (default: false)
+   */
+  enableBackendSeparation?: boolean;
+
+  /**
+   * Callback when backend stem separation completes
+   */
+  onStemSeparationComplete?: (result: JobResult) => void;
 }
 
 /**
@@ -66,6 +78,8 @@ export function FileUploader({
   audioContext,
   maxSize = 100 * 1024 * 1024,
   multiple = true,
+  enableBackendSeparation = false,
+  onStemSeparationComplete,
 }: FileUploaderProps) {
   const [uploadingFiles, setUploadingFiles] = useState<
     { name: string; progress: UploadProgress }[]
@@ -113,33 +127,100 @@ export function FileUploader({
             },
           ]);
 
-          // Load and process audio file
-          const loadedFile = await loadAudioFile(
-            file,
-            audioContext,
-            (progress) => {
-              // Update progress in UI
-              setUploadingFiles((prev) =>
-                prev.map((f) =>
-                  f.name === file.name ? { ...f, progress } : f,
-                ),
-              );
-              onProgress?.(file.name, progress);
-            },
-          );
-
-          // Create track object for DeckManager
-          const track = createTrackFromFile(loadedFile);
-
-          console.log(`✅ Successfully loaded: ${file.name}`);
-          onFileLoaded(track);
-
-          // Remove from uploading list after delay (show success)
-          setTimeout(() => {
-            setUploadingFiles((prev) =>
-              prev.filter((f) => f.name !== file.name),
+          // Backend stem separation path
+          if (enableBackendSeparation && onStemSeparationComplete) {
+            console.log(
+              `🔧 Uploading to backend for stem separation: ${file.name}`,
             );
-          }, 1500);
+
+            // Upload to backend
+            const job = await stemifyClient.uploadForSeparation({
+              file,
+              model: "htdemucs",
+            });
+
+            console.log(`✅ Job created: ${job.job_id}`);
+
+            // Poll for completion
+            const result = await stemifyClient.pollJobUntilComplete(
+              job.job_id,
+              (progress) => {
+                setUploadingFiles((prev) =>
+                  prev.map((f) =>
+                    f.name === file.name
+                      ? {
+                          ...f,
+                          progress: {
+                            stage: "processing",
+                            progress,
+                            message: `Separating stems: ${progress}%`,
+                          },
+                        }
+                      : f,
+                  ),
+                );
+                onProgress?.(file.name, {
+                  stage: "processing",
+                  progress,
+                  message: `Separating stems: ${progress}%`,
+                });
+              },
+            );
+
+            console.log(`✅ Stem separation complete: ${file.name}`);
+            onStemSeparationComplete(result);
+
+            // Update to complete
+            setUploadingFiles((prev) =>
+              prev.map((f) =>
+                f.name === file.name
+                  ? {
+                      ...f,
+                      progress: {
+                        stage: "complete",
+                        progress: 100,
+                        message: "Stems ready!",
+                      },
+                    }
+                  : f,
+              ),
+            );
+
+            // Remove from list after delay
+            setTimeout(() => {
+              setUploadingFiles((prev) =>
+                prev.filter((f) => f.name !== file.name),
+              );
+            }, 1500);
+          } else {
+            // Local file loading path (existing)
+            const loadedFile = await loadAudioFile(
+              file,
+              audioContext,
+              (progress) => {
+                // Update progress in UI
+                setUploadingFiles((prev) =>
+                  prev.map((f) =>
+                    f.name === file.name ? { ...f, progress } : f,
+                  ),
+                );
+                onProgress?.(file.name, progress);
+              },
+            );
+
+            // Create track object for DeckManager
+            const track = createTrackFromFile(loadedFile);
+
+            console.log(`✅ Successfully loaded: ${file.name}`);
+            onFileLoaded(track);
+
+            // Remove from uploading list after delay (show success)
+            setTimeout(() => {
+              setUploadingFiles((prev) =>
+                prev.filter((f) => f.name !== file.name),
+              );
+            }, 1500);
+          }
         } catch (error: any) {
           const errorMessage = error.message || "Unknown error";
           console.error(`❌ Failed to load ${file.name}:`, error);
@@ -175,7 +256,14 @@ export function FileUploader({
         }
       }
     },
-    [audioContext, onFileLoaded, onProgress, onError],
+    [
+      audioContext,
+      onFileLoaded,
+      onProgress,
+      onError,
+      enableBackendSeparation,
+      onStemSeparationComplete,
+    ],
   );
 
   const { getRootProps, getInputProps, isDragActive, isDragReject } =
@@ -284,6 +372,8 @@ export function FileUploader({
                 <p className="text-green-700 text-xs mt-2">
                   Supported: MP3, WAV, FLAC, M4A, OGG (max{" "}
                   {maxSize / 1024 / 1024}MB)
+                  {enableBackendSeparation &&
+                    " • Backend stem separation enabled"}
                 </p>
               </>
             )}

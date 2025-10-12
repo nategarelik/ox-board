@@ -281,6 +281,9 @@ export function GestureFeedback({
           });
         }
       });
+
+      // Update gesture trails when feedback updates
+      updateGestureTrails(feedback.activeGestures);
     };
 
     mapper.on("feedbackUpdate", handleFeedbackUpdate);
@@ -288,7 +291,7 @@ export function GestureFeedback({
     return () => {
       mapper.off("feedbackUpdate", handleFeedbackUpdate);
     };
-  }, [mapper]);
+  }, [mapper, updateGestureTrails]);
 
   if (!isActive || !feedbackState) {
     return null;

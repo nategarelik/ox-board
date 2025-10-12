@@ -17,6 +17,9 @@ import {
 } from "@/components/terminal/TerminalCard";
 import { FileUploader } from "@/components/terminal/FileUploader";
 import { useDeckManager } from "@/hooks/useDeckManager";
+import { stemCache } from "@/lib/storage/stemCache";
+import { stemifyClient } from "@/lib/api/stemifyClient";
+import type { JobResult } from "@/types/api";
 
 interface Track {
   id: string;
@@ -33,9 +36,23 @@ export function TerminalMusicLibrary() {
   const [sortBy, setSortBy] = useState<"name" | "bpm" | "key">("name");
   const [showUploader, setShowUploader] = useState(false);
   const [loadedTracks, setLoadedTracks] = useState<Track[]>([]);
+  const [enableBackendSeparation, setEnableBackendSeparation] = useState(false);
+  const [backendConnected, setBackendConnected] = useState(false);
 
   // Get audio context from useDeckManager
   const { audioInit, loadTrack } = useDeckManager();
+
+  // Test backend connection on mount
+  React.useEffect(() => {
+    stemifyClient.testConnection().then((connected) => {
+      setBackendConnected(connected);
+      if (connected) {
+        console.log("✅ Backend stem separation service connected");
+      } else {
+        console.warn("⚠️ Backend stem separation service unavailable");
+      }
+    });
+  }, []);
 
   // Mock data (will be replaced by user-loaded tracks)
   const tracks: Track[] = [
@@ -129,6 +146,85 @@ export function TerminalMusicLibrary() {
     // Could show toast notification here
   };
 
+  // Handle backend stem separation completion
+  const handleStemSeparationComplete = async (result: JobResult) => {
+    console.log("🎉 Stem separation complete:", result);
+
+    try {
+      // Download stems from backend URLs
+      const [drumsBlob, bassBlob, vocalsBlob, otherBlob] = await Promise.all([
+        fetch(result.stems.drums).then((r) => r.blob()),
+        fetch(result.stems.bass).then((r) => r.blob()),
+        fetch(result.stems.vocals).then((r) => r.blob()),
+        fetch(result.stems.other).then((r) => r.blob()),
+      ]);
+
+      // Convert blobs to audio buffers
+      const audioContext = new AudioContext();
+      const [drumsBuffer, bassBuffer, vocalsBuffer, otherBuffer] =
+        await Promise.all([
+          drumsBlob
+            .arrayBuffer()
+            .then((ab) => audioContext.decodeAudioData(ab)),
+          bassBlob.arrayBuffer().then((ab) => audioContext.decodeAudioData(ab)),
+          vocalsBlob
+            .arrayBuffer()
+            .then((ab) => audioContext.decodeAudioData(ab)),
+          otherBlob
+            .arrayBuffer()
+            .then((ab) => audioContext.decodeAudioData(ab)),
+        ]);
+
+      // Cache stems in IndexedDB
+      await stemCache.init();
+      const trackUrl = URL.createObjectURL(drumsBlob); // Placeholder URL
+      const stemId = await stemCache.saveStem(
+        trackUrl,
+        result.metadata.original_filename,
+        {
+          drums: { audioBuffer: drumsBuffer },
+          bass: { audioBuffer: bassBuffer },
+          melody: { audioBuffer: otherBuffer },
+          vocals: { audioBuffer: vocalsBuffer },
+        },
+        {
+          bpm: 120, // TODO: Extract from analysis
+          key: "C", // TODO: Extract from analysis
+          duration: result.metadata.duration,
+          processingDate: Date.now(),
+          processingTime: 0,
+          priority: "high",
+          quality: "lossless",
+        },
+      );
+
+      console.log(`✅ Cached stems with ID: ${stemId}`);
+
+      // Add to loaded tracks
+      const minutes = Math.floor(result.metadata.duration / 60);
+      const seconds = Math.floor(result.metadata.duration % 60);
+      const durationStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+      const newTrack: Track = {
+        id: stemId,
+        name: result.metadata.original_filename,
+        artist: "Unknown",
+        bpm: 120,
+        key: "C",
+        duration: durationStr,
+        size: "CACHED",
+      };
+
+      setLoadedTracks((prev) => [...prev, newTrack]);
+
+      console.log(
+        `✅ Backend stem separation complete for: ${result.metadata.original_filename}`,
+      );
+    } catch (error) {
+      console.error("❌ Failed to cache separated stems:", error);
+    }
+  };
+
   // Combine mock tracks with loaded tracks
   const allTracks = [...loadedTracks, ...tracks];
 
@@ -203,6 +299,28 @@ export function TerminalMusicLibrary() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Backend separation toggle */}
+            {backendConnected && (
+              <div className="mb-4 p-3 border-2 border-green-600 bg-green-500/10 rounded">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={enableBackendSeparation}
+                    onChange={(e) =>
+                      setEnableBackendSeparation(e.target.checked)
+                    }
+                    className="w-4 h-4 accent-green-500"
+                  />
+                  <span className="text-green-400 font-mono text-sm font-bold">
+                    ENABLE_BACKEND_STEM_SEPARATION
+                  </span>
+                </label>
+                <p className="text-green-600 text-xs mt-1 ml-6 font-mono">
+                  Uses AI-powered Demucs model to separate drums, bass, vocals,
+                  and other stems
+                </p>
+              </div>
+            )}
             <FileUploader
               onFileLoaded={handleFileLoaded}
               onError={handleError}
@@ -215,11 +333,19 @@ export function TerminalMusicLibrary() {
                   : null
               }
               multiple={true}
+              enableBackendSeparation={enableBackendSeparation}
+              onStemSeparationComplete={handleStemSeparationComplete}
             />
             {!audioInit.isReady && (
               <div className="mt-4 p-3 border border-yellow-600 bg-yellow-500/10 text-yellow-400 font-mono text-xs">
                 ⚠️ Audio system not initialized. Initialize audio in Studio tab
                 first.
+              </div>
+            )}
+            {!backendConnected && (
+              <div className="mt-4 p-3 border border-orange-600 bg-orange-500/10 text-orange-400 font-mono text-xs">
+                ⚠️ Backend stem separation service not available. Using local
+                file loading only.
               </div>
             )}
           </CardContent>

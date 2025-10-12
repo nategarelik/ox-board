@@ -491,6 +491,69 @@ export function useDeckManager(): UseDeckManagerReturn {
     [],
   );
 
+  const loadCachedStems = useCallback(
+    async (deck: "A" | "B", stemId: string): Promise<void> => {
+      if (!deckManagerRef.current) {
+        throw new Error("Audio system not initialized");
+      }
+
+      try {
+        const { stemCache } = await import("@/lib/storage/stemCache");
+
+        // Load stem from cache by ID
+        const cachedStem = await stemCache.loadStem(stemId);
+
+        if (!cachedStem) {
+          throw new Error(`No cached stems found for ID: ${stemId}`);
+        }
+
+        // Convert ArrayBuffers to AudioBuffers
+        const [drumsBuffer, bassBuffer, melodyBuffer, vocalsBuffer] =
+          await Promise.all([
+            stemCache.arrayBufferToAudioBuffer(cachedStem.stems.drums),
+            stemCache.arrayBufferToAudioBuffer(cachedStem.stems.bass),
+            stemCache.arrayBufferToAudioBuffer(cachedStem.stems.melody),
+            stemCache.arrayBufferToAudioBuffer(cachedStem.stems.vocals),
+          ]);
+
+        // Create track object with stem buffers
+        const track = {
+          id: cachedStem.id,
+          url: cachedStem.trackUrl,
+          title: cachedStem.trackTitle,
+          artist: "Unknown",
+          duration: cachedStem.metadata.duration,
+          bpm: cachedStem.metadata.bpm,
+          key: cachedStem.metadata.key,
+          stems: {
+            drums: drumsBuffer,
+            bass: bassBuffer,
+            melody: melodyBuffer,
+            vocals: vocalsBuffer,
+          },
+        };
+
+        // Load into deck with separated stems
+        const deckInstance =
+          deck === "A"
+            ? deckManagerRef.current.deckA
+            : deckManagerRef.current.deckB;
+        await deckInstance.load(track);
+
+        console.log(
+          `✅ Loaded cached stems for ${cachedStem.trackTitle} into Deck ${deck}`,
+        );
+      } catch (error) {
+        console.error(
+          `❌ Failed to load cached stems into Deck ${deck}:`,
+          error,
+        );
+        throw error;
+      }
+    },
+    [],
+  );
+
   // ============================================================================
   // MIXER CONTROL METHODS
   // ============================================================================
@@ -604,6 +667,7 @@ export function useDeckManager(): UseDeckManagerReturn {
     setDeckEQ,
     seekDeck,
     loadTrack,
+    loadCachedStems,
 
     // Mixer controls
     setCrossfader,

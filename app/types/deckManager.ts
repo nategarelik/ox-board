@@ -115,6 +115,8 @@ export interface DeckControlMethods {
       key?: string;
     },
   ) => Promise<void>;
+  /** Load cached stems into the specified deck */
+  loadCachedStems: (deck: "A" | "B", stemId: string) => Promise<void>;
 }
 
 /**
