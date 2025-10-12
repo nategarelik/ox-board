@@ -387,19 +387,6 @@ export class Channel {
   }
 }
 
-export class FeedbackDelay {
-  public delayTime = createParam(0);
-  public feedback = createParam(0);
-  public wet = createParam(0.5);
-
-  constructor(options: any = {}) {
-    this.delayTime.value = options.delayTime ?? 0;
-    this.feedback.value = options.feedback ?? 0;
-    this.wet.value = options.wet ?? 0.5;
-    attachNodeHelpers(this);
-  }
-}
-
 export class Analyser {
   public size: number;
   public type: string;
@@ -518,7 +505,6 @@ export default {
   Phaser,
   Volume,
   Channel,
-  FeedbackDelay,
   Analyser,
   FFT,
   ToneAudioBuffer,
