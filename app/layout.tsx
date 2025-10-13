@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import ErrorBoundary from "./components/ErrorBoundary";
-import KeyboardShortcutsProvider from "./components/accessibility/KeyboardShortcutsProvider";
-import PWAProvider from "./components/PWAProvider";
-import { FeatureFlagProvider } from "./contexts/FeatureFlagContext";
 import "./globals.css";
 import "./styles/accessibility.css";
 
@@ -115,13 +112,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased bg-black text-white min-h-screen">
-        <PWAProvider>
-          <FeatureFlagProvider>
-            <ErrorBoundary level="page">
-              <KeyboardShortcutsProvider>{children}</KeyboardShortcutsProvider>
-            </ErrorBoundary>
-          </FeatureFlagProvider>
-        </PWAProvider>
+        <ErrorBoundary level="page">{children}</ErrorBoundary>
       </body>
     </html>
   );
